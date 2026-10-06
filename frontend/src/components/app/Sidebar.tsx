@@ -3,7 +3,6 @@
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  Clock,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -23,7 +22,7 @@ import { Logo } from "@/components/ui/Logo";
 
 import { useSession } from "./session";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; soon?: boolean };
+type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const mainNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,8 +30,8 @@ const mainNav: NavItem[] = [
   { href: "/gastos", label: "Gastos", icon: ArrowDownCircle },
   { href: "/gastos-fijos", label: "Gastos fijos", icon: Repeat },
   { href: "/prediccion", label: "Predicción", icon: TrendingUp },
-  { href: "/metas", label: "Metas de ahorro", icon: Target, soon: true },
-  { href: "/reportes", label: "Reportes", icon: FileText, soon: true },
+  { href: "/metas", label: "Metas de ahorro", icon: Target },
+  { href: "/reportes", label: "Reportes", icon: FileText },
 ];
 
 const itemClass =
@@ -41,23 +40,6 @@ const itemClass =
 function NavLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
   const pathname = usePathname();
   const Icon = item.icon;
-
-  if (item.soon) {
-    // Not built yet: shown so the product's shape is visible, but not a dead link
-    return (
-      <span
-        aria-disabled="true"
-        title="Próximamente"
-        className={`${itemClass} text-on-ink-muted cursor-not-allowed whitespace-nowrap`}
-      >
-        <Icon aria-hidden="true" className="size-5 shrink-0" />
-        {item.label}
-        <Clock aria-hidden="true" className="ml-auto size-4 shrink-0" />
-        <span className="sr-only"> (próximamente)</span>
-      </span>
-    );
-  }
-
   const active = pathname === item.href;
   return (
     <Link

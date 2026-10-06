@@ -1,6 +1,6 @@
 "use client";
 
-import { ChevronLeft, ChevronRight, Plus, ReceiptText, SearchX } from "lucide-react";
+import { ChevronLeft, ChevronRight, Download, Plus, ReceiptText, SearchX } from "lucide-react";
 import { useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/app/PageHeader";
@@ -102,7 +102,25 @@ export function TransactionsPage() {
       <PageHeader
         title="Gastos"
         subtitle="Todos tus movimientos que no se repiten"
-        actions={addButton}
+        actions={
+          <>
+            {/* Same filters as the table: what you see is what you download */}
+            <a
+              href={financeApi.exportUrl({
+                from: params.from,
+                to: params.to,
+                type: params.type,
+                category_id: params.category_id,
+              })}
+              download
+              className={buttonClass("ghost")}
+            >
+              <Download aria-hidden="true" className="size-4" />
+              Exportar CSV
+            </a>
+            {addButton}
+          </>
+        }
       />
       <Notice message={notice} />
       {error ? <FormAlert title={error} /> : null}
