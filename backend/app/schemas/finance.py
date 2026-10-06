@@ -26,6 +26,8 @@ from app.schemas.common import (
 
 class SettingsIn(InputModel):
     initial_balance: NonNegativeMoney
+    # The day initial_balance was true (the client sends its local date)
+    balance_as_of: date
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] = "USD"
     income_period: Frequency
     custom_period_days: CustomPeriodDays | None = None
@@ -41,6 +43,7 @@ class SettingsIn(InputModel):
 
 class SettingsOut(OutputModel):
     initial_balance: Decimal
+    balance_as_of: date
     currency: str
     income_period: Frequency
     custom_period_days: int | None
@@ -96,6 +99,7 @@ class IncomeOut(OutputModel):
 class FixedExpenseIn(FrequencyFields):
     name: Label
     amount: PositiveMoney
+    start_date: date
     due_day: Annotated[int, Field(ge=1, le=31)] | None = None
     category_id: uuid.UUID | None = None
     is_active: bool = True
@@ -107,6 +111,7 @@ class FixedExpenseOut(OutputModel):
     amount: Decimal
     frequency: Frequency
     custom_period_days: int | None
+    start_date: date
     due_day: int | None
     category_id: uuid.UUID | None
     is_active: bool

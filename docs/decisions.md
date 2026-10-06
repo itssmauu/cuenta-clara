@@ -107,3 +107,27 @@ La única excepción son las categorías predeterminadas: son visibles para todo
 ## D-025 · Monto inicial no negativo
 
 **Fase 3.** `initial_balance` acepta `0` o más. Empezar con saldo negativo (deudas) es un caso válido, pero complica la UI de onboarding y el mensaje "te quedan $X". Se puede relajar más adelante: la base no lo restringe, solo la validación de la API.
+
+## D-026 · El saldo empieza en `balance_as_of`
+
+**Fase 4.** Se añadió `user_settings.balance_as_of`: el día en que el monto inicial era cierto. Sin esa fecha no hay forma de saber qué movimientos ya están incluidos en el monto inicial. Nada anterior cuenta para el saldo, los límites ni los promedios. Detalle en [`calculations.md`](calculations.md).
+
+## D-027 · Gastos fijos con `start_date`
+
+**Fase 4.** Los ingresos ya tenían `start_date`; los gastos fijos no, y sin ella un gasto semanal no tiene un día de la semana definido. Ahora es obligatoria en ambos (coherente con D-023: editar un gasto no reinicia su fecha en silencio).
+
+## D-028 · Lo recurrente se cuenta solo; las transacciones son lo variable
+
+**Fase 4.** Los ingresos recurrentes y los gastos fijos se suman y restan automáticamente en sus fechas. Las transacciones son para lo que no se repite. Si el usuario registrara también su sueldo como transacción, contaría doble. La interfaz lo explicará en el formulario de transacciones (Fase 7).
+
+## D-029 · El límite de gasto incluye los gastos fijos
+
+**Fase 4.** "Te pasaste" se calcula sobre todo lo que salió en el periodo (fijos + variables), porque la pregunta del usuario es "¿me alcanza?". El límite se define por el periodo de ingreso y se convierte a otros periodos por duración promedio.
+
+## D-030 · La fecha de referencia la envía el cliente
+
+**Fase 4.** `/dashboard` y `/forecast` aceptan `?date=YYYY-MM-DD` (por defecto, la fecha del servidor). Así "hoy" coincide con la zona horaria del usuario sin guardar zonas horarias en el backend, y los tests son deterministas.
+
+## D-031 · Desactivar un ingreso o gasto fijo lo quita también del pasado
+
+**Fase 4.** No se guarda cuándo estuvo activo cada registro. Desactivarlo lo excluye de todos los cálculos, incluidos los periodos anteriores. Es una simplificación aceptable para un presupuesto personal; si molesta, se añade `end_date`.

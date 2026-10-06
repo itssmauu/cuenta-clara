@@ -4,7 +4,13 @@ import pytest
 from fastapi.testclient import TestClient
 
 URL = "/api/v1/fixed-expenses"
-INTERNET = {"name": "Internet", "amount": "30.00", "frequency": "monthly", "due_day": 15}
+INTERNET = {
+    "name": "Internet",
+    "amount": "30.00",
+    "frequency": "monthly",
+    "start_date": "2026-10-01",
+    "due_day": 15,
+}
 
 
 def test_fixed_expense_crud_with_default_category(login_as: Callable[[str], TestClient]) -> None:

@@ -86,7 +86,7 @@ cuenta-clara/
 - [x] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
 - [x] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
 - [x] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
-- [ ] **Fase 4:** dashboard y predicción
+- [x] **Fase 4:** dashboard y predicción
 - [ ] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [ ] **Fase 6:** onboarding y dashboard
 - [ ] **Fase 7:** resto de pantallas
@@ -96,4 +96,4 @@ cuenta-clara/
 
 La app maneja información financiera, así que la seguridad es un requisito central: Argon2id, sesiones en cookies `HttpOnly` con refresh rotativo y detección de robo, CSRF, rate limiting, bloqueo temporal y errores que no revelan qué correos existen. Detalle completo, con dónde está implementada cada medida y qué test la cubre, en [`docs/security.md`](docs/security.md).
 
-Las decisiones de diseño se registran en [`docs/decisions.md`](docs/decisions.md).
+Cómo se calculan el saldo, el límite de gasto y la predicción: [`docs/calculations.md`](docs/calculations.md). Las decisiones de diseño se registran en [`docs/decisions.md`](docs/decisions.md).

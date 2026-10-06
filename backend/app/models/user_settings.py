@@ -1,7 +1,8 @@
 import uuid
+from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, ForeignKey, String, false
+from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, IdMixin, TimestampMixin, str_enum
@@ -23,6 +24,8 @@ class UserSettings(IdMixin, TimestampMixin, Base):
         ForeignKey("users.id", ondelete="CASCADE"), unique=True
     )
     initial_balance: Mapped[Decimal] = mapped_column(server_default="0")
+    # The day initial_balance was true; nothing earlier counts toward the balance
+    balance_as_of: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     currency: Mapped[str] = mapped_column(String(3), server_default="USD")
     income_period: Mapped[Frequency] = mapped_column(
         str_enum(Frequency, "income_period"), server_default=Frequency.MONTHLY.value

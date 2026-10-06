@@ -72,8 +72,12 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `GET` / `PUT` / `DELETE` | `/api/v1/fixed-expenses/{id}` | |
 | `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`; paginación `limit` (≤ 100) y `offset` |
 | `GET` / `PUT` / `DELETE` | `/api/v1/transactions/{id}` | |
+| `GET` | `/api/v1/dashboard` | Saldo, ingresos y gastos del periodo, límite, serie de 6 periodos, próximos gastos fijos y últimos movimientos. Parámetros: `period` (`daily`/`weekly`/`biweekly`/`monthly`) y `date` |
+| `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period` y `date` |
 
 Todas las rutas de datos requieren sesión y solo ven los datos del usuario autenticado. Un recurso ajeno responde `404`.
+
+Cómo se calculan el saldo, los límites y la predicción: [`docs/calculations.md`](../docs/calculations.md).
 
 **Montos:** se envían y se reciben como texto con dos decimales (`"160.00"`), nunca como float. Ver D-021 en [`docs/decisions.md`](../docs/decisions.md).
 
