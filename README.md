@@ -36,12 +36,13 @@ cp .env.example .env   # edita los valores
 docker compose up -d --build
 ```
 
-Esto levanta PostgreSQL 16 y la API, que aplica las migraciones al arrancar:
+Esto levanta PostgreSQL 16, la API (que aplica las migraciones al arrancar) y el frontend:
 
+- App web: <http://localhost:3000>
 - API: <http://localhost:8000/api/v1/health>
 - Documentación interactiva (Swagger): <http://localhost:8000/docs>
 
-El frontend se añade en la Fase 5. Para trabajar en el backend sin Docker, ver [`backend/README.md`](backend/README.md).
+Para trabajar sin Docker, ver [`backend/README.md`](backend/README.md) y [`frontend/README.md`](frontend/README.md).
 
 > **¿Ya tienes PostgreSQL instalado en tu máquina?** Ocupa el puerto 5432. Cambia `POSTGRES_PORT=5433` en `.env` (y el puerto en `DATABASE_URL` / `TEST_DATABASE_URL`).
 
@@ -66,13 +67,16 @@ Definidas en [`.env.example`](.env.example). Nunca se commitea `.env`.
 | `LOGIN_RATE_LIMIT` / `REGISTER_RATE_LIMIT` / `EMAIL_RATE_LIMIT` | Límites por IP y por correo |
 | `MAX_FAILED_LOGINS` / `LOCKOUT_MINUTES` | Bloqueo temporal tras intentos fallidos |
 | `FRONTEND_ORIGIN` | Único origen permitido por CORS |
+| `FORWARDED_ALLOW_IPS` | IPs de proxy en las que la API confía para `X-Forwarded-For` |
+| `FRONTEND_PORT` | Puerto del host para la app web, por defecto `3000` |
+| `API_INTERNAL_URL` | A dónde reenvía Next.js las peticiones `/api/*` |
 
 ## Estructura
 
 ```
 cuenta-clara/
 ├─ backend/            # API FastAPI
-├─ frontend/           # App Next.js (Fase 5+)
+├─ frontend/           # App Next.js
 ├─ infra/              # scripts de infraestructura (init de Postgres)
 ├─ docs/               # arquitectura, decisiones, seguridad, capturas
 ├─ .github/workflows/  # CI
@@ -87,7 +91,7 @@ cuenta-clara/
 - [x] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
 - [x] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
 - [x] **Fase 4:** dashboard y predicción
-- [ ] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
+- [x] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [ ] **Fase 6:** onboarding y dashboard
 - [ ] **Fase 7:** resto de pantallas
 - [ ] **Fase 8:** pulido, accesibilidad, E2E y documentación
