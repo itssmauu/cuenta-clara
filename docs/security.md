@@ -112,6 +112,12 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - En producción la app **no arranca** si `COOKIE_SECURE=false`.
 - Los logs registran **IDs de usuario**, nunca correos, contraseñas ni tokens. El healthcheck no devuelve detalles de conexión a la base.
 
+### Exportación a CSV (Fase 9)
+
+- Solo exporta los movimientos del usuario autenticado. Cubierto por `test_export_only_includes_the_callers_data`.
+- **Protección contra inyección de fórmulas:** cualquier texto del usuario (notas, nombres de categoría) que empiece con `= + - @`, tabulación o retorno se prefija con `'`. Así una nota como `=HYPERLINK(...)` no se ejecuta al abrir el archivo en Excel o Google Sheets.
+  → `app/services/export.py` · `tests/test_phase9_api.py`
+
 ## 9. Dependencias
 
 - Versiones exactas: `==` en `pyproject.toml` y sin rangos en `package.json`, más `package-lock.json`.

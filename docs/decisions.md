@@ -214,3 +214,27 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 ## D-050 · Selector de periodo en grilla en móviles
 
 **Fase 8.** En 375 px los cuatro botones Diario/Semanal/Quincenal/Mensual se partían en dos líneas. En pantallas pequeñas se muestran como una grilla de 4 columnas a todo el ancho, y desde `sm` vuelven a ser píldoras en línea. El problema apareció al revisar las capturas generadas por Playwright.
+
+## D-051 · Metas de ahorro: seguimiento, no movimiento de saldo
+
+**Fase 9.** Una meta registra cuánto se apartó para algo, pero **aportar no resta del saldo disponible**: el dinero apartado sigue siendo del usuario y suele estar en la misma cuenta. Así no hay doble conteo con las transacciones. Cada meta muestra su progreso y, si tiene fecha objetivo, **cuánto apartar por periodo** (el periodo del usuario) para llegar a tiempo: lo que falta dividido entre los periodos restantes, contando el actual y redondeando hacia arriba al centavo. Se calcula en el backend con una función pura (`services/savings.py`). Retirar más de lo ahorrado se rechaza con 422.
+
+## D-052 · Alerta al 80 % del límite
+
+**Fase 9.** `/dashboard` devuelve `limit_status`: `none`, `ok`, `warning` (80 % o más del límite usado) u `over`. Con `warning` u `over`, el dashboard muestra un aviso con `role="status"`, icono y texto ("Atención: llevas el 85 % de tu límite semanal. Te quedan $6.00"). El umbral está en una constante (`WARNING_PERCENT`).
+
+## D-053 · Comparación con el periodo anterior
+
+**Fase 9.** `/dashboard` incluye ingresos y gasto del periodo anterior. Las tarjetas muestran la diferencia con flecha y palabras ("$15.00 menos que la semana anterior"), sin colores de "bueno/malo": gastar más no siempre es malo y el color solo confundiría. La resta se hace en centavos enteros (`subtractMoney`) para no usar floats con dinero.
+
+## D-054 · Gasto por categoría con barras de un solo color
+
+**Fase 9.** Suma gastos fijos y variables del periodo por categoría, de mayor a menor ("Sin categoría" al final en empates). Las barras horizontales son todas del mismo color porque comparan magnitudes; la identidad la da el nombre, y el color de cada categoría aparece como punto en la tabla. Valor al final de cada barra y tabla equivalente.
+
+## D-055 · Exportar a CSV de forma segura
+
+**Fase 9.** `GET /transactions/export` devuelve los movimientos del usuario con los mismos filtros que la lista (máximo 10 000 filas). Para que un archivo abierto en Excel no ejecute nada, cualquier texto del usuario que empiece con `= + - @`, tabulación o retorno se prefija con `'` (*CSV/formula injection*). Los montos son números con signo (gastos negativos), no texto del usuario. Lleva BOM UTF-8 para que Excel muestre bien las tildes.
+
+## D-056 · Predicción con regresión lineal, opcional y explicable
+
+**Fase 9.** El "aprendizaje automático sencillo" es una regresión lineal por mínimos cuadrados (`services/trend.py`, sin dependencias) sobre el gasto variable de hasta 8 periodos completos. Se proyecta la línea hacia adelante, nunca por debajo de 0. Es **opcional** (`estimator=trend`) y la página explica qué encontró: cuánto sube o baja el gasto por periodo y el R². Con menos de 3 periodos completos usa el promedio y lo dice. Se eligió algo pequeño y explicable en vez de un modelo opaco: con el historial de una persona, una línea es honesta sobre lo poco que se puede predecir.

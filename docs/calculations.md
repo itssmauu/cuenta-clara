@@ -74,3 +74,29 @@ cierre = apertura + ingresos recurrentes − gastos fijos − gasto variable pro
 - Siempre `Decimal` y `NUMERIC(12,2)`, nunca float.
 - Redondeo a centavos `ROUND_HALF_UP`, solo al final de cada cálculo.
 - En JSON los montos viajan como texto: `"230.00"`.
+
+## Alerta, comparación y categorías (Fase 9)
+
+- **`limit_status`:** `warning` desde el 80 % del límite usado; `over` al pasarlo, con el mismo criterio estricto de antes.
+- **Periodo anterior:** los mismos totales para el periodo inmediatamente anterior, y la misma regla de `balance_as_of`: lo anterior a esa fecha cuenta como 0.
+- **Por categoría:** gastos fijos (según su categoría) y variables del periodo, agrupados. Los ingresos no se incluyen.
+
+## Metas de ahorro
+
+```
+falta            = max(meta − ahorrado, 0)
+periodos_restantes = periodos desde el actual hasta el que contiene la fecha objetivo (inclusive)
+por_periodo      = ⌈ falta / periodos_restantes ⌉   (al centavo)
+```
+
+Ejemplo semanal, miércoles 7 de octubre, meta $200 con $100 ahorrados para el domingo 25: quedan 3 semanas (la actual y 2 más) → $100 / 3 = **$33.34** por semana.
+
+## Predicción con tendencia (`estimator=trend`)
+
+1. Toma el gasto variable de hasta 8 periodos **completos** desde `balance_as_of` (x = 0, 1, …, n−1).
+2. Ajusta una recta por mínimos cuadrados: `pendiente = Σ(x−x̄)(y−ȳ) / Σ(x−x̄)²`, `intercepto = ȳ − pendiente · x̄`.
+3. El periodo actual es x = n. Para el periodo futuro k se estima `intercepto + pendiente · (n + k)`, nunca menos de 0.
+4. **R²** (de 0 a 1) indica qué tanto explica la recta el historial; la página lo muestra.
+5. Con menos de 3 periodos se usa el promedio, y la respuesta lo indica (`estimator: "average"`).
+
+Ejemplo: gastos de 10, 20 y 30 en tres semanas → pendiente 10, R² 1. La semana actual es x = 3, así que las dos siguientes se estiman en **50** y **60**.

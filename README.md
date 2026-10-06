@@ -8,9 +8,13 @@ Proyecto personal de portafolio: backend en FastAPI, frontend en Next.js, Postgr
 
 ![Dashboard de Cuenta Clara: tarjetas de saldo, gráfica de gasto contra límite y gastos de la semana](docs/screenshots/dashboard.png)
 
-| Landing | Registro | Predicción | Móvil |
-| --- | --- | --- | --- |
-| ![Landing](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Predicción de saldo por semana](docs/screenshots/prediccion.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
+| Landing | Registro | Predicción |
+| --- | --- | --- |
+| ![Landing](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Predicción de saldo por semana](docs/screenshots/prediccion.png) |
+
+| Metas de ahorro | Reportes | Móvil |
+| --- | --- | --- |
+| ![Metas de ahorro con progreso](docs/screenshots/metas.png) | ![Reportes: comparación y gasto por categoría](docs/screenshots/reportes.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
 
 ## ¿Qué hace?
 
@@ -29,6 +33,11 @@ Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo in
 - **Movimientos** sueltos con filtros por fecha, tipo y categoría.
 - **Predicción** del saldo para los próximos 4, 8 o 12 periodos.
 - **Configuración:** monto inicial, moneda, periodo, límite y categorías propias.
+- **Metas de ahorro** con progreso y cuánto apartar por periodo para llegar a la fecha.
+- **Alerta al 80 % del límite** y **comparación con el periodo anterior** en el dashboard.
+- **Gasto por categoría** y **reportes** que comparan periodos.
+- **Exportar a CSV**, protegido contra inyección de fórmulas.
+- **Predicción con tendencia:** regresión lineal sobre tu historial, explicada en la propia página.
 
 ## Stack
 
@@ -121,7 +130,7 @@ cuenta-clara/
 - [x] **Fase 6:** onboarding y dashboard
 - [x] **Fase 7:** resto de pantallas
 - [x] **Fase 8:** pulido, accesibilidad, E2E y documentación
-- [ ] **Fase 9** (ideas, pendientes de aprobación): metas de ahorro, alertas al 80 % del límite, comparación con el periodo anterior, gráfico por categoría, exportar a CSV, predicción con aprendizaje automático
+- [x] **Fase 9:** metas de ahorro, alertas al 80 % del límite, comparación con el periodo anterior, gasto por categoría, exportar a CSV y predicción con regresión lineal
 
 ## Calidad y pruebas
 

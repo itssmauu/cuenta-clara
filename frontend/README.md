@@ -9,7 +9,7 @@ frontend/
 ├─ src/
 │  ├─ app/                 # rutas públicas: /, /login, /register, /recuperar-contrasena
 │  │  ├─ (auth)/           # layout compartido de login y registro
-│  │  ├─ (app)/            # rutas privadas con barra lateral: /dashboard, /ingresos, /gastos…
+│  │  ├─ (app)/            # rutas privadas con barra lateral: /dashboard, /ingresos, /gastos, /metas, /reportes…
 │  │  ├─ onboarding/       # asistente de 4 pasos del primer ingreso
 │  │  ├─ globals.css       # tokens de diseño (@theme) y estilos base
 │  │  └─ layout.tsx        # fuentes Sora + Manrope (next/font)
@@ -17,14 +17,14 @@ frontend/
 │  │  ├─ landing/          # secciones de la landing (componentes de servidor)
 │  │  ├─ auth/             # formularios de acceso (componentes de cliente)
 │  │  ├─ app/              # sesión, barra lateral, encabezado de página
-│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla de gastos del periodo
-│  │  ├─ finance/          # Ingresos, Gastos, Gastos fijos, Predicción, Configuración y sus diálogos
+│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla de gastos del periodo, gasto por categoría
+│  │  ├─ finance/          # Ingresos, Gastos, Gastos fijos, Metas, Reportes, Predicción, Configuración y sus diálogos
 │  │  ├─ onboarding/       # pasos del asistente
 │  │  └─ ui/               # botones, campos, diálogos, avisos, estados vacíos
 │  ├─ lib/
 │  │  ├─ api.ts            # cliente de la API (CSRF, refresh automático, errores)
-│  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, dashboard
-│  │  ├─ format.ts         # dinero ($1,234.50) y fechas locales
+│  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, metas, dashboard, exportación
+│  │  ├─ format.ts         # dinero ($1,234.50, restas en centavos) y fechas locales
 │  │  ├─ use-resource.ts   # carga de datos en el cliente con estados de carga y error
 │  │  └─ validation.ts     # esquemas Zod (reflejan la política del backend)
 │  └─ proxy.ts             # Content-Security-Policy con nonce por petición
