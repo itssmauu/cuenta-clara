@@ -1,22 +1,30 @@
 # Frontend: app web de Cuenta Clara
 
-**Next.js 16** (App Router, Turbopack) + TypeScript + Tailwind CSS v4, con React Hook Form + Zod.
+**Next.js 16** (App Router, Turbopack) + TypeScript + Tailwind CSS v4, con React Hook Form + Zod y Recharts.
 
 ## Estructura
 
 ```
 frontend/
 ├─ src/
-│  ├─ app/                 # rutas: /, /login, /register, /recuperar-contrasena, /dashboard
+│  ├─ app/                 # rutas públicas: /, /login, /register, /recuperar-contrasena
 │  │  ├─ (auth)/           # layout compartido de login y registro
+│  │  ├─ (app)/            # rutas privadas con barra lateral: /dashboard, /ingresos, /gastos…
+│  │  ├─ onboarding/       # asistente de 4 pasos del primer ingreso
 │  │  ├─ globals.css       # tokens de diseño (@theme) y estilos base
 │  │  └─ layout.tsx        # fuentes Sora + Manrope (next/font)
 │  ├─ components/
 │  │  ├─ landing/          # secciones de la landing (componentes de servidor)
 │  │  ├─ auth/             # formularios de acceso (componentes de cliente)
+│  │  ├─ app/              # sesión, barra lateral, encabezado de página
+│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla, "Añadir movimiento"
+│  │  ├─ onboarding/       # pasos del asistente
 │  │  └─ ui/               # botones, campos, alertas
 │  ├─ lib/
 │  │  ├─ api.ts            # cliente de la API (CSRF, refresh automático, errores)
+│  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, dashboard
+│  │  ├─ format.ts         # dinero ($1,234.50) y fechas locales
+│  │  ├─ use-resource.ts   # carga de datos en el cliente con estados de carga y error
 │  │  └─ validation.ts     # esquemas Zod (reflejan la política del backend)
 │  └─ proxy.ts             # Content-Security-Policy con nonce por petición
 ├─ next.config.ts          # proxy /api → FastAPI, cabeceras de seguridad

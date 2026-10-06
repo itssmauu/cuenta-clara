@@ -161,3 +161,28 @@ El proxy reenvía `X-Forwarded-For` y uvicorn lo usa para el rate limiting por I
 ## D-038 · La sesión se comprueba contra la API, no en el `proxy`
 
 **Fase 5.** Las cookies de sesión tienen `path=/api`, así que no viajan al pedir `/dashboard` y el `proxy` de Next no puede saber si hay sesión. Las páginas privadas llaman a `/api/v1/auth/me` (renovando con el refresh token si hace falta) y redirigen a `/login` con 401. La API sigue siendo la única que decide.
+
+## D-039 · Los datos de la app se cargan en el cliente
+
+**Fase 6.** Como las cookies de sesión tienen `path=/api` (D-038), el servidor de Next no puede pedir datos en nombre del usuario. Las páginas privadas cargan sus datos en el navegador con un hook pequeño (`useResource`): estado de carga, error con reintento y recarga manual, conservando los datos previos mientras se actualizan. El estado de carga se *deriva* de qué petición terminó, en vez de marcarse dentro del efecto (regla `set-state-in-effect` de React 19). Si el proyecto crece, el siguiente paso natural es TanStack Query.
+
+## D-040 · Onboarding: se guarda todo al final y sin duplicados
+
+**Fase 6.** Los 4 pasos (monto inicial → gastos fijos → ingreso y frecuencia → límite) viven en el cliente y se guardan al terminar: gastos fijos, ingreso y, por último, los ajustes con `onboarding_completed: true`. Si algo falla a la mitad, el asistente recuerda qué ya se creó y el reintento no lo duplica. Hasta completar el onboarding, la app redirige a `/onboarding`; después, `/onboarding` redirige al dashboard.
+
+- El **ingreso es opcional** (hay quien no tiene uno fijo), pero la **frecuencia es obligatoria**: define el periodo del usuario, con el que se miden el dashboard y el límite.
+- `balance_as_of` es el día local del usuario al terminar el onboarding.
+
+## D-041 · La gráfica sigue la skill de visualización de datos
+
+**Fase 6.** Barras de máximo 24 px con esquinas de 4 px arriba y base recta; línea del límite punteada; etiqueta de valor solo en los periodos que se pasan (en color de tinta, nunca del color de la barra); eje Y con números redondos; tooltip al pasar el mouse o enfocar con teclado; leyenda visible. El validador de la skill marcó el coral con contraste 2.5:1 sobre blanco (WARN), lo que obliga a etiquetas visibles o vista de tabla: hay ambas ("Ver los datos como tabla"). El estado nunca depende solo del color: el chip y el medidor dicen "Te pasaste por $X" / "Dentro del límite" con icono.
+
+Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cliente y React aplica sus estilos por el CSSOM, que la CSP no bloquea. Verificado en el navegador sin violaciones.
+
+## D-042 · El periodo del dashboard vive en la URL
+
+**Fase 6.** `/dashboard?period=monthly`: el selector Diario/Semanal/Quincenal/Mensual sobrevive a recargas, se puede compartir y el botón atrás funciona. Sin parámetro, se usa el periodo del usuario.
+
+## D-043 · Secciones aún no construidas
+
+**Fase 6.** Ingresos, Gastos, Gastos fijos, Predicción y Configuración ya tienen ruta con un estado vacío (Fase 7), así la navegación nunca lleva a un 404. Metas de ahorro y Reportes (Fase 9, pendientes de aprobación) se muestran deshabilitados con un icono de reloj y "(próximamente)" para lectores de pantalla.
