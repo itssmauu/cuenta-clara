@@ -38,6 +38,9 @@ services:
       EMAIL_RATE_LIMIT: ${EMAIL_RATE_LIMIT:-10/hour}
       MAX_FAILED_LOGINS: ${MAX_FAILED_LOGINS:-5}
       LOCKOUT_MINUTES: ${LOCKOUT_MINUTES:-15}
+      # Requests arrive through the frontend's /api proxy: trust its X-Forwarded-For so
+      # rate limiting sees the real client IP. In production, set this to the proxy's IP.
+      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:
@@ -49,6 +52,25 @@ services:
         - python
         - -c
         - import urllib.request; urllib.request.urlopen('http://localhost:8000/api/v1/health')
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        # The Next.js server proxies /api/* to the backend over the compose network
+        API_INTERNAL_URL: http://backend:8000
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "node", "-e", "fetch('http://localhost:3000/').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))"]
       interval: 10s
       timeout: 5s
       retries: 6

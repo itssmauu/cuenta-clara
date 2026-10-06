@@ -8,11 +8,11 @@ Cuenta Clara guarda información financiera personal. Este documento explica cad
 | 2 | Sesiones (JWT corto + refresh rotativo en cookies) | ✅ Fase 2 |
 | 3 | Protección contra abuso (rate limiting, bloqueo, errores genéricos) | ✅ Fase 2 |
 | 4 | CSRF | ✅ Fase 2 |
-| 5 | Validación estricta y SQL parametrizado | ✅ Backend · Zod en Fase 5 |
+| 5 | Validación estricta y SQL parametrizado | ✅ Fases 2–5 |
 | 6 | Autorización por recurso (anti-IDOR) | ✅ Fase 3 |
-| 7 | CORS y cabeceras de seguridad | ✅ Fase 2 |
+| 7 | CORS, cabeceras y CSP | ✅ API (Fase 2) · Web (Fase 5) |
 | 8 | Secretos y logs | ✅ |
-| 9 | Auditoría de dependencias | ✅ Backend · npm en Fase 5 |
+| 9 | Auditoría de dependencias | ✅ pip-audit y npm audit |
 
 ---
 
@@ -72,7 +72,7 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Pydantic** valida cada request con `extra="forbid"`: un campo inesperado (por ejemplo `is_active`) devuelve `422` y no puede colarse en el modelo (*mass assignment*). Los correos se normalizan a minúsculas y la base lo garantiza con un `CHECK`.
 - **Restricciones en la base:** montos `> 0`, `NUMERIC(12,2)` (nunca float) y frecuencias válidas. Aunque la API tuviera un bug, la base rechaza datos inválidos.
 - **Sin SQL concatenado:** todas las consultas usan el ORM o parámetros de SQLAlchemy. Ruff con las reglas de bandit (`S`) alerta en CI si aparece SQL construido con strings.
-- Zod en el frontend llega en la Fase 5. Es una ayuda de UX: **el backend nunca confía en el cliente**.
+- **Zod en el frontend** (`frontend/src/lib/validation.ts`) da respuesta inmediata en los formularios. Es solo UX: **el backend nunca confía en el cliente** y valida todo de nuevo (además rechaza contraseñas comunes, que el cliente no comprueba).
 
 ## 6. Autorización (anti-IDOR)
 
@@ -92,6 +92,19 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **HSTS** (2 años) solo con `APP_ENV=production`. En local fijaría HTTPS en `localhost` durante meses.
   → `app/core/http_security.py`, `app/main.py` · `tests/test_http_security.py`
 
+### En la app web (Next.js)
+
+- **CSP estricta con nonce por petición** (`frontend/src/proxy.ts`):
+  - Scripts: `script-src 'nonce-…' 'strict-dynamic'`, sin `unsafe-inline`, así que un XSS no puede ejecutar código inyectado.
+  - Estilos: `style-src 'self' 'nonce-…'`.
+  - Además: `object-src 'none'`, `frame-ancestors 'none'`, `form-action 'self'` y `base-uri 'self'`.
+  - `unsafe-eval` solo en desarrollo.
+- **Cabeceras** (`frontend/next.config.ts`): `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` y `Permissions-Policy`. Sin `X-Powered-By`.
+- **Mismo origen:** el navegador solo habla con la app web, y Next.js reenvía `/api/*` a FastAPI.
+  - Las cookies de sesión son de primera parte y JavaScript solo puede leer `csrf_token`. Verificado en el navegador: `document.cookie` no muestra `access_token` ni `refresh_token`.
+  - El proxy reenvía `X-Forwarded-For`. La API solo lo acepta desde `FORWARDED_ALLOW_IPS`, para que el rate limiting vea la IP real sin permitir que un cliente la falsifique.
+- **Fuentes self-hosted** con `next/font`: ninguna petición a terceros al cargar la página.
+
 ## 8. Secretos y logs
 
 - Toda la configuración sale de variables de entorno (`app/core/config.py`). `JWT_SECRET_KEY` es obligatoria y debe tener al menos 32 caracteres.
@@ -101,8 +114,11 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 
 ## 9. Dependencias
 
-- Versiones fijadas con `==` en `pyproject.toml`.
-- `pip-audit` corre en cada PR y en cada push a `main`. `npm audit` se añade con el frontend en la Fase 5.
+- Versiones exactas: `==` en `pyproject.toml` y sin rangos en `package.json`, más `package-lock.json`.
+- En cada PR y cada push a `main`:
+  - `pip-audit` revisa el backend.
+  - `npm audit --omit=dev` bloquea si las dependencias de producción del frontend tienen vulnerabilidades altas.
+  - El audit completo, que incluye herramientas de desarrollo, se muestra como informativo. Ver D-034.
 
 ---
 

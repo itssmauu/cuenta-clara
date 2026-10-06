@@ -1,0 +1,94 @@
+@import "tailwindcss";
+
+/*
+ * Design tokens: the single place to change the look.
+ * Every color is a CSS variable exposed to Tailwind as `bg-*`, `text-*`, `border-*`...
+ * Components use these names, never raw hex values.
+ */
+@theme {
+  /* Surfaces */
+  --color-canvas: #f3f5fb;
+  --color-canvas-dashboard: #e9ecf7;
+  --color-surface: #ffffff;
+
+  /* Ink (dark navy) and the shades used on dark panels */
+  --color-ink: #14163a;
+  --color-ink-2: #2a2d63;
+  --color-ink-3: #1b1d48;
+  --color-ink-deep: #0b0c25;
+  --color-ink-border: #4b4e8e;
+  --color-on-ink: #c9cbee;
+  --color-on-ink-muted: #9ea1d6;
+
+  /* Text on light surfaces */
+  --color-body: #44476e;
+  --color-muted: #55587e;
+  --color-on-tint: #33366a;
+
+  /* Lines and form fields */
+  --color-line: #e1e4f2;
+  --color-field: #d7daec;
+
+  /* Violet: brand and charts */
+  --color-primary: #5b4bdb;
+  --color-primary-hover: #4d3ec9;
+  --color-primary-bar: #7b6cf0;
+  --color-primary-soft: #c7c1fa;
+  --color-primary-tint: #e6e3ff;
+  --color-focus: #9b8ff5;
+
+  /* Coral: calls to action and "you went over" */
+  --color-accent: #ff7a59;
+  --color-accent-hover: #ff8e72;
+  --color-accent-tint: #ffd3c6;
+
+  /* Mint: positive amounts */
+  --color-mint: #7fe0bb;
+  --color-mint-ink: #0f7a57;
+  --color-mint-tint: #cdefe0;
+
+  /* Errors need 4.5:1 on white; coral alone does not reach it */
+  --color-danger: #b42318;
+  --color-danger-tint: #fdecea;
+
+  /* Typography (variables set by next/font in layout.tsx) */
+  --font-sans: var(--font-manrope), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-sora), ui-sans-serif, system-ui, sans-serif;
+
+  /* Large, friendly radii */
+  --radius-field: 14px;
+  --radius-card: 28px;
+  --radius-panel: 36px;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-canvas);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* One visible focus style for every interactive element (keyboard users) */
+  :focus-visible {
+    outline: 3px solid var(--color-focus);
+    outline-offset: 2px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    html {
+      scroll-behavior: auto;
+    }
+
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      transition-duration: 0.01ms !important;
+    }
+  }
+}

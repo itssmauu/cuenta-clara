@@ -1,13 +1,62 @@
-# Frontend: interfaz web de Cuenta Clara
+# Frontend: app web de Cuenta Clara
 
-**Next.js** (App Router) + TypeScript + Tailwind CSS, con React Hook Form + Zod y Recharts.
+**Next.js 16** (App Router, Turbopack) + TypeScript + Tailwind CSS v4, con React Hook Form + Zod.
 
-Se implementa a partir de la **Fase 5**. Estructura prevista:
+## Estructura
 
 ```
 frontend/
-├─ src/app/          # rutas: /, /login, /register, /dashboard, /ingresos, /gastos, /gastos-fijos, /prediccion, /ajustes
-├─ src/components/
-├─ src/lib/          # cliente API, validaciones Zod
-└─ package.json
+├─ src/
+│  ├─ app/                 # rutas: /, /login, /register, /recuperar-contrasena, /dashboard
+│  │  ├─ (auth)/           # layout compartido de login y registro
+│  │  ├─ globals.css       # tokens de diseño (@theme) y estilos base
+│  │  └─ layout.tsx        # fuentes Sora + Manrope (next/font)
+│  ├─ components/
+│  │  ├─ landing/          # secciones de la landing (componentes de servidor)
+│  │  ├─ auth/             # formularios de acceso (componentes de cliente)
+│  │  └─ ui/               # botones, campos, alertas
+│  ├─ lib/
+│  │  ├─ api.ts            # cliente de la API (CSRF, refresh automático, errores)
+│  │  └─ validation.ts     # esquemas Zod (reflejan la política del backend)
+│  └─ proxy.ts             # Content-Security-Policy con nonce por petición
+├─ next.config.ts          # proxy /api → FastAPI, cabeceras de seguridad
+└─ Dockerfile              # build standalone, usuario sin privilegios
 ```
+
+## Desarrollo local
+
+Requiere Node 24 y la API corriendo en `http://localhost:8000` (ver [`backend/README.md`](../backend/README.md)).
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:3000
+```
+
+El navegador solo habla con `localhost:3000`: Next.js reenvía `/api/*` al backend (`API_INTERNAL_URL`, por defecto `http://localhost:8000`). Así las cookies de sesión son del mismo origen y no hace falta CORS.
+
+## Calidad
+
+```bash
+npm run lint           # ESLint (reglas de Next + core web vitals)
+npm run format:check   # Prettier (ordena también las clases de Tailwind)
+npm run typecheck      # tsc --noEmit
+npm test               # Vitest + Testing Library
+npm run build
+```
+
+## Diseño
+
+- Basado en el wireframe del proyecto (landing, acceso y dashboard).
+- **Tokens:** todos los colores, fuentes y radios están en `@theme` de [`src/app/globals.css`](src/app/globals.css). Cambiar un color ahí lo cambia en toda la app.
+- **Accesibilidad:**
+  - `label` real en cada campo y errores enlazados con `aria-describedby`.
+  - Resumen de errores que recibe el foco.
+  - Foco visible.
+  - Objetivos táctiles de 44 px como mínimo.
+  - Contraste AA.
+  - Se respeta `prefers-reduced-motion`.
+- **Seguridad:**
+  - Los tokens de sesión viven en cookies `HttpOnly`: JavaScript nunca los ve.
+  - La CSP solo permite scripts con el nonce de cada petición.
+  - Detalle en [`docs/security.md`](../docs/security.md).

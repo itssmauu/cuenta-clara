@@ -131,3 +131,33 @@ La única excepción son las categorías predeterminadas: son visibles para todo
 ## D-031 · Desactivar un ingreso o gasto fijo lo quita también del pasado
 
 **Fase 4.** No se guarda cuándo estuvo activo cada registro. Desactivarlo lo excluye de todos los cálculos, incluidos los periodos anteriores. Es una simplificación aceptable para un presupuesto personal; si molesta, se añade `end_date`.
+
+## D-032 · El frontend hace de proxy de `/api`
+
+**Fase 5.** El navegador solo habla con el origen de Next.js; `next.config.ts` reescribe `/api/*` hacia FastAPI. Así las cookies de sesión son de primera parte (`SameSite=Lax` funciona sin excepciones), el navegador nunca hace peticiones cross-origin y en producción basta un solo dominio. El CORS restringido del backend se mantiene como segunda barrera.
+
+El proxy reenvía `X-Forwarded-For` y uvicorn lo usa para el rate limiting por IP, pero solo si la petición viene de una IP en `FORWARDED_ALLOW_IPS`. En Docker Compose se confía en la red interna (`*`); en producción debe ser la IP del proxy.
+
+## D-033 · CSP con nonce: todas las páginas se renderizan por petición
+
+**Fase 5.** `src/proxy.ts` genera un nonce por petición y una CSP estricta (`script-src 'nonce-…' 'strict-dynamic'`, sin `unsafe-inline`). El nonce solo llega a páginas renderizadas dinámicamente, así que el layout raíz llama a `connection()`. El costo (sin HTML estático pre-generado) es irrelevante para esta app y a cambio un XSS no puede ejecutar scripts inyectados. Consecuencia: no se usan atributos `style` en línea; los tamaños de las barras de ejemplo son clases de Tailwind.
+
+## D-034 · `npm audit` bloquea solo dependencias de producción
+
+**Fase 5.** Las dependencias de producción tienen 0 vulnerabilidades. Hay 5 avisos altos en herramientas de lint (`eslint-config-next → fast-glob → micromatch → braces`, sin versión corregida); el "arreglo" de npm bajaría `eslint-config-next` a la v14. El CI falla con `npm audit --omit=dev` y muestra el audit completo como informativo.
+
+## D-035 · Tokens de diseño en `@theme` (Tailwind v4)
+
+**Fase 5.** Tailwind v4 se configura en CSS, no en `tailwind.config.js`. Todos los tokens (colores, fuentes, radios) están en `@theme` dentro de `src/app/globals.css`, que genera a la vez las variables CSS y las utilidades (`bg-primary`, `rounded-card`…). Los componentes nunca usan hexadecimales sueltos.
+
+## D-036 · Tokens del proyecto por encima de la recomendación de ui-ux-pro-max
+
+**Fase 5.** La skill de diseño sugirió IBM Plex y una paleta dorada para fintech. Se mantuvieron Sora/Manrope y la paleta del prompt maestro (también usadas en el wireframe). De la skill se adoptaron el patrón "confianza y autoridad", las reglas de formularios (validación al salir del campo, error junto al campo con `aria-describedby`, resumen de errores enfocable, mostrar contraseña, permitir pegar), el uso de `next/font`, componentes de servidor por defecto y el checklist de entrega (contraste, foco visible, objetivos de 44 px, `prefers-reduced-motion`, sin scroll horizontal en móvil).
+
+## D-037 · Login y registro son rutas, no pestañas en JavaScript
+
+**Fase 5.** El wireframe muestra una tarjeta con pestañas. Se implementaron como enlaces a `/login` y `/register` con `aria-current`: cada formulario tiene su URL, el botón atrás funciona y la landing enlaza directo al registro.
+
+## D-038 · La sesión se comprueba contra la API, no en el `proxy`
+
+**Fase 5.** Las cookies de sesión tienen `path=/api`, así que no viajan al pedir `/dashboard` y el `proxy` de Next no puede saber si hay sesión. Las páginas privadas llaman a `/api/v1/auth/me` (renovando con el refresh token si hace falta) y redirigen a `/login` con 401. La API sigue siendo la única que decide.
