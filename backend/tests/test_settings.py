@@ -7,6 +7,7 @@ URL = "/api/v1/settings"
 
 VALID = {
     "initial_balance": "100.00",
+    "balance_as_of": "2026-10-05",
     "currency": "USD",
     "income_period": "weekly",
     "spending_limit": "30.00",
@@ -20,7 +21,9 @@ def test_new_account_starts_with_default_settings(login_as: Callable[[str], Test
     response = ana.get(URL)
 
     assert response.status_code == 200
-    assert response.json() == {
+    body = response.json()
+    assert body.pop("balance_as_of")  # defaults to the creation date
+    assert body == {
         "initial_balance": "0.00",
         "currency": "USD",
         "income_period": "monthly",

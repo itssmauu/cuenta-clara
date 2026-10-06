@@ -26,7 +26,7 @@ RESOURCES = {
     ),
     "fixed_expense": Resource(
         "/api/v1/fixed-expenses",
-        {"name": "Internet", "amount": "30.00", "frequency": "monthly"},
+        {"name": "Internet", "amount": "30.00", "frequency": "monthly", "start_date": "2026-10-01"},
     ),
     "transaction": Resource(
         "/api/v1/transactions",
@@ -109,7 +109,11 @@ def test_settings_are_per_user(ana_and_beto: tuple[TestClient, TestClient]) -> N
     ana, beto = ana_and_beto
     ana.put(
         "/api/v1/settings",
-        json={"initial_balance": "100.00", "income_period": "weekly"},
+        json={
+            "initial_balance": "100.00",
+            "balance_as_of": "2026-10-05",
+            "income_period": "weekly",
+        },
     )
 
     assert beto.get("/api/v1/settings").json()["initial_balance"] == "0.00"
