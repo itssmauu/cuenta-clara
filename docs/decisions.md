@@ -85,3 +85,25 @@ El costo: sin verificación de correo, un usuario que olvidó que ya tenía cuen
 ## D-020 · Rate limiting en memoria
 
 **Fase 2.** `slowapi` y `limits` guardan los contadores en la memoria del proceso. Con una sola instancia es suficiente. Con varias réplicas, cada una contaría por separado y habría que usar Redis (ambas librerías lo soportan cambiando el *storage*).
+
+## D-021 · Los montos viajan como texto en JSON
+
+**Fase 3.** La API devuelve los montos como strings con dos decimales (`"160.00"`) y acepta strings o números. JSON no tiene tipo decimal, y si el frontend los leyera como `number` (float binario) aparecerían errores del tipo `0.1 + 0.2 = 0.30000000000000004`. El frontend formatea con `Intl.NumberFormat` y, si tiene que operar, lo hace sobre centavos enteros.
+
+## D-022 · Recursos de otro usuario responden 404, no 403
+
+**Fase 3.** Si Beto pide un ingreso de Ana por su id, recibe `404 No encontrado`, igual que si el id no existiera. Un `403` le confirmaría que ese id es válido y pertenece a alguien. Todas las consultas pasan por `services/ownership.py`, que siempre filtra por `user_id`, y `tests/test_idor.py` lo verifica para cada recurso. Se comprobó rompiendo el filtro a propósito: los tests fallan.
+
+La única excepción son las categorías predeterminadas: son visibles para todos, así que intentar editarlas devuelve `403` con un mensaje claro.
+
+## D-023 · `PUT` reemplaza el registro completo
+
+**Fase 3.** Las actualizaciones usan `PUT` con el objeto entero en vez de `PATCH` parcial. Los formularios del frontend siempre envían todos los campos, y así las reglas que cruzan campos (frecuencia `custom` ⇔ días) se validan siempre sobre el estado final. Un campo opcional omitido vuelve a su valor por defecto.
+
+## D-024 · Nombres de categoría únicos sin distinguir mayúsculas, incluidas las predeterminadas
+
+**Fase 3.** Un usuario no puede crear "comida" porque ya existe la predeterminada "Comida". Ver dos categorías con el mismo nombre en un selector sería confuso. Al borrar una categoría propia, sus gastos y transacciones se conservan sin categoría (`ON DELETE SET NULL`).
+
+## D-025 · Monto inicial no negativo
+
+**Fase 3.** `initial_balance` acepta `0` o más. Empezar con saldo negativo (deudas) es un caso válido, pero complica la UI de onboarding y el mensaje "te quedan $X". Se puede relajar más adelante: la base no lo restringe, solo la validación de la API.

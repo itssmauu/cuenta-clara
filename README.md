@@ -85,7 +85,7 @@ cuenta-clara/
 - [x] **Fase 0:** base del repo, Docker Compose con Postgres, CI
 - [x] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
 - [x] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
-- [ ] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
+- [x] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
 - [ ] **Fase 4:** dashboard y predicción
 - [ ] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [ ] **Fase 6:** onboarding y dashboard

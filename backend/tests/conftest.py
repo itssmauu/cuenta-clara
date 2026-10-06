@@ -1,5 +1,5 @@
 import os
-from collections.abc import Iterator
+from collections.abc import Callable, Iterator
 from pathlib import Path
 
 import pytest
@@ -27,6 +27,8 @@ if not TEST_DATABASE_URL:
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["APP_ENV"] = "test"
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-with-at-least-32-characters")
+# Many tests register several users from the same "IP"; the login limit stays at its default
+os.environ.setdefault("REGISTER_RATE_LIMIT", "1000/minute")
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
@@ -84,3 +86,26 @@ def client() -> Iterator[TestClient]:
     with get_sessionmaker()() as session:
         session.execute(delete(User))
         session.commit()
+
+
+@pytest.fixture
+def login_as(client: TestClient) -> Iterator[Callable[[str], TestClient]]:
+    """Factory for logged-in clients, each with its own cookie jar and CSRF header set.
+
+    Depends on `client` so rate limits are reset and created users are cleaned up.
+    """
+    from tests.auth_helpers import register_and_login
+
+    opened: list[TestClient] = []
+
+    def _login(email: str) -> TestClient:
+        user_client = TestClient(app, base_url="https://testserver")
+        user_client.__enter__()
+        opened.append(user_client)
+        register_and_login(user_client, email=email)
+        user_client.headers["X-CSRF-Token"] = user_client.cookies.get("csrf_token") or ""
+        return user_client
+
+    yield _login
+    for user_client in opened:
+        user_client.__exit__(None, None, None)

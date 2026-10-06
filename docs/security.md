@@ -9,7 +9,7 @@ Cuenta Clara guarda información financiera personal. Este documento explica cad
 | 3 | Protección contra abuso (rate limiting, bloqueo, errores genéricos) | ✅ Fase 2 |
 | 4 | CSRF | ✅ Fase 2 |
 | 5 | Validación estricta y SQL parametrizado | ✅ Backend · Zod en Fase 5 |
-| 6 | Autorización por recurso (anti-IDOR) | 🟡 Base en Fase 2 · CRUD en Fase 3 |
+| 6 | Autorización por recurso (anti-IDOR) | ✅ Fase 3 |
 | 7 | CORS y cabeceras de seguridad | ✅ Fase 2 |
 | 8 | Secretos y logs | ✅ |
 | 9 | Auditoría de dependencias | ✅ Backend · npm en Fase 5 |
@@ -78,7 +78,11 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 
 - `get_current_user` (`app/api/deps.py`) obtiene el usuario **solo** del JWT firmado, nunca de un parámetro de la petición.
 - Un usuario no puede hacerse pasar por otro editando su token: cambiar `sub` rompe la firma. Cubierto en `test_user_cannot_impersonate_another_by_editing_their_token`.
-- **Fase 3:** cada consulta de datos financieros filtra por `user_id` del usuario autenticado y devuelve `404` (no `403`) si el recurso es de otro, para no confirmar que existe. Habrá un test de IDOR por cada endpoint.
+- **Todas las consultas de datos financieros pasan por `app/services/ownership.py`**, que siempre añade `WHERE user_id = <usuario autenticado>`. Si el recurso es de otro usuario, la respuesta es `404`, idéntica a la de un id inexistente, para no confirmar que existe.
+- **Ningún request acepta `user_id` ni `id`** (`extra="forbid"`): el dueño siempre sale de la sesión.
+- **Referencias cruzadas:** un gasto o transacción solo puede apuntar a una categoría predeterminada o propia. Usar la categoría de otro usuario da `422 La categoría no existe.`
+- **`tests/test_idor.py`** prueba, para cada recurso, que otro usuario no puede leerlo, editarlo, borrarlo ni verlo en listados, y que el original queda intacto. También cubre filtrar por la categoría de otro y enviar un `user_id` ajeno.
+- **Los tests se validaron rompiendo el filtro a propósito:** sin `user_id` en la consulta, los tests de IDOR fallan.
 
 ## 7. CORS y cabeceras
 

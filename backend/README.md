@@ -63,5 +63,18 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `POST` | `/api/v1/auth/refresh` | Rota la sesión (requiere `X-CSRF-Token`) |
 | `POST` | `/api/v1/auth/logout` | Revoca la sesión y borra las cookies (requiere `X-CSRF-Token`) |
 | `GET` | `/api/v1/auth/me` | Usuario de la sesión actual |
+| `GET` / `PUT` | `/api/v1/settings` | Monto inicial, moneda, periodo de ingreso, límite de gasto |
+| `GET` / `POST` | `/api/v1/categories` | Predeterminadas + propias / crear propia |
+| `PUT` / `DELETE` | `/api/v1/categories/{id}` | Solo categorías propias (las predeterminadas son de solo lectura) |
+| `GET` / `POST` | `/api/v1/incomes` | Ingresos recurrentes |
+| `GET` / `PUT` / `DELETE` | `/api/v1/incomes/{id}` | |
+| `GET` / `POST` | `/api/v1/fixed-expenses` | Gastos fijos |
+| `GET` / `PUT` / `DELETE` | `/api/v1/fixed-expenses/{id}` | |
+| `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`; paginación `limit` (≤ 100) y `offset` |
+| `GET` / `PUT` / `DELETE` | `/api/v1/transactions/{id}` | |
+
+Todas las rutas de datos requieren sesión y solo ven los datos del usuario autenticado. Un recurso ajeno responde `404`.
+
+**Montos:** se envían y se reciben como texto con dos decimales (`"160.00"`), nunca como float. Ver D-021 en [`docs/decisions.md`](../docs/decisions.md).
 
 Toda petición `POST/PUT/PATCH/DELETE` (salvo `login` y `register`) debe enviar la cabecera `X-CSRF-Token` con el valor de la cookie `csrf_token`. Ver [`docs/security.md`](../docs/security.md).
