@@ -1,0 +1,73 @@
+import os
+from collections.abc import Iterator
+from pathlib import Path
+
+import pytest
+from pydantic_settings import BaseSettings, SettingsConfigDict
+
+BACKEND_DIR = Path(__file__).resolve().parents[1]
+
+
+class TestEnv(BaseSettings):
+    __test__ = False  # not a test class, despite the name
+    model_config = SettingsConfigDict(
+        env_file=(BACKEND_DIR.parent / ".env", BACKEND_DIR / ".env"), extra="ignore"
+    )
+    test_database_url: str | None = None
+
+
+# Tests drop and recreate the schema, so they must never touch the development database.
+# Require an explicit URL and point the app at it before any app module is imported.
+TEST_DATABASE_URL = TestEnv().test_database_url
+if not TEST_DATABASE_URL:
+    raise pytest.UsageError(
+        "Set TEST_DATABASE_URL to a dedicated, disposable database "
+        "(e.g. postgresql+psycopg://user:pass@localhost:5432/cuentaclara_test)"
+    )
+os.environ["DATABASE_URL"] = TEST_DATABASE_URL
+os.environ["APP_ENV"] = "test"
+
+from alembic import command  # noqa: E402
+from alembic.config import Config  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy.orm import Session  # noqa: E402
+
+from app.core.database import get_engine  # noqa: E402
+from app.main import app  # noqa: E402
+
+ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
+
+
+@pytest.fixture(scope="session")
+def alembic_config() -> Config:
+    config = Config(str(ALEMBIC_INI))
+    config.set_main_option("sqlalchemy.url", TEST_DATABASE_URL.replace("%", "%%"))
+    return config
+
+
+@pytest.fixture(scope="session", autouse=True)
+def migrated_db(alembic_config: Config) -> None:
+    """Start every test run from a clean schema built by the real migrations."""
+    command.downgrade(alembic_config, "base")
+    command.upgrade(alembic_config, "head")
+
+
+@pytest.fixture
+def db_session() -> Iterator[Session]:
+    """A session whose changes are rolled back after each test."""
+    connection = get_engine().connect()
+    transaction = connection.begin()
+    session = Session(bind=connection, join_transaction_mode="create_savepoint")
+    try:
+        yield session
+    finally:
+        session.close()
+        transaction.rollback()
+        connection.close()
+
+
+@pytest.fixture
+def client() -> Iterator[TestClient]:
+    with TestClient(app) as test_client:
+        yield test_client
+    app.dependency_overrides.clear()
