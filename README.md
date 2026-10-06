@@ -4,7 +4,13 @@
 
 Aplicación web de finanzas personales: registra tu monto inicial, tus gastos fijos y tus ingresos, y descubre cuánto te queda **antes** de gastarlo.
 
-> 🚧 En construcción. Proyecto personal de portafolio.
+Proyecto personal de portafolio: backend en FastAPI, frontend en Next.js, PostgreSQL, Docker y CI completo, con la seguridad como requisito central.
+
+![Dashboard de Cuenta Clara: tarjetas de saldo, gráfica de gasto contra límite y gastos de la semana](docs/screenshots/dashboard.png)
+
+| Landing | Registro | Predicción | Móvil |
+| --- | --- | --- | --- |
+| ![Landing](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Predicción de saldo por semana](docs/screenshots/prediccion.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
 
 ## ¿Qué hace?
 
@@ -15,6 +21,15 @@ Aplicación web de finanzas personales: registra tu monto inicial, tus gastos fi
 
 Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo ingresan $160 → saldo proyectado **$230**.
 
+### Funcionalidades
+
+- **Onboarding de 4 pasos:** monto inicial → gastos fijos → ingreso y frecuencia → límite de gasto.
+- **Dashboard:** saldo, ingresos y gasto del periodo (diario, semanal, quincenal o mensual); gráfica de gasto contra límite que marca en coral los periodos en que te pasaste; próximos gastos fijos; gastos del periodo.
+- **Ingresos y gastos fijos recurrentes**, que se suman y restan solos en sus fechas. Se pueden pausar sin borrarlos.
+- **Movimientos** sueltos con filtros por fecha, tipo y categoría.
+- **Predicción** del saldo para los próximos 4, 8 o 12 periodos.
+- **Configuración:** monto inicial, moneda, periodo, límite y categorías propias.
+
 ## Stack
 
 | Capa | Tecnología |
@@ -23,7 +38,18 @@ Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo in
 | Backend | Python 3.12, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2 |
 | Base de datos | PostgreSQL 16 |
 | Infra local | Docker Compose |
-| Calidad | pytest, Vitest + Testing Library, ruff, ESLint + Prettier, GitHub Actions |
+| Calidad | pytest, Vitest + Testing Library, Playwright + axe-core, ruff, ESLint + Prettier, GitHub Actions |
+
+## Arquitectura
+
+```mermaid
+flowchart LR
+    B[Navegador] -- "HTTPS · cookies HttpOnly" --> W["Next.js 16<br/>páginas + proxy /api<br/>CSP con nonce"]
+    W -- "/api/* (rewrite)" --> A["FastAPI<br/>auth · CRUD · cálculos"]
+    A -- SQLAlchemy --> D[(PostgreSQL 16)]
+```
+
+El navegador solo habla con la app web; Next.js reenvía `/api/*` a FastAPI, así que las cookies de sesión son del mismo origen. Detalle por capas, flujo de autenticación y modelo de datos en [`docs/architecture.md`](docs/architecture.md).
 
 ## Cómo correrlo
 
@@ -78,7 +104,7 @@ cuenta-clara/
 ├─ backend/            # API FastAPI
 ├─ frontend/           # App Next.js
 ├─ infra/              # scripts de infraestructura (init de Postgres)
-├─ docs/               # arquitectura, decisiones, seguridad, capturas
+├─ docs/               # arquitectura, decisiones, seguridad, cálculos, pruebas, capturas
 ├─ .github/workflows/  # CI
 ├─ docker-compose.yml
 └─ .env.example
@@ -94,10 +120,34 @@ cuenta-clara/
 - [x] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [x] **Fase 6:** onboarding y dashboard
 - [x] **Fase 7:** resto de pantallas
-- [ ] **Fase 8:** pulido, accesibilidad, E2E y documentación
+- [x] **Fase 8:** pulido, accesibilidad, E2E y documentación
+- [ ] **Fase 9** (ideas, pendientes de aprobación): metas de ahorro, alertas al 80 % del límite, comparación con el periodo anterior, gráfico por categoría, exportar a CSV, predicción con aprendizaje automático
+
+## Calidad y pruebas
+
+Cada push a `main` y cada PR pasan por CI: lint, tipos, pruebas, build, auditoría de dependencias y el stack completo en Docker con pruebas end-to-end.
+
+| Nivel | Herramienta | Qué cubre |
+| --- | --- | --- |
+| Backend | pytest | Cálculos (incluido 100 − 30 + 160 = 230), API, seguridad (tokens falsificados, CSRF, rate limiting, bloqueo) y anti-IDOR por recurso |
+| Frontend | Vitest + Testing Library | Validaciones, cliente de API, formularios, dashboard y cada pantalla |
+| End-to-end | Playwright | Registro → onboarding → dashboard → movimientos → cerrar sesión, contra el stack real |
+| Accesibilidad | axe-core | Auditoría WCAG 2.2 AA de **todas** las pantallas, sin violaciones |
+
+Cómo correr cada nivel: [`docs/testing.md`](docs/testing.md).
+
+## Documentación
+
+| Documento | Contenido |
+| --- | --- |
+| [`docs/architecture.md`](docs/architecture.md) | Capas, flujo de una petición, autenticación y modelo de datos |
+| [`docs/security.md`](docs/security.md) | Cada medida de seguridad, dónde está y qué test la cubre |
+| [`docs/calculations.md`](docs/calculations.md) | Cómo se calculan el saldo, el límite y la predicción |
+| [`docs/testing.md`](docs/testing.md) | Estrategia de pruebas y cómo ejecutarlas |
+| [`docs/decisions.md`](docs/decisions.md) | Registro de decisiones con su porqué |
 
 ## Seguridad
 
 La app maneja información financiera, así que la seguridad es un requisito central: Argon2id, sesiones en cookies `HttpOnly` con refresh rotativo y detección de robo, CSRF, rate limiting, bloqueo temporal y errores que no revelan qué correos existen. Detalle completo, con dónde está implementada cada medida y qué test la cubre, en [`docs/security.md`](docs/security.md).
 
-Cómo se calculan el saldo, el límite de gasto y la predicción: [`docs/calculations.md`](docs/calculations.md). Las decisiones de diseño se registran en [`docs/decisions.md`](docs/decisions.md).
+Cómo se calculan el saldo, el límite de gasto y la predicción: [`docs/calculations.md`](docs/calculations.md).

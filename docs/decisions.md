@@ -202,3 +202,15 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 ## D-047 · Predicción: línea, cifra destacada y tabla
 
 **Fase 7.** El saldo proyectado es un cambio en el tiempo de una sola serie: línea de 2 px con marcadores de 8 px, guía vertical y tooltip, sin leyenda (el título nombra la serie). La cifra principal ("saldo proyectado en N periodos") va como número destacado y el detalle completo en una tabla visible. Un saldo negativo se marca con icono y texto ("saldo negativo"), no solo con el color del punto.
+
+## D-048 · Pruebas E2E con Playwright y auditoría de accesibilidad con axe
+
+**Fase 8.** Las E2E corren contra el stack real (web + API + BD): en CI, contra Docker Compose. Cada pantalla, pública y privada, pasa por axe-core con las reglas WCAG 2.2 AA, y cualquier violación hace fallar el CI. En la primera corrida axe no encontró violaciones. Los fallos iniciales eran todos de selectores de los propios tests (textos repetidos a propósito, el anunciador de rutas de Next con `role="alert"`). Se usa un solo worker porque la API limita los logins por IP.
+
+## D-049 · Enlace "Saltar al contenido" y páginas de error propias
+
+**Fase 8.** El primer elemento enfocable de cada página es "Saltar al contenido", que lleva a `#contenido` (el `<main>` de cada layout). Hay páginas propias para 404 y para errores inesperados (`error.tsx`): no muestran detalles técnicos, solo un código de referencia y la opción de reintentar.
+
+## D-050 · Selector de periodo en grilla en móviles
+
+**Fase 8.** En 375 px los cuatro botones Diario/Semanal/Quincenal/Mensual se partían en dos líneas. En pantallas pequeñas se muestran como una grilla de 4 columnas a todo el ancho, y desde `sm` vuelven a ser píldoras en línea. El problema apareció al revisar las capturas generadas por Playwright.
