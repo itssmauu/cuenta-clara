@@ -24,8 +24,26 @@ beforeEach(() => {
   replace.mockReset();
   vi.spyOn(authApi, "me").mockResolvedValue({ id: "u1", email: "ana@example.com", name: "Ana" });
   vi.spyOn(financeApi, "getSettings").mockResolvedValue(pending);
-  vi.spyOn(financeApi, "createFixedExpense").mockResolvedValue({ id: "f1" });
-  vi.spyOn(financeApi, "createIncome").mockResolvedValue({ id: "i1" });
+  vi.spyOn(financeApi, "createFixedExpense").mockResolvedValue({
+    id: "f1",
+    name: "Pasaje",
+    amount: "30.00",
+    frequency: "weekly",
+    custom_period_days: null,
+    start_date: "2026-10-05",
+    due_day: null,
+    category_id: null,
+    is_active: true,
+  });
+  vi.spyOn(financeApi, "createIncome").mockResolvedValue({
+    id: "i1",
+    label: "Beca",
+    amount: "160.00",
+    frequency: "weekly",
+    custom_period_days: null,
+    start_date: "2026-10-05",
+    is_active: true,
+  });
   vi.spyOn(financeApi, "saveSettings").mockResolvedValue({
     ...pending,
     onboarding_completed: true,

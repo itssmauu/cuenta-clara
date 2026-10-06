@@ -74,24 +74,33 @@ export const initialBalanceSchema = z.object({
   initial_balance: money({ allowZero: true }),
 });
 
-export const fixedExpenseSchema = z
-  .object({
-    name: z.string().trim().min(1, { error: "Escribe un nombre." }).max(100),
-    amount: money({ allowZero: false }),
-    frequency,
-    custom_period_days: optionalDays,
-    due_day: z
-      .string()
-      .optional()
-      .transform((value) => (value ? Number(value) : null))
-      .pipe(
-        z
-          .number()
-          .int()
-          .min(1, { error: "Entre 1 y 31." })
-          .max(31, { error: "Entre 1 y 31." })
-          .nullable(),
-      ),
+const fixedExpenseFields = z.object({
+  name: z.string().trim().min(1, { error: "Escribe un nombre." }).max(100),
+  amount: money({ allowZero: false }),
+  frequency,
+  custom_period_days: optionalDays,
+  due_day: z
+    .string()
+    .optional()
+    .transform((value) => (value ? Number(value) : null))
+    .pipe(
+      z
+        .number()
+        .int()
+        .min(1, { error: "Entre 1 y 31." })
+        .max(31, { error: "Entre 1 y 31." })
+        .nullable(),
+    ),
+});
+
+/** Onboarding: start date and category are filled in automatically. */
+export const fixedExpenseSchema = fixedExpenseFields.superRefine(requireDaysWhenCustom);
+
+/** Full create/edit form on the "Gastos fijos" page. */
+export const fixedExpenseFormSchema = fixedExpenseFields
+  .extend({
+    start_date: z.iso.date({ error: "Elige una fecha válida." }),
+    category_id: z.string().transform((value) => value || null),
   })
   .superRefine(requireDaysWhenCustom);
 
@@ -130,8 +139,35 @@ export const transactionSchema = z.object({
     .transform((value) => value || null),
 });
 
+export const settingsSchema = z
+  .object({
+    initial_balance: money({ allowZero: true }),
+    balance_as_of: isoDate,
+    currency: z.string().regex(/^[A-Z]{3}$/, { error: "Elige una moneda." }),
+    income_period: frequency,
+    custom_period_days: optionalDays,
+  })
+  .and(spendingLimitSchema)
+  .superRefine((data, ctx) =>
+    requireDaysWhenCustom({ ...data, frequency: data.income_period }, ctx),
+  );
+
+export const categorySchema = z.object({
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: "Escribe un nombre." })
+    .max(50, { error: "Máximo 50 caracteres." }),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, { error: "Elige un color." }),
+});
+
 export type FixedExpenseForm = z.input<typeof fixedExpenseSchema>;
 export type FixedExpenseValues = z.output<typeof fixedExpenseSchema>;
+export type FixedExpenseFullForm = z.input<typeof fixedExpenseFormSchema>;
+export type FixedExpenseFullValues = z.output<typeof fixedExpenseFormSchema>;
+export type SettingsForm = z.input<typeof settingsSchema>;
+export type SettingsValues = z.output<typeof settingsSchema>;
+export type CategoryValues = z.output<typeof categorySchema>;
 export type IncomeForm = z.input<typeof incomeSchema>;
 export type IncomeValues = z.output<typeof incomeSchema>;
 export type TransactionForm = z.input<typeof transactionSchema>;

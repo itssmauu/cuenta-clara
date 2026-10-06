@@ -48,6 +48,38 @@ export type Transaction = {
 
 export type TransactionInput = Omit<Transaction, "id">;
 
+export type Income = IncomeInput & {
+  id: string;
+  custom_period_days: number | null;
+  is_active: boolean;
+};
+
+export type FixedExpense = FixedExpenseInput & {
+  id: string;
+  custom_period_days: number | null;
+  due_day: number | null;
+  category_id: string | null;
+  is_active: boolean;
+};
+
+export type ForecastPeriod = {
+  period_start: string;
+  period_end: string;
+  opening_balance: Money;
+  income: Money;
+  fixed_expenses: Money;
+  variable_spending: Money;
+  closing_balance: Money;
+  is_current: boolean;
+};
+
+export type Forecast = {
+  period: Frequency;
+  currency: string;
+  average_variable_spending: Money;
+  periods: ForecastPeriod[];
+};
+
 export type TransactionPage = {
   items: Transaction[];
   total: number;
@@ -109,11 +141,24 @@ export const financeApi = {
   ) => request<Settings>("/settings", { method: "PUT", body: data }),
 
   listCategories: () => request<Category[]>("/categories"),
+  createCategory: (data: { name: string; color: string }) =>
+    request<Category>("/categories", { method: "POST", body: data }),
+  updateCategory: (id: string, data: { name: string; color: string }) =>
+    request<Category>(`/categories/${id}`, { method: "PUT", body: data }),
+  deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
 
-  createIncome: (data: IncomeInput) =>
-    request<{ id: string }>("/incomes", { method: "POST", body: data }),
+  listIncomes: () => request<Income[]>("/incomes"),
+  createIncome: (data: IncomeInput) => request<Income>("/incomes", { method: "POST", body: data }),
+  updateIncome: (id: string, data: IncomeInput & { is_active: boolean }) =>
+    request<Income>(`/incomes/${id}`, { method: "PUT", body: data }),
+  deleteIncome: (id: string) => request<void>(`/incomes/${id}`, { method: "DELETE" }),
+
+  listFixedExpenses: () => request<FixedExpense[]>("/fixed-expenses"),
   createFixedExpense: (data: FixedExpenseInput) =>
-    request<{ id: string }>("/fixed-expenses", { method: "POST", body: data }),
+    request<FixedExpense>("/fixed-expenses", { method: "POST", body: data }),
+  updateFixedExpense: (id: string, data: FixedExpenseInput & { is_active: boolean }) =>
+    request<FixedExpense>(`/fixed-expenses/${id}`, { method: "PUT", body: data }),
+  deleteFixedExpense: (id: string) => request<void>(`/fixed-expenses/${id}`, { method: "DELETE" }),
 
   listTransactions: (params: {
     from?: string;
@@ -124,6 +169,12 @@ export const financeApi = {
   }) => request<TransactionPage>(`/transactions${query(params)}`),
   createTransaction: (data: TransactionInput) =>
     request<Transaction>("/transactions", { method: "POST", body: data }),
+  updateTransaction: (id: string, data: TransactionInput) =>
+    request<Transaction>(`/transactions/${id}`, { method: "PUT", body: data }),
+  deleteTransaction: (id: string) => request<void>(`/transactions/${id}`, { method: "DELETE" }),
+
+  getForecast: (periods: number, period: DashboardPeriod | undefined, date: string) =>
+    request<Forecast>(`/forecast${query({ periods, period, date })}`),
 
   getDashboard: (period: DashboardPeriod, date: string) =>
     request<Dashboard>(`/dashboard${query({ period, date })}`),
