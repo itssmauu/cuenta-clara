@@ -9,6 +9,18 @@ export function uniqueEmail(prefix = "e2e"): string {
 
 /** Fails the test on any WCAG 2.2 A/AA violation axe can detect on the current page. */
 export async function expectAccessible(page: Page) {
+  // Audit the settled page: mid-transition colors (e.g. a button turning active) would
+  // otherwise be measured halfway and report a contrast that the user never really sees
+  await page.waitForLoadState("networkidle");
+  await page.evaluate(() =>
+    Promise.all(
+      document
+        .getAnimations()
+        // Infinite ones (loading pulses) never finish: only wait for the finite ones
+        .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
+        .map((a) => a.finished),
+    ),
+  );
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();

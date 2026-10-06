@@ -34,6 +34,22 @@ test("@screenshots capture the main screens", async ({ page }) => {
   await page.getByRole("heading", { name: "Detalle por periodo" }).waitFor();
   await page.screenshot({ path: `${OUT}/prediccion.png`, fullPage: true });
 
+  await page.getByRole("link", { name: "Metas de ahorro" }).click();
+  await page.getByRole("button", { name: "Nueva meta" }).first().click();
+  const goal = page.getByRole("dialog", { name: "Nueva meta" });
+  await goal.getByLabel("¿Para qué ahorras?").fill("Laptop");
+  await goal.getByLabel("Meta", { exact: true }).fill("600");
+  await goal.getByLabel("Ya tengo ahorrado").fill("150");
+  const due = new Date(Date.now() + 1000 * 60 * 60 * 24 * 30).toISOString().slice(0, 10);
+  await goal.getByLabel("Fecha objetivo (opcional)").fill(due);
+  await goal.getByRole("button", { name: "Guardar meta" }).click();
+  await page.getByRole("article", { name: "Laptop" }).waitFor();
+  await page.screenshot({ path: `${OUT}/metas.png` });
+
+  await page.getByRole("link", { name: "Reportes" }).click();
+  await page.getByRole("heading", { name: /Este periodo frente a/ }).waitFor();
+  await page.screenshot({ path: `${OUT}/reportes.png`, fullPage: true });
+
   await page.setViewportSize({ width: 390, height: 844 });
   // On a phone the sidebar is collapsed into a menu: navigate directly
   await page.goto("/dashboard");

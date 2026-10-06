@@ -64,6 +64,15 @@ test.describe("a new user's first week", () => {
     // First match is the status chip (the chart's data table repeats it)
     await expect(page.getByText("Te pasaste por $15.00").first()).toBeVisible();
     await expect(page.getByRole("button", { name: "Añadir movimiento" })).toBeFocused();
+    // Phase 9: the over-limit alert and the category breakdown
+    await expect(
+      page.getByText("Te pasaste de tu límite semanal por $15.00", { exact: false }),
+    ).toBeVisible();
+    // The table view sits in a <details>: open it like a user would
+    const categories = page.getByRole("region", { name: "Gasto por categoría" });
+    await categories.getByText("Ver como tabla").click();
+    await expect(categories.getByRole("table")).toContainText("Comida$25.00");
+    await expect(categories.getByRole("table")).toContainText("Sin categoría$30.00");
   });
 
   test("the dashboard is accessible and fits a phone", async () => {
@@ -98,6 +107,55 @@ test.describe("a new user's first week", () => {
     await page.getByRole("link", { name: "Ingresos" }).click();
     await page.getByRole("button", { name: "Activar Beca" }).click();
     await expect(page.getByRole("status")).toContainText("«Beca» activado.");
+  });
+
+  test("saves towards a goal", async () => {
+    await page.getByRole("link", { name: "Metas de ahorro" }).click();
+    await expect(page.getByText("Aún no tienes metas de ahorro")).toBeVisible();
+    await expectAccessible(page);
+
+    await page.getByRole("button", { name: "Nueva meta" }).first().click();
+    const dialog = page.getByRole("dialog", { name: "Nueva meta" });
+    await dialog.getByLabel("¿Para qué ahorras?").fill("Laptop");
+    await dialog.getByLabel("Meta", { exact: true }).fill("600");
+    await dialog.getByRole("button", { name: "Guardar meta" }).click();
+
+    const card = page.getByRole("article", { name: "Laptop" });
+    await expect(card).toContainText("$0.00 de $600.00");
+    await page.getByRole("button", { name: "Aportar o retirar en Laptop" }).click();
+    const money = page.getByRole("dialog");
+    await money.getByLabel("Monto").fill("150");
+    await money.getByRole("button", { name: "Aportar" }).click();
+
+    await expect(card).toContainText("$150.00 de $600.00");
+    await expect(card.getByRole("meter")).toHaveAttribute("aria-valuenow", "25");
+    await expectAccessible(page);
+  });
+
+  test("reports compare periods and export a CSV", async () => {
+    await page.getByRole("link", { name: "Reportes" }).click();
+    await expect(page.getByRole("heading", { name: /Este periodo frente a/ })).toBeVisible();
+    await expectAccessible(page);
+
+    const downloadPromise = page.waitForEvent("download");
+    await page.getByRole("link", { name: "Descargar CSV" }).click();
+    const download = await downloadPromise;
+    expect(download.suggestedFilename()).toMatch(/^cuenta-clara-movimientos-.*.csv$/);
+    const csv = await (await download.createReadStream()).toArray();
+    const text = Buffer.concat(csv).toString("utf8");
+    expect(text).toContain("fecha,tipo,monto,categoria,nota");
+    expect(text).toContain("gasto,-25.00,Comida,Almuerzo");
+  });
+
+  test("the forecast can use a trend estimate", async () => {
+    await page.getByRole("link", { name: "Predicción" }).click();
+    await page.getByRole("button", { name: "Tendencia" }).click();
+    await expect(page.getByRole("button", { name: "Tendencia" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    // A brand-new user has no complete weeks: the page explains the fallback
+    await expect(page.getByText(/hacen falta al menos 3 periodos completos/)).toBeVisible();
   });
 
   for (const [link, heading] of [
