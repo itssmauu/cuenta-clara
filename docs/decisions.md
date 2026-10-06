@@ -186,3 +186,19 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 ## D-043 · Secciones aún no construidas
 
 **Fase 6.** Ingresos, Gastos, Gastos fijos, Predicción y Configuración ya tienen ruta con un estado vacío (Fase 7), así la navegación nunca lleva a un 404. Metas de ahorro y Reportes (Fase 9, pendientes de aprobación) se muestran deshabilitados con un icono de reloj y "(próximamente)" para lectores de pantalla.
+
+## D-044 · Diálogos nativos para crear, editar y confirmar
+
+**Fase 7.** Crear y editar se hacen en un `<dialog>` nativo (`components/ui/Dialog.tsx`): el navegador atrapa el foco, cierra con Esc, deja inerte la página de fondo y devuelve el foco al botón que lo abrió. El formulario se monta al abrir, así que siempre arranca con los valores del registro. Toda eliminación pasa por un `ConfirmDialog`; para ingresos y gastos fijos se sugiere **pausar** en vez de borrar.
+
+## D-045 · Los cuerpos de las peticiones solo llevan campos aceptados
+
+**Fase 7.** La API rechaza campos desconocidos (`extra="forbid"`, Fase 3). Al pausar un ingreso, el frontend enviaba la fila completa (con `id` y fechas de auditoría) y recibía 422; los tests no lo detectaron porque el mock aceptaba cualquier cosa y la aserción era parcial. Se encontró al probar en el navegador. Ahora `incomePayload` y `fixedExpensePayload` construyen el cuerpo explícitamente y los tests comparan el cuerpo **exacto**.
+
+## D-046 · Filtros de movimientos en estado local
+
+**Fase 7.** En `/gastos` los filtros (fechas, tipo, categoría) y la página viven en el estado del componente, no en la URL como el periodo del dashboard (D-042). Cualquier cambio de filtro vuelve a la primera página. Si se necesita compartir una búsqueda, se pasan a la URL.
+
+## D-047 · Predicción: línea, cifra destacada y tabla
+
+**Fase 7.** El saldo proyectado es un cambio en el tiempo de una sola serie: línea de 2 px con marcadores de 8 px, guía vertical y tooltip, sin leyenda (el título nombra la serie). La cifra principal ("saldo proyectado en N periodos") va como número destacado y el detalle completo en una tabla visible. Un saldo negativo se marca con icono y texto ("saldo negativo"), no solo con el color del punto.

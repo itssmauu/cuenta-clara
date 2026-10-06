@@ -5,15 +5,16 @@ import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useMemo, useState } from "react";
 
 import { PageHeader } from "@/components/app/PageHeader";
+import { TransactionDialog } from "@/components/finance/TransactionDialog";
 import { useSession } from "@/components/app/session";
 import { buttonClass } from "@/components/ui/button";
+import { Notice, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { financeApi, type Category, type DashboardPeriod } from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
-import { AddTransactionDialog } from "./AddTransactionDialog";
 import { KpiCards, LimitChip, LimitMeter, UpcomingExpenses } from "./Cards";
 import { CURRENT_PERIOD_NAME } from "./period-labels";
 import { PeriodExpenses } from "./PeriodExpenses";
@@ -30,6 +31,7 @@ export function Dashboard() {
   const searchParams = useSearchParams();
   const [today] = useState(todayISO);
   const [adding, setAdding] = useState(false);
+  const [notice, showNotice] = useNotice();
 
   // The selected period lives in the URL (?period=monthly) so it survives reloads and links
   const fromUrl = searchParams.get("period");
@@ -111,6 +113,8 @@ export function Dashboard() {
         }
       />
 
+      <Notice message={notice} />
+
       {dashboard.status === "error" && !current ? (
         <div className="flex flex-col items-start gap-3">
           <FormAlert title="No pudimos cargar tu dashboard." items={[dashboard.error.message]} />
@@ -162,10 +166,13 @@ export function Dashboard() {
         </div>
       )}
 
-      <AddTransactionDialog
+      <TransactionDialog
         open={adding}
         onClose={() => setAdding(false)}
-        onSaved={refreshAll}
+        onSaved={(message) => {
+          showNotice(message);
+          refreshAll();
+        }}
         categories={categoryList.data ?? []}
       />
     </>

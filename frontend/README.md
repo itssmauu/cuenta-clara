@@ -17,9 +17,10 @@ frontend/
 │  │  ├─ landing/          # secciones de la landing (componentes de servidor)
 │  │  ├─ auth/             # formularios de acceso (componentes de cliente)
 │  │  ├─ app/              # sesión, barra lateral, encabezado de página
-│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla, "Añadir movimiento"
+│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla de gastos del periodo
+│  │  ├─ finance/          # Ingresos, Gastos, Gastos fijos, Predicción, Configuración y sus diálogos
 │  │  ├─ onboarding/       # pasos del asistente
-│  │  └─ ui/               # botones, campos, alertas
+│  │  └─ ui/               # botones, campos, diálogos, avisos, estados vacíos
 │  ├─ lib/
 │  │  ├─ api.ts            # cliente de la API (CSRF, refresh automático, errores)
 │  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, dashboard
