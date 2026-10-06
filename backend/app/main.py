@@ -1,5 +1,6 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from slowapi.errors import RateLimitExceeded
 
 from app.api.router import api_router
@@ -7,6 +8,11 @@ from app.core.config import get_settings
 from app.core.http_security import CSRF_HEADER, CSRFMiddleware, SecurityHeadersMiddleware
 from app.core.logging import configure_logging
 from app.core.rate_limit import EmailRateLimitedError, limiter, rate_limit_exceeded_handler
+from app.services.errors import DomainError
+
+
+def domain_error_handler(_request: Request, exc: DomainError) -> JSONResponse:
+    return JSONResponse(status_code=exc.status_code, content={"detail": exc.message})
 
 
 def create_app() -> FastAPI:
@@ -25,6 +31,7 @@ def create_app() -> FastAPI:
     app.state.limiter = limiter
     app.add_exception_handler(RateLimitExceeded, rate_limit_exceeded_handler)
     app.add_exception_handler(EmailRateLimitedError, rate_limit_exceeded_handler)
+    app.add_exception_handler(DomainError, domain_error_handler)
 
     # Middleware added last runs first. CORS is outermost so even CSRF rejections
     # carry CORS headers and the frontend can read the error.
