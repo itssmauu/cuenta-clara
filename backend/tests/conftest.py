@@ -26,14 +26,18 @@ if not TEST_DATABASE_URL:
     )
 os.environ["DATABASE_URL"] = TEST_DATABASE_URL
 os.environ["APP_ENV"] = "test"
+os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-with-at-least-32-characters")
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402
 from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
-from app.core.database import get_engine  # noqa: E402
+from app.core.database import get_engine, get_sessionmaker  # noqa: E402
+from app.core.rate_limit import reset_rate_limits  # noqa: E402
 from app.main import app  # noqa: E402
+from app.models import User  # noqa: E402
 
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
 
@@ -68,6 +72,15 @@ def db_session() -> Iterator[Session]:
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
-    with TestClient(app) as test_client:
+    """An API client over HTTPS (so `Secure` cookies are sent) with fresh rate limits.
+
+    API calls commit for real, so every user created during the test is deleted
+    afterwards (their data goes with them via ON DELETE CASCADE).
+    """
+    reset_rate_limits()
+    with TestClient(app, base_url="https://testserver") as test_client:
         yield test_client
     app.dependency_overrides.clear()
+    with get_sessionmaker()() as session:
+        session.execute(delete(User))
+        session.commit()
