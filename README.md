@@ -33,10 +33,17 @@ Requisitos: [Docker Desktop](https://www.docker.com/products/docker-desktop/) y 
 git clone https://github.com/itssmauu/cuenta-clara.git
 cd cuenta-clara
 cp .env.example .env   # edita los valores
-docker compose up -d
+docker compose up -d --build
 ```
 
-Por ahora solo levanta PostgreSQL; el backend y el frontend se añaden en las siguientes fases.
+Esto levanta PostgreSQL 16 y la API, que aplica las migraciones al arrancar:
+
+- API: <http://localhost:8000/api/v1/health>
+- Documentación interactiva (Swagger): <http://localhost:8000/docs>
+
+El frontend se añade en la Fase 5. Para trabajar en el backend sin Docker, ver [`backend/README.md`](backend/README.md).
+
+> **¿Ya tienes PostgreSQL instalado en tu máquina?** Ocupa el puerto 5432. Cambia `POSTGRES_PORT=5433` en `.env` (y el puerto en `DATABASE_URL` / `TEST_DATABASE_URL`).
 
 ## Variables de entorno
 
@@ -48,13 +55,19 @@ Definidas en [`.env.example`](.env.example). Nunca se commitea `.env`.
 | `POSTGRES_PASSWORD` | Contraseña de la base de datos |
 | `POSTGRES_DB` | Nombre de la base de datos |
 | `POSTGRES_PORT` | Puerto del host (solo `127.0.0.1`), por defecto `5432` |
+| `APP_ENV` | `development`, `test` o `production` (en producción se desactiva `/docs`) |
+| `LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING` o `ERROR` |
+| `BACKEND_PORT` | Puerto del host para la API, por defecto `8000` |
+| `DATABASE_URL` | Conexión de la API cuando corre fuera de Docker |
+| `TEST_DATABASE_URL` | Base **desechable** para los tests (se borra en cada corrida) |
 
 ## Estructura
 
 ```
 cuenta-clara/
-├─ backend/            # API FastAPI (Fase 1+)
+├─ backend/            # API FastAPI
 ├─ frontend/           # App Next.js (Fase 5+)
+├─ infra/              # scripts de infraestructura (init de Postgres)
 ├─ docs/               # arquitectura, decisiones, seguridad, capturas
 ├─ .github/workflows/  # CI
 ├─ docker-compose.yml
@@ -64,7 +77,7 @@ cuenta-clara/
 ## Roadmap
 
 - [x] **Fase 0:** base del repo, Docker Compose con Postgres, CI
-- [ ] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
+- [x] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
 - [ ] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
 - [ ] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
 - [ ] **Fase 4:** dashboard y predicción
