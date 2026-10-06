@@ -31,7 +31,12 @@ def load_finance_data(db: Session, user: User) -> tuple[FinanceData, UserSetting
         )
     ).all()
     transactions = db.execute(
-        select(Transaction.occurred_on, Transaction.amount, Transaction.type).where(
+        select(
+            Transaction.occurred_on,
+            Transaction.amount,
+            Transaction.type,
+            Transaction.category_id,
+        ).where(
             Transaction.user_id == user.id,
             Transaction.occurred_on >= settings.balance_as_of,
         )
@@ -69,8 +74,13 @@ def load_finance_data(db: Session, user: User) -> tuple[FinanceData, UserSetting
             for f in fixed_expenses
         ],
         transactions=[
-            OneOff(on=on, amount=amount, is_income=kind == TransactionType.INCOME)
-            for on, amount, kind in transactions
+            OneOff(
+                on=on,
+                amount=amount,
+                is_income=kind == TransactionType.INCOME,
+                category_id=category_id,
+            )
+            for on, amount, kind, category_id in transactions
         ],
     )
     return data, settings
