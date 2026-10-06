@@ -186,7 +186,8 @@ def test_forecast_starts_with_the_current_period_and_projects_forward() -> None:
         fixed_expenses=[Recurring(amount=D("30.00"), frequency=Frequency.WEEKLY, start=MONDAY)],
     )
 
-    average, rows = build_forecast(data, WEEKLY, WEDNESDAY, periods=4)
+    forecast = build_forecast(data, WEEKLY, WEDNESDAY, periods=4)
+    average, rows = forecast.average, forecast.periods
 
     assert average == D("0.00")
     assert [r.closing_balance for r in rows] == [D("230.00"), D("360.00"), D("490.00"), D("620.00")]
@@ -204,7 +205,8 @@ def test_forecast_subtracts_average_variable_spending() -> None:
         ],
     )
 
-    average, rows = build_forecast(data, WEEKLY, WEDNESDAY, periods=2)
+    forecast = build_forecast(data, WEEKLY, WEDNESDAY, periods=2)
+    average, rows = forecast.average, forecast.periods
 
     assert average == D("30.00")  # (40 + 20) / 2 complete weeks
     assert rows[0].variable_spending == D("5.00")  # current week uses real spending
