@@ -125,6 +125,50 @@ export type Dashboard = {
   recent_transactions: Transaction[];
 };
 
+/**
+ * Request bodies with only the fields the API accepts. The API rejects unknown fields
+ * (`extra="forbid"`), so a row as returned by the API (id, timestamps…) can't be sent back.
+ */
+export function incomePayload(
+  item: Income,
+  changes: Partial<IncomeInput & { is_active: boolean }> = {},
+) {
+  const { label, amount, frequency, custom_period_days, start_date, is_active } = {
+    ...item,
+    ...changes,
+  };
+  return { label, amount, frequency, custom_period_days, start_date, is_active };
+}
+
+export function fixedExpensePayload(
+  item: FixedExpense,
+  changes: Partial<FixedExpenseInput & { is_active: boolean }> = {},
+) {
+  const {
+    name,
+    amount,
+    frequency,
+    custom_period_days,
+    start_date,
+    due_day,
+    category_id,
+    is_active,
+  } = {
+    ...item,
+    ...changes,
+  };
+  return {
+    name,
+    amount,
+    frequency,
+    custom_period_days,
+    start_date,
+    due_day,
+    category_id,
+    is_active,
+  };
+}
+
 function query(params: Record<string, string | number | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
@@ -164,6 +208,7 @@ export const financeApi = {
     from?: string;
     to?: string;
     type?: TransactionType;
+    category_id?: string;
     limit?: number;
     offset?: number;
   }) => request<TransactionPage>(`/transactions${query(params)}`),

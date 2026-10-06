@@ -10,7 +10,12 @@ import { ConfirmDialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, StatusPill, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { ApiError } from "@/lib/api";
-import { financeApi, type Category, type FixedExpense } from "@/lib/finance-api";
+import {
+  financeApi,
+  fixedExpensePayload,
+  type Category,
+  type FixedExpense,
+} from "@/lib/finance-api";
 import { formatMoney } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
@@ -36,7 +41,10 @@ export function FixedExpensesPage() {
   async function toggle(item: FixedExpense) {
     setError(null);
     try {
-      await financeApi.updateFixedExpense(item.id, { ...item, is_active: !item.is_active });
+      await financeApi.updateFixedExpense(
+        item.id,
+        fixedExpensePayload(item, { is_active: !item.is_active }),
+      );
       showNotice(item.is_active ? `«${item.name}» en pausa.` : `«${item.name}» activado.`);
       reload();
     } catch (caught) {

@@ -10,7 +10,7 @@ import { ConfirmDialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, StatusPill, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { ApiError } from "@/lib/api";
-import { financeApi, type Income } from "@/lib/finance-api";
+import { financeApi, incomePayload, type Income } from "@/lib/finance-api";
 import { FREQUENCY_LABELS } from "@/lib/finance-validation";
 import { formatDate, formatMoney } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
@@ -37,7 +37,7 @@ export function IncomesPage() {
   async function toggle(item: Income) {
     setError(null);
     try {
-      await financeApi.updateIncome(item.id, { ...item, is_active: !item.is_active });
+      await financeApi.updateIncome(item.id, incomePayload(item, { is_active: !item.is_active }));
       showNotice(item.is_active ? `«${item.label}» en pausa.` : `«${item.label}» activado.`);
       reload();
     } catch (caught) {
