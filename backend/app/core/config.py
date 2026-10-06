@@ -1,7 +1,7 @@
 from functools import lru_cache
-from typing import Literal
+from typing import Literal, Self
 
-from pydantic import PostgresDsn
+from pydantic import Field, PostgresDsn, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -23,11 +23,38 @@ class Settings(BaseSettings):
     log_level: Literal["DEBUG", "INFO", "WARNING", "ERROR"] = "INFO"
     database_url: PostgresDsn
 
+    # ── Auth ────────────────────────────────────────────
+    # HS256 signing key, at least 32 random characters. Generate one with:
+    #   python -c "import secrets; print(secrets.token_urlsafe(48))"
+    jwt_secret_key: SecretStr = Field(min_length=32)
+    access_token_ttl_minutes: int = Field(default=15, ge=1, le=60)
+    refresh_token_ttl_days: int = Field(default=7, ge=1, le=30)
+    # Secure cookies are only sent over HTTPS (browsers treat http://localhost as secure too)
+    cookie_secure: bool = True
+
+    # ── Abuse protection ────────────────────────────────
+    login_rate_limit: str = "5/minute"
+    register_rate_limit: str = "3/minute"
+    # Per email address, across all IPs (slows down distributed guessing on one account)
+    email_rate_limit: str = "10/hour"
+    max_failed_logins: int = Field(default=5, ge=1)
+    lockout_minutes: int = Field(default=15, ge=1)
+
+    # ── HTTP ────────────────────────────────────────────
+    # The only origin allowed to call the API with credentials (the Next.js app)
+    frontend_origin: str = "http://localhost:3000"
+
     @property
     def is_production(self) -> bool:
         return self.app_env == "production"
 
+    @model_validator(mode="after")
+    def _production_must_be_secure(self) -> Self:
+        if self.is_production and not self.cookie_secure:
+            raise ValueError("COOKIE_SECURE must be true in production")
+        return self
+
 
 @lru_cache
 def get_settings() -> Settings:
-    return Settings()  # type: ignore[call-arg]  # database_url comes from the environment
+    return Settings()  # type: ignore[call-arg]  # required values come from the environment

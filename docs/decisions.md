@@ -59,3 +59,29 @@ Autogenerate de Alembic duplica esas restricciones al crear la tabla; la migraci
 ## D-014 · Swagger desactivado en producción
 
 **Fase 1.** `/docs` y `/openapi.json` están disponibles en desarrollo y tests, y se desactivan con `APP_ENV=production` para no publicar el mapa completo de la API.
+
+## D-015 · El registro no revela si un correo ya existe
+
+**Fase 2.** `POST /auth/register` responde siempre `202` con el mismo mensaje, y no inicia sesión. Si el correo ya tenía cuenta no pasa nada (la cuenta original no se toca). El frontend, después de registrar, llama a `login` con las mismas credenciales: si la cuenta era nueva, entra; si no, recibe el error genérico de login. Así nadie puede usar el formulario de registro para averiguar quién usa la app.
+
+El costo: sin verificación de correo, un usuario que olvidó que ya tenía cuenta solo ve "correo o contraseña incorrectos". Cuando haya envío de correos, el registro duplicado enviará un aviso "ya tienes una cuenta" al dueño del correo.
+
+## D-016 · Refresh tokens opacos, no JWT
+
+**Fase 2.** El access token es un JWT (se valida sin ir a la base en cada petición). El refresh token es un valor aleatorio guardado (hasheado) en `refresh_tokens`, porque necesita poder **revocarse** y **rotarse**, y detectar reutilización. Un JWT de refresh no se podría invalidar antes de que expire.
+
+## D-017 · Bloqueo temporal por cuenta, con límite por correo
+
+**Fase 2.** Tras 5 fallos la cuenta se bloquea 15 minutos. El riesgo conocido es que alguien bloquee a propósito la cuenta de otro (DoS). Se acepta porque el bloqueo es corto y se libera solo, y el límite por correo (10/hora) acota cuántas veces puede repetirse.
+
+## D-018 · CSRF con double-submit cookie
+
+**Fase 2.** Se eligió double-submit (cookie legible + cabecera) en vez de un token sincronizado en el servidor: no necesita estado y encaja con una API JSON que consume un SPA. Se compara en tiempo constante y se combina con `SameSite=Lax` y CORS restringido.
+
+## D-019 · Mensajes de error de la API en español
+
+**Fase 2.** Los textos que el usuario final puede ver (errores de login, problemas de la contraseña, rate limiting) vienen ya en español desde la API, para que el frontend los muestre tal cual. El código, los nombres y los logs siguen en inglés.
+
+## D-020 · Rate limiting en memoria
+
+**Fase 2.** `slowapi` y `limits` guardan los contadores en la memoria del proceso. Con una sola instancia es suficiente. Con varias réplicas, cada una contaría por separado y habría que usar Redis (ambas librerías lo soportan cambiando el *storage*).

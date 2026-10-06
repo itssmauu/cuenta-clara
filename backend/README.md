@@ -7,11 +7,11 @@ API REST con **FastAPI** (Python 3.12), SQLAlchemy 2.x, Alembic y PostgreSQL 16.
 ```
 backend/
 ├─ app/
-│  ├─ api/        # routers (hoy: health; próximamente auth, settings, incomes, ...)
-│  ├─ core/       # configuración, conexión a BD, logging
+│  ├─ api/        # routers HTTP, cookies y dependencias (usuario actual)
+│  ├─ core/       # config, BD, seguridad (hash, JWT), CSRF, cabeceras, rate limiting, logging
 │  ├─ models/     # modelos SQLAlchemy
-│  ├─ schemas/    # esquemas Pydantic (Fase 2+)
-│  ├─ services/   # lógica de negocio: cálculos y proyecciones (Fase 4)
+│  ├─ schemas/    # esquemas Pydantic de request/response
+│  ├─ services/   # lógica de negocio (auth; cálculos y proyecciones en la Fase 4)
 │  └─ main.py     # fábrica de la app FastAPI
 ├─ alembic/       # migraciones
 ├─ tests/
@@ -58,3 +58,10 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/api/v1/health` | Estado de la API y de la base de datos (`503` si la BD no responde) |
+| `POST` | `/api/v1/auth/register` | Crea la cuenta. Siempre `202`, exista o no el correo |
+| `POST` | `/api/v1/auth/login` | Inicia sesión y deja las cookies de sesión |
+| `POST` | `/api/v1/auth/refresh` | Rota la sesión (requiere `X-CSRF-Token`) |
+| `POST` | `/api/v1/auth/logout` | Revoca la sesión y borra las cookies (requiere `X-CSRF-Token`) |
+| `GET` | `/api/v1/auth/me` | Usuario de la sesión actual |
+
+Toda petición `POST/PUT/PATCH/DELETE` (salvo `login` y `register`) debe enviar la cabecera `X-CSRF-Token` con el valor de la cookie `csrf_token`. Ver [`docs/security.md`](../docs/security.md).

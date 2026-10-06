@@ -75,8 +75,14 @@ jobs:
       - name: Build and start the stack, wait until healthy
         run: docker compose up --detach --build --wait
 
-      - name: Smoke test the API
-        run: curl --fail --silent http://localhost:8000/api/v1/health
+      - name: Smoke test the API (health, register, login)
+        run: |
+          api=http://localhost:8000/api/v1
+          body='{"email":"smoke@example.com","password":"Lluvia-Verde-2026!","name":"Smoke"}'
+          curl --fail --silent --show-error "$api/health"
+          curl --fail --silent --show-error -H 'Content-Type: application/json' -d "$body" "$api/auth/register"
+          curl --fail --silent --show-error -H 'Content-Type: application/json' \
+            -d '{"email":"smoke@example.com","password":"Lluvia-Verde-2026!"}' "$api/auth/login"
 
       - name: Show logs on failure
         if: failure()

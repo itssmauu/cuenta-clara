@@ -60,6 +60,12 @@ Definidas en [`.env.example`](.env.example). Nunca se commitea `.env`.
 | `BACKEND_PORT` | Puerto del host para la API, por defecto `8000` |
 | `DATABASE_URL` | Conexión de la API cuando corre fuera de Docker |
 | `TEST_DATABASE_URL` | Base **desechable** para los tests (se borra en cada corrida) |
+| `JWT_SECRET_KEY` | Clave para firmar los tokens (≥ 32 caracteres aleatorios) |
+| `ACCESS_TOKEN_TTL_MINUTES` / `REFRESH_TOKEN_TTL_DAYS` | Duración de la sesión (15 min / 7 días) |
+| `COOKIE_SECURE` | Cookies solo por HTTPS; obligatorio `true` en producción |
+| `LOGIN_RATE_LIMIT` / `REGISTER_RATE_LIMIT` / `EMAIL_RATE_LIMIT` | Límites por IP y por correo |
+| `MAX_FAILED_LOGINS` / `LOCKOUT_MINUTES` | Bloqueo temporal tras intentos fallidos |
+| `FRONTEND_ORIGIN` | Único origen permitido por CORS |
 
 ## Estructura
 
@@ -78,12 +84,16 @@ cuenta-clara/
 
 - [x] **Fase 0:** base del repo, Docker Compose con Postgres, CI
 - [x] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
-- [ ] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
+- [x] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
 - [ ] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
 - [ ] **Fase 4:** dashboard y predicción
 - [ ] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [ ] **Fase 6:** onboarding y dashboard
 - [ ] **Fase 7:** resto de pantallas
 - [ ] **Fase 8:** pulido, accesibilidad, E2E y documentación
+
+## Seguridad
+
+La app maneja información financiera, así que la seguridad es un requisito central: Argon2id, sesiones en cookies `HttpOnly` con refresh rotativo y detección de robo, CSRF, rate limiting, bloqueo temporal y errores que no revelan qué correos existen. Detalle completo, con dónde está implementada cada medida y qué test la cubre, en [`docs/security.md`](docs/security.md).
 
 Las decisiones de diseño se registran en [`docs/decisions.md`](docs/decisions.md).
