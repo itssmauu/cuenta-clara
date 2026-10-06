@@ -1,6 +1,6 @@
 /** Pill button styles, shared by <button> and <Link> so both look identical. */
 
-type Variant = "accent" | "primary" | "ink" | "ghost" | "outline-on-ink";
+type Variant = "accent" | "primary" | "ink" | "ghost" | "outline-on-ink" | "danger";
 type Size = "md" | "lg";
 
 const base =
@@ -15,6 +15,7 @@ const variants: Record<Variant, string> = {
   ink: "bg-ink text-white hover:bg-ink-2",
   ghost: "text-ink hover:bg-ink/5",
   "outline-on-ink": "border-2 border-ink-border text-white hover:bg-white/5",
+  danger: "bg-danger text-white hover:opacity-90",
 };
 
 const sizes: Record<Size, string> = {
