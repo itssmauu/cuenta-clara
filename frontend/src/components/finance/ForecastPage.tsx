@@ -153,7 +153,7 @@ export function ForecastPage() {
             <div
               role="group"
               aria-label="Periodo"
-              className="flex flex-wrap gap-1 rounded-full bg-white p-1"
+              className="grid w-full grid-cols-4 gap-1 rounded-full bg-white p-1 sm:flex sm:w-auto"
             >
               {PERIOD_OPTIONS.map((option) => (
                 <button
@@ -161,7 +161,7 @@ export function ForecastPage() {
                   type="button"
                   aria-pressed={activePeriod === option}
                   onClick={() => setPeriod(option)}
-                  className={`min-h-11 cursor-pointer rounded-full px-4 text-sm font-bold transition-colors duration-200 ${
+                  className={`min-h-11 cursor-pointer rounded-full px-1 text-[13px] font-bold transition-colors duration-200 sm:px-4 sm:text-sm ${
                     activePeriod === option ? "bg-ink text-white" : "hover:bg-ink/5"
                   }`}
                 >
