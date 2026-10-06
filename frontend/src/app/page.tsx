@@ -12,7 +12,7 @@ export default function LandingPage() {
       className="mx-auto flex w-full max-w-[1360px] flex-col gap-16 px-4 pt-5 sm:gap-24 sm:px-10"
     >
       <SiteHeader />
-      <main className="flex flex-col gap-16 sm:gap-24">
+      <main id="contenido" tabIndex={-1} className="flex flex-col gap-16 outline-none sm:gap-24">
         <Hero />
         <HowItWorks />
         <Prediction />

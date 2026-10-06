@@ -32,7 +32,13 @@ export function AppShell({ children }: { children: ReactNode }) {
       <div className="bg-canvas-dashboard min-h-dvh">
         <div className="mx-auto flex max-w-[1360px] flex-col gap-5 p-3 sm:p-5 lg:flex-row">
           <Sidebar />
-          <div className="flex min-w-0 flex-1 flex-col gap-5">{children}</div>
+          <main
+            id="contenido"
+            tabIndex={-1}
+            className="flex min-w-0 flex-1 flex-col gap-5 outline-none"
+          >
+            {children}
+          </main>
         </div>
       </div>
     </SessionProvider>
