@@ -15,7 +15,8 @@ import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
-import { KpiCards, LimitChip, LimitMeter, UpcomingExpenses } from "./Cards";
+import { KpiCards, LimitAlert, LimitChip, LimitMeter, UpcomingExpenses } from "./Cards";
+import { CategoryBreakdown } from "./CategoryBreakdown";
 import { CURRENT_PERIOD_NAME } from "./period-labels";
 import { PeriodExpenses } from "./PeriodExpenses";
 import { SpendingChart } from "./SpendingChart";
@@ -126,6 +127,7 @@ export function Dashboard() {
         <DashboardSkeleton />
       ) : (
         <div className="flex flex-col gap-5" aria-busy={dashboard.status === "loading"}>
+          <LimitAlert dashboard={current} />
           <KpiCards dashboard={current} />
 
           <div className="flex flex-wrap gap-5">
@@ -155,6 +157,16 @@ export function Dashboard() {
               />
             </div>
           </div>
+
+          <section
+            aria-labelledby="categories-chart-title"
+            className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
+          >
+            <h2 id="categories-chart-title" className="font-display text-xl font-bold">
+              Gasto por categoría
+            </h2>
+            <CategoryBreakdown items={current.spending_by_category} currency={current.currency} />
+          </section>
 
           <PeriodExpenses
             title={`Gastos de ${CURRENT_PERIOD_NAME[period]}`}

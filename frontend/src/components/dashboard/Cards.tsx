@@ -1,10 +1,17 @@
-import { AlertTriangle, CheckCircle2, Info } from "lucide-react";
+import {
+  AlertTriangle,
+  ArrowDownRight,
+  ArrowUpRight,
+  CheckCircle2,
+  Info,
+  Minus,
+} from "lucide-react";
 import Link from "next/link";
 
 import type { Dashboard, UpcomingFixedExpense } from "@/lib/finance-api";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, subtractMoney } from "@/lib/format";
 
-import { PERIOD_ADJECTIVE } from "./period-labels";
+import { PERIOD_ADJECTIVE, PREVIOUS_PERIOD_NAME } from "./period-labels";
 
 type KpiProps = {
   label: string;
@@ -12,9 +19,32 @@ type KpiProps = {
   note: string;
   tone?: "ink" | "white" | "tint";
   valueClass?: string;
+  comparison?: { current: string; previous: string; currency: string; previousName: string };
 };
 
-function Kpi({ label, value, note, tone = "white", valueClass = "" }: KpiProps) {
+/** "↑ $15.00 más que la semana anterior": an arrow plus words, so it never relies on color. */
+function Comparison({
+  current,
+  previous,
+  currency,
+  previousName,
+}: NonNullable<KpiProps["comparison"]>) {
+  const diff = subtractMoney(current, previous);
+  const amount = Number(diff);
+  const Icon = amount > 0 ? ArrowUpRight : amount < 0 ? ArrowDownRight : Minus;
+  const text =
+    amount === 0
+      ? `Igual que ${previousName}`
+      : `${formatMoney(Math.abs(amount), currency)} ${amount > 0 ? "más" : "menos"} que ${previousName}`;
+  return (
+    <span className="text-body flex items-center gap-1 text-xs font-bold">
+      <Icon aria-hidden="true" className="size-4 shrink-0" />
+      {text}
+    </span>
+  );
+}
+
+function Kpi({ label, value, note, tone = "white", valueClass = "", comparison }: KpiProps) {
   const surface = { ink: "bg-ink text-white", white: "bg-white", tint: "bg-primary-tint" }[tone];
   const soft = { ink: "text-on-ink", white: "text-muted", tint: "text-on-tint" }[tone];
   return (
@@ -26,6 +56,7 @@ function Kpi({ label, value, note, tone = "white", valueClass = "" }: KpiProps) 
         {value}
       </span>
       <span className={`text-xs font-semibold ${soft}`}>{note}</span>
+      {comparison ? <Comparison {...comparison} /> : null}
     </div>
   );
 }
@@ -33,6 +64,12 @@ function Kpi({ label, value, note, tone = "white", valueClass = "" }: KpiProps) 
 export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
   const money = (value: string) => formatMoney(value, d.currency);
   const since = formatDate(d.balance_as_of, { day: "numeric", month: "short", year: "numeric" });
+  const compare = (current: string, previous: string) => ({
+    current,
+    previous,
+    currency: d.currency,
+    previousName: PREVIOUS_PERIOD_NAME[d.period],
+  });
   return (
     <section
       aria-label="Resumen del periodo"
@@ -49,11 +86,13 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
         value={money(d.income)}
         note={`Saldo al iniciar: ${money(d.opening_balance)}`}
         valueClass="text-mint-ink"
+        comparison={compare(d.income, d.previous_income)}
       />
       <Kpi
         label="Gastado"
         value={money(d.spent)}
         note={`Fijos ${money(d.fixed_expenses)} · Variables ${money(d.variable_expenses)}`}
+        comparison={compare(d.spent, d.previous_spent)}
       />
       <Kpi
         tone="tint"
@@ -179,5 +218,23 @@ export function UpcomingExpenses({
         </ul>
       )}
     </section>
+  );
+}
+
+/** Alert once 80 % of the period's limit is used, and again when it is exceeded. */
+export function LimitAlert({ dashboard: d }: { dashboard: Dashboard }) {
+  if (d.limit_status !== "warning" && d.limit_status !== "over") return null;
+  const remaining = d.limit_remaining ?? "0";
+  const adjective = PERIOD_ADJECTIVE[d.period];
+  return (
+    <p
+      role="status"
+      className="bg-accent-tint text-ink flex items-start gap-3 rounded-2xl px-5 py-4 text-sm font-bold"
+    >
+      <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
+      {d.limit_status === "over"
+        ? `Te pasaste de tu límite ${adjective} por ${formatMoney(Math.abs(Number(remaining)), d.currency)}. Revisa tus gastos de este periodo.`
+        : `Atención: llevas el ${d.limit_used_percent}% de tu límite ${adjective}. Te quedan ${formatMoney(remaining, d.currency)}.`}
+    </p>
   );
 }
