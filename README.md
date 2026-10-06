@@ -93,7 +93,7 @@ cuenta-clara/
 - [x] **Fase 4:** dashboard y predicción
 - [x] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
 - [x] **Fase 6:** onboarding y dashboard
-- [ ] **Fase 7:** resto de pantallas
+- [x] **Fase 7:** resto de pantallas
 - [ ] **Fase 8:** pulido, accesibilidad, E2E y documentación
 
 ## Seguridad
