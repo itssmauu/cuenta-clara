@@ -28,6 +28,7 @@ frontend/
 │  │  ├─ use-resource.ts   # carga de datos en el cliente con estados de carga y error
 │  │  └─ validation.ts     # esquemas Zod (reflejan la política del backend)
 │  └─ proxy.ts             # Content-Security-Policy con nonce por petición
+├─ e2e/                   # pruebas end-to-end (Playwright) y auditoría axe
 ├─ next.config.ts          # proxy /api → FastAPI, cabeceras de seguridad
 └─ Dockerfile              # build standalone, usuario sin privilegios
 ```
@@ -52,6 +53,10 @@ npm run format:check   # Prettier (ordena también las clases de Tailwind)
 npm run typecheck      # tsc --noEmit
 npm test               # Vitest + Testing Library
 npm run build
+
+# End-to-end + accesibilidad (requiere la app corriendo; ver docs/testing.md)
+npx playwright install chromium
+E2E_BASE_URL=http://localhost:3000 npm run e2e
 ```
 
 ## Diseño

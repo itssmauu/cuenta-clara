@@ -32,7 +32,16 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
 
   return (
     <html lang="es" className={`${sora.variable} ${manrope.variable}`}>
-      <body className="min-h-dvh">{children}</body>
+      <body className="min-h-dvh">
+        {/* First stop for keyboard users: jump past the navigation */}
+        <a
+          href="#contenido"
+          className="bg-ink sr-only rounded-full px-5 py-3 font-bold text-white focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-50"
+        >
+          Saltar al contenido
+        </a>
+        {children}
+      </body>
     </html>
   );
 }

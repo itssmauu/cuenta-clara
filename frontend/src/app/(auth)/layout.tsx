@@ -22,7 +22,11 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
         </p>
       </aside>
 
-      <main className="flex min-w-0 flex-[1_1_480px] items-center justify-center py-4">
+      <main
+        id="contenido"
+        tabIndex={-1}
+        className="flex min-w-0 flex-[1_1_480px] items-center justify-center py-4 outline-none"
+      >
         <div className="flex w-full max-w-[460px] flex-col gap-6 rounded-[32px] bg-white p-6 sm:p-10">
           {children}
         </div>
