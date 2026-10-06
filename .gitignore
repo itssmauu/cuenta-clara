@@ -39,6 +39,7 @@ pnpm-debug.log*
 .vscode/*
 !.vscode/extensions.json
 .idea/
+.claude/settings.local.json
 *.swp
 .DS_Store
 Thumbs.db
