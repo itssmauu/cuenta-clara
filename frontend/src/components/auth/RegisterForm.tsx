@@ -5,10 +5,10 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
-import { buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { PasswordChecklist } from "@/components/ui/PasswordChecklist";
 import { PasswordField } from "@/components/ui/PasswordField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { TextField } from "@/components/ui/TextField";
 import { ApiError, authApi } from "@/lib/api";
 import { registerSchema, type RegisterValues } from "@/lib/validation";
@@ -58,8 +58,16 @@ export function RegisterForm() {
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-[18px]">
-      {serverError ? <FormAlert title={serverError.title} items={serverError.items} /> : null}
+    <form
+      noValidate
+      onSubmit={handleSubmit(onSubmit)}
+      className="stagger-in flex flex-col gap-[18px]"
+    >
+      {serverError ? (
+        <div className="motion-safe:animate-[shake_360ms_ease-in-out]">
+          <FormAlert title={serverError.title} items={serverError.items} />
+        </div>
+      ) : null}
 
       <TextField
         id="name"
@@ -95,14 +103,7 @@ export function RegisterForm() {
         {...register("confirmPassword")}
       />
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        aria-busy={isSubmitting}
-        className={buttonClass("primary", "lg", "min-h-[52px] font-extrabold")}
-      >
-        {isSubmitting ? "Creando tu cuenta…" : "Crear cuenta"}
-      </button>
+      <SubmitButton busy={isSubmitting} label="Crear cuenta" busyLabel="Creando tu cuenta…" />
     </form>
   );
 }

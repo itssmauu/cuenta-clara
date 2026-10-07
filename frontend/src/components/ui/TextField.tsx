@@ -37,7 +37,7 @@ export function TextField({
           aria-invalid={error ? true : undefined}
           aria-describedby={describedBy || undefined}
           className={`text-ink placeholder:text-muted/80 rounded-field min-h-12 w-full border-2 bg-white px-4 text-[15px] transition-colors duration-200 ${
-            error ? "border-danger" : "border-field hover:border-primary-soft"
+            error ? "border-danger" : "border-field hover:border-primary-soft focus:border-primary"
           } ${trailing ? "pr-14" : ""} ${className}`}
           {...input}
         />

@@ -22,11 +22,14 @@ export function PasswordChecklist({ id, password }: { id: string; password: stri
                 ok ? "text-mint-ink" : "text-muted"
               }`}
             >
-              {ok ? (
-                <Check aria-hidden="true" className="size-4 shrink-0" strokeWidth={3} />
-              ) : (
-                <Circle aria-hidden="true" className="size-4 shrink-0" />
-              )}
+              {/* Keyed by state: a rule that becomes met pops its check in */}
+              <span
+                key={String(ok)}
+                aria-hidden="true"
+                className="grid shrink-0 animate-[pop_260ms_var(--ease-out-strong)] place-items-center"
+              >
+                {ok ? <Check className="size-4" strokeWidth={3} /> : <Circle className="size-4" />}
+              </span>
               <span>
                 {rule.label}
                 <span className="sr-only">{ok ? ": cumplido" : ": pendiente"}</span>
