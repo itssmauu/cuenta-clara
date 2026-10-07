@@ -1,5 +1,6 @@
-import { FinalCta, SiteFooter, Testimonial } from "@/components/landing/Closing";
+import { FinalCta, SiteFooter } from "@/components/landing/Closing";
 import { Hero } from "@/components/landing/Hero";
+import { Highlights } from "@/components/landing/Highlights";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { InsightsAndSecurity } from "@/components/landing/InsightsAndSecurity";
 import { Prediction } from "@/components/landing/Prediction";
@@ -18,7 +19,7 @@ export default function LandingPage() {
         <HowItWorks />
         <Prediction />
         <InsightsAndSecurity />
-        <Testimonial />
+        <Highlights />
         <FinalCta />
       </main>
       <SiteFooter />

@@ -198,6 +198,51 @@
     clip-path: inset(0 100% 0 0);
   }
 
+  /* Progress rings: the stroke draws up to --ring-offset (of 100) */
+  .reveal-ring {
+    stroke-dasharray: 100;
+    stroke-dashoffset: var(--ring-offset);
+  }
+
+  [data-reveal="hidden"] .reveal-ring {
+    stroke-dashoffset: 100;
+  }
+
+  [data-reveal="shown"] .reveal-ring {
+    transition: stroke-dashoffset 1200ms var(--ease-out-strong) 200ms;
+  }
+
+  /* Small messages that pop in once the demo has played */
+  [data-reveal="hidden"] .reveal-pop {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+
+  [data-reveal="shown"] .reveal-pop {
+    transition:
+      opacity 400ms var(--ease-out-strong),
+      transform 500ms var(--ease-out-strong);
+  }
+
+  /* Feature band: two identical lists slide by half the track for a seamless loop */
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee-track {
+      animation: marquee 45s linear infinite;
+    }
+
+    .marquee:is(:hover, :focus-within, [data-paused]) .marquee-track {
+      animation-play-state: paused;
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Without motion it is one static, wrapped list: see the motion-reduce: classes in Marquee.tsx */
+
   /* Rows and labels slide in from the left */
   [data-reveal="hidden"] .reveal-slide-x {
     opacity: 0;
