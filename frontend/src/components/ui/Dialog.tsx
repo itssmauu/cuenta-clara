@@ -59,7 +59,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
             <button
               type="button"
               onClick={onClose}
-              className="hover:bg-canvas ease-out-strong grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,transform] duration-200 active:scale-[0.94]"
+              className="hover:bg-canvas ease-out-strong grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,scale] duration-200 active:scale-[0.94]"
             >
               <X aria-hidden="true" className="size-5" />
               <span className="sr-only">Cerrar</span>

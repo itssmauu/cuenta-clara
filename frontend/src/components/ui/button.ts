@@ -5,8 +5,9 @@ type Size = "md" | "lg";
 
 const base =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full font-bold " +
-  // Press feedback: a quick, subtle squeeze so the button feels like it listened
-  "transition-[background-color,color,opacity,transform] duration-200 ease-out-strong " +
+  // Press feedback: a quick, subtle squeeze so the button feels like it listened.
+  // Tailwind v4 scales and translates through their own properties, not `transform`.
+  "transition-[background-color,color,opacity,box-shadow,translate,scale] duration-200 ease-out-strong " +
   "active:scale-[0.97] active:duration-100 disabled:cursor-not-allowed disabled:opacity-60 " +
   "disabled:active:scale-100 cursor-pointer";
 
