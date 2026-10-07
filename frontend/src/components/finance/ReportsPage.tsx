@@ -8,6 +8,7 @@ import { useSession } from "@/components/app/session";
 import { CategoryBreakdown } from "@/components/dashboard/CategoryBreakdown";
 import { periodRange, PREVIOUS_PERIOD_NAME } from "@/components/dashboard/period-labels";
 import { buttonClass } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
@@ -74,25 +75,17 @@ export function ReportsPage() {
         title="Reportes"
         subtitle="Compara periodos, mira en qué se va tu dinero y descarga tus datos"
         actions={
-          <div
-            role="group"
-            aria-label="Periodo"
-            className="grid w-full grid-cols-4 gap-1 rounded-full bg-white p-1 sm:flex sm:w-auto"
-          >
-            {PERIOD_OPTIONS.map((option) => (
-              <button
-                key={option}
-                type="button"
-                aria-pressed={period === option}
-                onClick={() => setPeriod(option)}
-                className={`min-h-11 cursor-pointer rounded-full px-1 text-[13px] font-bold transition-colors duration-200 sm:px-4 sm:text-sm ${
-                  period === option ? "bg-ink text-white" : "hover:bg-ink/5"
-                }`}
-              >
-                {FREQUENCY_LABELS[option]}
-              </button>
-            ))}
-          </div>
+          <SegmentedControl
+            label="Periodo"
+            options={PERIOD_OPTIONS.map((option) => ({
+              value: option,
+              label: FREQUENCY_LABELS[option],
+            }))}
+            value={period}
+            onChange={setPeriod}
+            layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+            optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
+          />
         }
       />
 

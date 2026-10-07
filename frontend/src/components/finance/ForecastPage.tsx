@@ -19,6 +19,7 @@ import { periodRange, periodTick, PERIOD_ADJECTIVE } from "@/components/dashboar
 import { niceScale } from "@/components/dashboard/SpendingChart";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { financeApi, type DashboardPeriod, type Estimator, type Forecast } from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, todayISO } from "@/lib/format";
@@ -27,6 +28,11 @@ import { useResource } from "@/lib/use-resource";
 import { td, th } from "./RowActions";
 
 const HORIZONS = [4, 8, 12];
+
+const ESTIMATORS = [
+  { value: "average", label: "Promedio" },
+  { value: "trend", label: "Tendencia" },
+] as const satisfies readonly { value: Estimator; label: string }[];
 
 const COLOR = {
   line: "var(--color-primary)",
@@ -152,69 +158,31 @@ export function ForecastPage() {
         subtitle="Tu saldo proyectado para los próximos periodos"
         actions={
           <>
-            <div
-              role="group"
-              aria-label="Periodo"
-              className="grid w-full grid-cols-4 gap-1 rounded-full bg-white p-1 sm:flex sm:w-auto"
-            >
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={activePeriod === option}
-                  onClick={() => setPeriod(option)}
-                  className={`min-h-11 cursor-pointer rounded-full px-1 text-[13px] font-bold transition-colors duration-200 sm:px-4 sm:text-sm ${
-                    activePeriod === option ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {FREQUENCY_LABELS[option]}
-                </button>
-              ))}
-            </div>
-            <div
-              role="group"
-              aria-label="Cuántos periodos"
-              className="flex gap-1 rounded-full bg-white p-1"
-            >
-              {HORIZONS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-label={`${n} periodos`}
-                  aria-pressed={horizon === n}
-                  onClick={() => setHorizon(n)}
-                  className={`min-h-11 min-w-11 cursor-pointer rounded-full px-3 text-sm font-bold transition-colors duration-200 ${
-                    horizon === n ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
-            <div
-              role="group"
-              aria-label="Cómo estimar el gasto"
-              className="flex gap-1 rounded-full bg-white p-1"
-            >
-              {(
-                [
-                  ["average", "Promedio"],
-                  ["trend", "Tendencia"],
-                ] as const
-              ).map(([value, label]) => (
-                <button
-                  key={value}
-                  type="button"
-                  aria-pressed={estimator === value}
-                  onClick={() => setEstimator(value)}
-                  className={`min-h-11 cursor-pointer rounded-full px-4 text-sm font-bold transition-colors duration-200 ${
-                    estimator === value ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              label="Periodo"
+              options={PERIOD_OPTIONS.map((option) => ({
+                value: option,
+                label: FREQUENCY_LABELS[option],
+              }))}
+              // A custom period has no button: then nothing looks selected
+              value={PERIOD_OPTIONS.find((option) => option === activePeriod)}
+              onChange={setPeriod}
+              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
+            />
+            <SegmentedControl
+              label="Cuántos periodos"
+              options={HORIZONS.map((n) => ({ value: n, label: n, ariaLabel: `${n} periodos` }))}
+              value={horizon}
+              onChange={setHorizon}
+              optionClass="px-3 text-sm"
+            />
+            <SegmentedControl
+              label="Cómo estimar el gasto"
+              options={ESTIMATORS}
+              value={estimator}
+              onChange={setEstimator}
+            />
           </>
         }
       />
