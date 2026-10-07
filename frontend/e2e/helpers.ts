@@ -16,7 +16,8 @@ export async function waitForSettled(page: Page) {
         .getAnimations()
         // Infinite ones (loading pulses) never finish: only wait for the finite ones
         .filter((a) => a.effect?.getComputedTiming().endTime !== Infinity)
-        .map((a) => a.finished),
+        // A cancelled animation (its element left mid-transition) rejects: that is settled too
+        .map((a) => a.finished.catch(() => undefined)),
     ),
   );
 }
