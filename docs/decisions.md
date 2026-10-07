@@ -275,3 +275,29 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 - Con `prefers-reduced-motion` no hay desplazamientos ni flotación.
 - Las copias decorativas (la píldora y el indicador) están ocultas a lectores de pantalla y no reciben clics.
 - La auditoría axe sigue pasando en todas las pantallas.
+
+## D-059 · Inicio de sesión y registro con una proyección animada
+
+**Fase 9 (ajuste de diseño).** El panel oscuro tenía solo texto. Ahora muestra lo que hace el producto: predecir.
+
+- **Proyección ilustrativa:** usa las cifras del ejemplo del producto (100 − 30 + 160 = 230, luego +130 por semana) y lleva la etiqueta "Ejemplo", así que no pretende ser información real del visitante.
+  - La línea se dibuja de izquierda a derecha.
+  - La franja de estimación "respira", porque el futuro es una estimación, no un hecho.
+  - "Hoy" late como un marcador en vivo.
+  - Un punto recorre la predicción.
+  - Las cifras cuentan desde 0 con `@property` y `counter()`, solo con CSS.
+  - Dos tarjetas flotan con las entradas del cálculo.
+- **Barras de fondo:** suben en ola detrás del mensaje "Tu semana, bajo control" y siguen moviéndose suavemente.
+- **Sin JavaScript:** todo es SVG y CSS, así que se renderiza en el servidor con la CSP de nonce. En celulares se oculta la gráfica para no empujar el formulario hacia abajo.
+- **Pestañas:** pasaron al *layout* compartido. Como no se desmontan al cambiar de página, la píldora activa se desliza entre "Iniciar sesión" y "Registrarme" (`clip-path` sobre una copia, 320 ms).
+- **Botón principal:**
+  - Al pasar el mouse se eleva 2 px con un brillo de su color y la flecha avanza.
+  - Se aprieta al presionarlo.
+  - Mientras espera, el texto se difumina y aparece un indicador de carga.
+- **Formulario:**
+  - Los campos entran escalonados.
+  - Cada requisito de contraseña cumplido hace "pop".
+  - Un error del servidor llega con una sacudida corta.
+  - El borde del campo activo se vuelve violeta.
+- **Corrección:** en Tailwind v4, `scale-*` y `translate-*` usan sus propias propiedades CSS. La transición de los botones solo listaba `transform`, así que la presión y el crecimiento al pasar el mouse saltaban sin animarse. Ahora se listan `scale` y `translate`.
+- **Movimiento reducido:** con `prefers-reduced-motion` no hay bucles (franja, pulso, flotación, punto viajero ni barras): solo el estado final.
