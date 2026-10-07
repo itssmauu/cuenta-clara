@@ -5,8 +5,10 @@ type Size = "md" | "lg";
 
 const base =
   "inline-flex min-h-11 items-center justify-center gap-2 rounded-full font-bold " +
-  "transition-[background-color,opacity,transform] duration-200 ease-out " +
-  "active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-60 cursor-pointer";
+  // Press feedback: a quick, subtle squeeze so the button feels like it listened
+  "transition-[background-color,color,opacity,transform] duration-200 ease-out-strong " +
+  "active:scale-[0.97] active:duration-100 disabled:cursor-not-allowed disabled:opacity-60 " +
+  "disabled:active:scale-100 cursor-pointer";
 
 const variants: Record<Variant, string> = {
   // Coral with ink text: 6.6:1 contrast (white on coral would fail)

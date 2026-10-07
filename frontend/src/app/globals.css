@@ -60,14 +60,54 @@
   --radius-card: 28px;
   --radius-panel: 36px;
 
-  /* Motion: a strong ease-out for entrances (the built-in one is too weak) */
+  /*
+   * Motion. The built-in curves are too weak: entrances use a strong ease-out,
+   * things that move across the screen a strong ease-in-out. App UI stays under
+   * 300ms (it is used every day); only the landing takes longer.
+   */
   --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
   --animate-fade-up: fade-up 800ms var(--ease-out-strong) both;
+  --animate-rise-in: rise-in 300ms var(--ease-out-strong) both;
+  --animate-value-in: value-in 280ms var(--ease-out-strong) both;
+  --animate-float: float 7s ease-in-out infinite;
 
   @keyframes fade-up {
     from {
       opacity: 0;
       transform: translateY(24px);
+    }
+  }
+
+  /* Hero headline: fades and sharpens into place */
+  @keyframes blur-up {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(16px);
+    }
+  }
+
+  /* App content arriving after its skeleton: short and close */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* A figure that changed (another period): a brief blur bridges old and new */
+  @keyframes value-in {
+    from {
+      opacity: 0;
+      filter: blur(3px);
+      transform: translateY(3px);
+    }
+  }
+
+  @keyframes float {
+    50% {
+      transform: translateY(-10px);
     }
   }
 }
@@ -154,5 +194,110 @@
       opacity: 1 !important;
       transform: none !important;
     }
+  }
+}
+
+/* App motion: toasts, dialogs, staggered content and meters */
+@layer components {
+  /* Toast: rises from the bottom edge and leaves the same way, faster than it came */
+  .toast {
+    transition:
+      transform 400ms var(--ease-out-strong),
+      opacity 400ms var(--ease-out-strong);
+  }
+
+  .toast[data-leaving] {
+    opacity: 0;
+    transform: translateY(100%);
+    transition-duration: 200ms;
+  }
+
+  @starting-style {
+    .toast {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+
+  /* Dialogs: modals are not anchored to a trigger, so they scale from the center */
+  .app-dialog {
+    transition:
+      opacity 220ms var(--ease-out-strong),
+      transform 220ms var(--ease-out-strong),
+      overlay 220ms allow-discrete,
+      display 220ms allow-discrete;
+  }
+
+  .app-dialog:not([open]) {
+    opacity: 0;
+    transform: scale(0.96);
+    transition-duration: 150ms;
+  }
+
+  .app-dialog::backdrop {
+    background-color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    transition:
+      background-color 220ms var(--ease-out-strong),
+      overlay 220ms allow-discrete,
+      display 220ms allow-discrete;
+  }
+
+  .app-dialog:not([open])::backdrop {
+    background-color: transparent;
+  }
+
+  @starting-style {
+    .app-dialog[open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    .app-dialog[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  /* Content that replaces a skeleton: children arrive 50ms apart */
+  .stagger-in > * {
+    animation: var(--animate-rise-in);
+  }
+
+  .stagger-in > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .stagger-in > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .stagger-in > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  .stagger-in > :nth-child(n + 5) {
+    animation-delay: 200ms;
+  }
+
+  /* Meter fills: grow from the start the first time, glide on later changes */
+  .meter-fill {
+    transition: clip-path 700ms var(--ease-out-strong);
+  }
+
+  @starting-style {
+    .meter-fill {
+      clip-path: inset(0 100% 0 0 round 999px);
+    }
+  }
+
+  /* Segmented controls: the active pill slides between options */
+  .segmented-overlay[data-ready] {
+    transition: clip-path 260ms var(--ease-out-strong);
+  }
+
+  /* Sidebar: the active background slides to the new page */
+  .nav-indicator[data-ready] {
+    transition:
+      transform 260ms var(--ease-out-strong),
+      opacity 150ms ease;
   }
 }
