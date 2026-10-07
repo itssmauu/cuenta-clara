@@ -70,6 +70,11 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e
   - Objetivos táctiles de 44 px como mínimo.
   - Contraste AA.
   - Se respeta `prefers-reduced-motion`.
+- **Movimiento:**
+  - Curvas propias (`--ease-out-strong`, `--ease-in-out-strong`) y animaciones de menos de 300 ms en la app.
+  - Solo se animan `transform`, `opacity` y `clip-path`.
+  - Componentes: `SegmentedControl` (píldora deslizante), toasts, diálogos animados y el indicador del menú.
+  - Detalle en D-057 y D-058 de [`docs/decisions.md`](../docs/decisions.md).
 - **Seguridad:**
   - Los tokens de sesión viven en cookies `HttpOnly`: JavaScript nunca los ve.
   - La CSP solo permite scripts con el nonce de cada petición.

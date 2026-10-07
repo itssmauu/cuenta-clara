@@ -252,3 +252,26 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
   - Los lectores de pantalla oyen la cifra final una sola vez; los dígitos en movimiento están ocultos para ellos.
   - Saltar con Fin o con un enlace revela también lo que quedó atrás.
 - Sin librerías nuevas: transiciones CSS y un `requestAnimationFrame` para el conteo.
+
+## D-058 · Pulido de interacción en la app (filosofía de Emil Kowalski)
+
+**Fase 9 (ajuste de diseño).** La app se usa a diario, así que cada animación debe tener un propósito y ser corta. Lo que se usa muchas veces al día apenas se mueve.
+
+| Antes | Después | Por qué |
+| --- | --- | --- |
+| Aviso verde que empujaba el contenido hacia abajo | *Toast* oscuro flotante abajo: sube en 400 ms, sale por donde entró en 200 ms, no bloquea clics | Sin saltos de diseño; la salida es más rápida que la entrada |
+| El periodo activo cambiaba de color de golpe | Una "píldora" se desliza a la opción elegida (capa duplicada recortada con `clip-path`, 260 ms) | Muestra de dónde a dónde cambió y el color del texto cambia sin mezclas |
+| Fondo activo del menú saltaba de página en página | Indicador que se desliza a la nueva página (`transform`, 260 ms) | Continuidad espacial al navegar |
+| Diálogos que aparecían de golpe | Escala 0.96→1 con opacidad (220 ms) y salida en 150 ms, con `@starting-style` | Los modales no tienen origen, por eso escalan desde el centro |
+| Botones con `scale(0.98)` y la curva `ease-out` del navegador | `scale(0.97)` al presionar, curva `cubic-bezier(0.23, 1, 0.32, 1)` | Respuesta inmediata al toque |
+| Barras de medidores animando `width` | `clip-path` sobre una barra completa: crecen al aparecer y se deslizan al cambiar | Solo propiedades baratas; el borde redondeado no se deforma |
+| Cifras que cambiaban de golpe al cambiar de periodo | Entran con un leve desenfoque (280 ms) | El desenfoque une el valor viejo y el nuevo |
+| Gráficas de Recharts animando 1.5 s | 600 ms con *ease-out* | Una pantalla diaria no puede hacer esperar |
+| "Dashboard / Resumen de tus finanzas" | "Hola, Ana · Tu resumen de esta semana · 5 oct – 11 oct" e iconos en cada tarjeta | Menos genérico y con más contexto |
+
+**Landing:** brillos de marca y una cuadrícula tenue dan profundidad al hero. El titular entra enfocándose (desenfoque → nítido) y el teléfono flota (CSS) y se inclina hacia el cursor con un resorte (inercia, no seguimiento rígido), solo con mouse o trackpad.
+
+**Accesibilidad:**
+- Con `prefers-reduced-motion` no hay desplazamientos ni flotación.
+- Las copias decorativas (la píldora y el indicador) están ocultas a lectores de pantalla y no reciben clics.
+- La auditoría axe sigue pasando en todas las pantallas.
