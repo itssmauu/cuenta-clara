@@ -238,3 +238,17 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 ## D-056 · Predicción con regresión lineal, opcional y explicable
 
 **Fase 9.** El "aprendizaje automático sencillo" es una regresión lineal por mínimos cuadrados (`services/trend.py`, sin dependencias) sobre el gasto variable de hasta 8 periodos completos. Se proyecta la línea hacia adelante, nunca por debajo de 0. Es **opcional** (`estimator=trend`) y la página explica qué encontró: cuánto sube o baja el gasto por periodo y el R². Con menos de 3 periodos completos usa el promedio y lo dice. Se eligió algo pequeño y explicable en vez de un modelo opaco: con el historial de una persona, una línea es honesta sobre lo poco que se puede predecir.
+
+## D-057 · Animaciones de la landing
+
+**Fase 9 (ajuste de diseño).** Solo en la landing, que es una página de marketing que se ve pocas veces. La app de uso diario no se anima así.
+
+- **Hero:** entra con un desvanecido hacia arriba escalonado, hecho solo con CSS, para que no parpadee al cargar.
+- **Secciones:** aparecen con un desvanecido al llegar a la pantalla (`ScrollReveal.tsx`, con `IntersectionObserver`), una sola vez.
+- **Estadísticas:** las barras crecen de izquierda a derecha (con `clip-path`, que no deforma los bordes redondeados) y las cifras cuentan desde 0.
+- **Botones:** crecen un 4 % al pasar el mouse. El `hover:` de Tailwind solo aplica en dispositivos con puntero.
+- **Accesibilidad y robustez:**
+  - Sin JavaScript, con `prefers-reduced-motion` o en contenido ya visible al cargar, no se oculta nada.
+  - Los lectores de pantalla oyen la cifra final una sola vez; los dígitos en movimiento están ocultos para ellos.
+  - Saltar con Fin o con un enlace revela también lo que quedó atrás.
+- Sin librerías nuevas: transiciones CSS y un `requestAnimationFrame` para el conteo.
