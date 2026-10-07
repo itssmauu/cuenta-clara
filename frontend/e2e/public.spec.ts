@@ -33,12 +33,28 @@ test.describe("public pages", () => {
     await expectAccessible(page);
   });
 
+  test("the moving feature band can be paused", async ({ page }) => {
+    await page.goto("/");
+    const toggle = page.getByRole("button", { name: "Pausar animación" });
+    await toggle.click();
+
+    await expect(page.getByRole("button", { name: "Reanudar animación" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+    const state = await page
+      .locator(".marquee-track")
+      .evaluate((track) => getComputedStyle(track).animationPlayState);
+    expect(state).toBe("paused");
+  });
+
   test("with reduced motion nothing is hidden or animated", async ({ page }) => {
     await page.emulateMedia({ reducedMotion: "reduce" });
     await page.goto("/");
 
     await expect(page.locator("#prediccion")).not.toHaveAttribute("data-reveal", /hidden|shown/);
     await expect(page.locator('[data-reveal="hidden"]')).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Pausar animación" })).toBeHidden();
   });
 
   for (const path of ["/", "/login", "/register", "/recuperar-contrasena", "/no-existe"]) {
