@@ -9,30 +9,36 @@ export function Hero() {
       className="bg-ink rounded-panel flex flex-wrap items-center gap-12 overflow-hidden p-8 text-white sm:p-12 lg:p-16"
     >
       <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-7">
-        <p className="bg-ink-2 self-start rounded-full px-4 py-2 text-sm font-semibold">
+        <p className="bg-ink-2 animate-fade-up self-start rounded-full px-4 py-2 text-sm font-semibold">
           Finanzas personales, semana a semana
         </p>
         <h1
           id="hero-title"
-          className="font-display text-[40px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance sm:text-[56px] lg:text-[68px]"
+          className="font-display animate-fade-up text-[40px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance [animation-delay:80ms] sm:text-[56px] lg:text-[68px]"
         >
           Sabe cuánto te queda <span className="text-accent">antes de gastarlo.</span>
         </h1>
-        <p className="text-on-ink max-w-[520px] text-lg leading-relaxed">
+        <p className="text-on-ink animate-fade-up max-w-[520px] text-lg leading-relaxed [animation-delay:160ms]">
           Registra tu monto inicial, tus gastos fijos y tus ingresos. Cuenta Clara proyecta tu
           semana y te muestra a dónde va cada dólar.
         </p>
-        <div className="flex flex-wrap items-center gap-3.5">
-          <Link href="/register" className={buttonClass("accent", "lg", "font-extrabold")}>
+        <div className="animate-fade-up flex flex-wrap items-center gap-3.5 [animation-delay:240ms]">
+          <Link
+            href="/register"
+            className={buttonClass("accent", "lg", "font-extrabold hover:scale-[1.04]")}
+          >
             Empezar gratis
           </Link>
-          <a href="#como-funciona" className={buttonClass("outline-on-ink", "lg")}>
+          <a
+            href="#como-funciona"
+            className={buttonClass("outline-on-ink", "lg", "hover:scale-[1.04]")}
+          >
             Ver cómo funciona
           </a>
         </div>
       </div>
 
-      <div className="flex min-w-0 flex-[1_1_320px] justify-center">
+      <div className="animate-fade-up flex min-w-0 flex-[1_1_320px] justify-center [animation-delay:200ms]">
         <PhoneMockup />
       </div>
     </section>

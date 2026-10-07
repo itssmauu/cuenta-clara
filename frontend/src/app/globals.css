@@ -59,6 +59,17 @@
   --radius-field: 14px;
   --radius-card: 28px;
   --radius-panel: 36px;
+
+  /* Motion: a strong ease-out for entrances (the built-in one is too weak) */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --animate-fade-up: fade-up 800ms var(--ease-out-strong) both;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
 }
 
 @layer base {
@@ -89,6 +100,59 @@
     *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/*
+ * Landing scroll reveal (ScrollReveal.tsx). The script marks as "hidden" only the
+ * [data-reveal] blocks still below the fold, so without JavaScript, with reduced
+ * motion or for content already on screen nothing is ever hidden. The hidden state
+ * has no transition: hiding is instant and off screen, only the reveal animates.
+ */
+@layer components {
+  [data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  [data-reveal="shown"] {
+    transition:
+      opacity 800ms var(--ease-out-strong),
+      transform 800ms var(--ease-out-strong);
+  }
+
+  /* Bars grow from their baseline; clip-path keeps the rounded ends undistorted */
+  [data-reveal="hidden"] .reveal-grow-y {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  [data-reveal="hidden"] .reveal-grow-x {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  /* Rows and labels slide in from the left */
+  [data-reveal="hidden"] .reveal-slide-x {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  /* An explicit end value: clip-path cannot interpolate from inset() to none */
+  [data-reveal="shown"] :is(.reveal-grow-y, .reveal-grow-x) {
+    clip-path: inset(0);
+  }
+
+  [data-reveal="shown"] :is(.reveal-grow-y, .reveal-grow-x, .reveal-slide-x) {
+    transition:
+      clip-path 900ms var(--ease-out-strong),
+      opacity 600ms var(--ease-out-strong),
+      transform 700ms var(--ease-out-strong);
+  }
+
+  @media print {
+    [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
     }
   }
 }

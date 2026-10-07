@@ -6,6 +6,7 @@ const steps = [
     card: "bg-primary-tint",
     numberClass: "text-primary",
     textClass: "text-on-tint",
+    delay: "",
   },
   {
     number: "02",
@@ -14,6 +15,7 @@ const steps = [
     card: "bg-ink text-white",
     numberClass: "text-accent",
     textClass: "text-on-ink",
+    delay: "delay-100",
   },
   {
     number: "03",
@@ -22,6 +24,7 @@ const steps = [
     card: "bg-surface",
     numberClass: "text-primary",
     textClass: "text-body",
+    delay: "delay-200",
   },
 ];
 
@@ -32,7 +35,7 @@ export function HowItWorks() {
       aria-labelledby="como-title"
       className="flex scroll-mt-6 flex-wrap items-start gap-12"
     >
-      <div className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
+      <div data-reveal className="flex min-w-0 flex-[1_1_360px] flex-col gap-5">
         <p className="text-primary text-sm font-bold tracking-[0.08em]">CÓMO FUNCIONA</p>
         <h2
           id="como-title"
@@ -49,7 +52,8 @@ export function HowItWorks() {
         {steps.map((step) => (
           <li
             key={step.number}
-            className={`rounded-card flex min-h-[260px] flex-col gap-3.5 p-7 ${step.card}`}
+            data-reveal
+            className={`rounded-card flex min-h-[260px] flex-col gap-3.5 p-7 ${step.card} ${step.delay}`}
           >
             <span
               aria-hidden="true"

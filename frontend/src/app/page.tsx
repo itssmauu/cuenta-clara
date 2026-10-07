@@ -3,6 +3,7 @@ import { Hero } from "@/components/landing/Hero";
 import { HowItWorks } from "@/components/landing/HowItWorks";
 import { InsightsAndSecurity } from "@/components/landing/InsightsAndSecurity";
 import { Prediction } from "@/components/landing/Prediction";
+import { ScrollReveal } from "@/components/landing/ScrollReveal";
 import { SiteHeader } from "@/components/landing/SiteHeader";
 
 export default function LandingPage() {
@@ -21,6 +22,7 @@ export default function LandingPage() {
         <FinalCta />
       </main>
       <SiteFooter />
+      <ScrollReveal />
     </div>
   );
 }

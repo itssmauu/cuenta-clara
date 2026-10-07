@@ -29,10 +29,10 @@ export function SiteHeader() {
         </ul>
       </nav>
       <div className="flex items-center gap-2">
-        <Link href="/login" className={buttonClass("ghost")}>
+        <Link href="/login" className={buttonClass("ghost", "md", "hover:scale-[1.04]")}>
           Iniciar sesión
         </Link>
-        <Link href="/register" className={buttonClass("accent")}>
+        <Link href="/register" className={buttonClass("accent", "md", "hover:scale-[1.04]")}>
           Crear cuenta
         </Link>
       </div>

@@ -4,7 +4,7 @@ import { buttonClass } from "@/components/ui/button";
 
 export function Testimonial() {
   return (
-    <figure className="flex flex-wrap items-center gap-8 sm:px-10">
+    <figure data-reveal className="flex flex-wrap items-center gap-8 sm:px-10">
       <span aria-hidden="true" className="bg-accent size-[72px] shrink-0 rounded-full" />
       <div className="flex min-w-0 flex-[1_1_420px] flex-col gap-3.5">
         {/* Placeholder until there is a real, consented user testimonial */}
@@ -21,6 +21,7 @@ export function FinalCta() {
   return (
     <section
       aria-labelledby="cta-title"
+      data-reveal
       className="bg-primary rounded-panel flex flex-wrap items-center justify-between gap-8 p-8 text-white sm:p-16"
     >
       <h2
@@ -29,7 +30,10 @@ export function FinalCta() {
       >
         Empieza hoy y ordena tu próxima semana.
       </h2>
-      <Link href="/register" className={buttonClass("accent", "lg", "text-[17px] font-extrabold")}>
+      <Link
+        href="/register"
+        className={buttonClass("accent", "lg", "text-[17px] font-extrabold hover:scale-[1.04]")}
+      >
         Crear mi cuenta
       </Link>
     </section>
