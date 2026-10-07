@@ -110,6 +110,33 @@
       transform: translateY(-10px);
     }
   }
+
+  /* A check that pops in when a password rule is met */
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.5;
+    }
+  }
+
+  /* A short "no" shake for a failed sign-in */
+  @keyframes shake {
+    20%,
+    60% {
+      translate: -4px 0;
+    }
+    40%,
+    80% {
+      translate: 4px 0;
+    }
+  }
+}
+
+/* Integer that CSS itself can count up (no JavaScript, so it works on server pages) */
+@property --count {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
 }
 
 @layer base {
@@ -299,5 +326,117 @@
     transition:
       transform 260ms var(--ease-out-strong),
       opacity 150ms ease;
+  }
+}
+
+/* Sign-in panel: an illustrative projection that draws itself and keeps breathing */
+@layer components {
+  /* Counts from 0 to --to (set per element with a class such as [--to:490]) */
+  .count-up {
+    counter-reset: count var(--count);
+    animation: count-up 1600ms var(--ease-out-strong) 400ms both;
+  }
+
+  .count-up::after {
+    content: counter(count);
+  }
+
+  @keyframes count-up {
+    to {
+      --count: var(--to);
+    }
+  }
+
+  /* The chart is revealed left to right, like a line being drawn */
+  .chart-draw {
+    animation: chart-draw 1600ms var(--ease-in-out-strong) 200ms both;
+  }
+
+  @keyframes chart-draw {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* Background bars of the sign-in panel: rise in a wave from the left */
+  .live-bar {
+    transform-origin: bottom;
+    animation: bar-grow 1100ms var(--ease-out-strong) var(--d) both;
+  }
+
+  @keyframes bar-grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  /* Tabs between sign-in and sign-up: the active pill slides across */
+  .auth-tabs-overlay {
+    transition: clip-path 320ms var(--ease-out-strong);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* The prediction band widens and narrows: the future is an estimate, not a fact */
+    .band-breathe {
+      transform-origin: 50% 50%;
+      transform-box: fill-box;
+      animation: band-breathe 4s ease-in-out infinite;
+    }
+
+    @keyframes band-breathe {
+      50% {
+        opacity: 0.55;
+        transform: scaleY(1.12);
+      }
+    }
+
+    /* "Today" pulses like a live marker */
+    .pulse-ring {
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: pulse-ring 2.4s var(--ease-out-strong) infinite;
+    }
+
+    @keyframes pulse-ring {
+      from {
+        opacity: 0.7;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(3.2);
+      }
+    }
+
+    /* ...then keep moving like live data (scale composes with the transform above) */
+    .live-bar {
+      animation:
+        bar-grow 1100ms var(--ease-out-strong) var(--d) both,
+        bar-breathe 4.5s ease-in-out calc(var(--d) + 1200ms) infinite alternate;
+    }
+
+    @keyframes bar-breathe {
+      to {
+        scale: 1 0.78;
+      }
+    }
+
+    .float-slow {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .float-slower {
+      animation: float 8s ease-in-out 1.2s infinite;
+    }
+  }
+
+  /* Without motion, the travelling dot is simply not there */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-only {
+      display: none;
+    }
   }
 }
