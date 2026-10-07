@@ -301,3 +301,19 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
   - El borde del campo activo se vuelve violeta.
 - **Corrección:** en Tailwind v4, `scale-*` y `translate-*` usan sus propias propiedades CSS. La transición de los botones solo listaba `transform`, así que la presión y el crecimiento al pasar el mouse saltaban sin animarse. Ahora se listan `scale` y `translate`.
 - **Movimiento reducido:** con `prefers-reduced-motion` no hay bucles (franja, pulso, flotación, punto viajero ni barras): solo el estado final.
+
+## D-060 · Sin testimonio por ahora: demos de lo que hace la app
+
+**Fase 9 (ajuste de diseño).** La landing tenía un hueco de testimonio con texto de relleno. Inventar uno sería engañoso, y el proyecto aún no tiene usuarios a quienes citar. Se reemplazó por "Te acompaña toda la semana":
+
+- **Tres mini-demos que se reproducen al llegar a la pantalla**, con cifras ilustrativas y la etiqueta "Ejemplo":
+  - la alerta al 80 % (la barra se llena y aparece el aviso);
+  - una meta de ahorro (el anillo se llena y aparece el plan semanal);
+  - la tendencia (la línea se dibuja y aparece la frase que la explica).
+- **Una franja con todo lo que incluye la app**, en desplazamiento continuo.
+  - Como es contenido que se mueve más de 5 segundos junto a otro contenido, tiene un botón "Pausar animación" (WCAG 2.2.2). También se detiene bajo el puntero.
+  - Con `prefers-reduced-motion` es una lista estática y el botón desaparece.
+
+Los testimonios reales quedan para el futuro, cuando haya personas que den su consentimiento.
+
+**Lección técnica:** los estilos de `@layer components` pierden contra las utilidades de Tailwind (`flex`, `[mask-image:…]`). Para ocultar algo con movimiento reducido hay que usar las variantes `motion-reduce:`, no reglas en ese *layer*. Lo detectó la prueba E2E.
