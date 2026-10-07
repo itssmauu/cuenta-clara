@@ -8,6 +8,7 @@ import { PageHeader } from "@/components/app/PageHeader";
 import { TransactionDialog } from "@/components/finance/TransactionDialog";
 import { useSession } from "@/components/app/session";
 import { buttonClass } from "@/components/ui/button";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Notice, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { financeApi, type Category, type DashboardPeriod } from "@/lib/finance-api";
@@ -17,7 +18,7 @@ import { useResource } from "@/lib/use-resource";
 
 import { KpiCards, LimitAlert, LimitChip, LimitMeter, UpcomingExpenses } from "./Cards";
 import { CategoryBreakdown } from "./CategoryBreakdown";
-import { CURRENT_PERIOD_NAME } from "./period-labels";
+import { CURRENT_PERIOD_NAME, periodRange } from "./period-labels";
 import { PeriodExpenses } from "./PeriodExpenses";
 import { SpendingChart } from "./SpendingChart";
 
@@ -26,7 +27,7 @@ function isPeriod(value: string | null): value is DashboardPeriod {
 }
 
 export function Dashboard() {
-  const { settings } = useSession();
+  const { user, settings } = useSession();
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();
@@ -79,29 +80,26 @@ export function Dashboard() {
   return (
     <>
       <PageHeader
-        title="Dashboard"
-        subtitle="Resumen de tus finanzas"
+        eyebrow="Dashboard"
+        title={`Hola, ${user.name.split(" ")[0]}`}
+        subtitle={
+          current
+            ? `Tu resumen de ${CURRENT_PERIOD_NAME[period]} · ${periodRange(current.period_start, current.period_end)}`
+            : "Resumen de tus finanzas"
+        }
         actions={
           <>
-            <div
-              role="group"
-              aria-label="Periodo"
-              className="grid w-full grid-cols-4 gap-1 rounded-full bg-white p-1 sm:flex sm:w-auto"
-            >
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={period === option}
-                  onClick={() => selectPeriod(option)}
-                  className={`min-h-11 cursor-pointer rounded-full px-1 text-[13px] font-bold transition-colors duration-200 sm:px-4 sm:text-sm ${
-                    period === option ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {FREQUENCY_LABELS[option]}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              label="Periodo"
+              options={PERIOD_OPTIONS.map((option) => ({
+                value: option,
+                label: FREQUENCY_LABELS[option],
+              }))}
+              value={period}
+              onChange={selectPeriod}
+              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
+            />
             <button
               type="button"
               onClick={() => setAdding(true)}
@@ -126,7 +124,7 @@ export function Dashboard() {
       ) : !current ? (
         <DashboardSkeleton />
       ) : (
-        <div className="flex flex-col gap-5" aria-busy={dashboard.status === "loading"}>
+        <div className="stagger-in flex flex-col gap-5" aria-busy={dashboard.status === "loading"}>
           <LimitAlert dashboard={current} />
           <KpiCards dashboard={current} />
 

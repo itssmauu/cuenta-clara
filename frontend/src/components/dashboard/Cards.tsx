@@ -1,10 +1,15 @@
 import {
   AlertTriangle,
   ArrowDownRight,
+  ArrowDownCircle,
+  ArrowUpCircle,
   ArrowUpRight,
   CheckCircle2,
   Info,
   Minus,
+  PiggyBank,
+  Wallet,
+  type LucideIcon,
 } from "lucide-react";
 import Link from "next/link";
 
@@ -14,6 +19,7 @@ import { formatDate, formatMoney, subtractMoney } from "@/lib/format";
 import { PERIOD_ADJECTIVE, PREVIOUS_PERIOD_NAME } from "./period-labels";
 
 type KpiProps = {
+  icon: LucideIcon;
   label: string;
   value: string;
   note: string;
@@ -44,14 +50,35 @@ function Comparison({
   );
 }
 
-function Kpi({ label, value, note, tone = "white", valueClass = "", comparison }: KpiProps) {
+function Kpi({
+  icon: Icon,
+  label,
+  value,
+  note,
+  tone = "white",
+  valueClass = "",
+  comparison,
+}: KpiProps) {
   const surface = { ink: "bg-ink text-white", white: "bg-white", tint: "bg-primary-tint" }[tone];
   const soft = { ink: "text-on-ink", white: "text-muted", tint: "text-on-tint" }[tone];
+  const tile = {
+    ink: "bg-ink-2 text-accent",
+    white: "bg-canvas text-primary",
+    tint: "bg-white text-primary",
+  }[tone];
   return (
-    <div className={`rounded-card flex flex-col gap-2 p-6 ${surface}`}>
-      <span className={`text-[13px] font-semibold ${soft}`}>{label}</span>
+    <div className={`rounded-card relative flex flex-col gap-2 p-6 ${surface}`}>
       <span
-        className={`font-display text-[28px] font-extrabold tracking-[-0.02em] tabular-nums sm:text-[32px] ${valueClass}`}
+        aria-hidden="true"
+        className={`absolute top-5 right-5 grid size-10 place-items-center rounded-2xl ${tile}`}
+      >
+        <Icon className="size-5" />
+      </span>
+      <span className={`pr-12 text-[13px] font-semibold ${soft}`}>{label}</span>
+      {/* Keyed by value: a new figure (another period) blurs in instead of snapping */}
+      <span
+        key={value}
+        className={`font-display animate-value-in text-[28px] font-extrabold tracking-[-0.02em] tabular-nums sm:text-[32px] ${valueClass}`}
       >
         {value}
       </span>
@@ -77,11 +104,13 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
     >
       <Kpi
         tone="ink"
+        icon={Wallet}
         label="Monto inicial"
         value={money(d.initial_balance)}
         note={`Desde el ${since}`}
       />
       <Kpi
+        icon={ArrowUpCircle}
         label="Ingresos del periodo"
         value={money(d.income)}
         note={`Saldo al iniciar: ${money(d.opening_balance)}`}
@@ -89,6 +118,7 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
         comparison={compare(d.income, d.previous_income)}
       />
       <Kpi
+        icon={ArrowDownCircle}
         label="Gastado"
         value={money(d.spent)}
         note={`Fijos ${money(d.fixed_expenses)} · Variables ${money(d.variable_expenses)}`}
@@ -96,6 +126,7 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
       />
       <Kpi
         tone="tint"
+        icon={PiggyBank}
         label="Saldo disponible"
         value={money(d.available_balance)}
         note="Saldo al iniciar + ingresos − gastos"
@@ -168,9 +199,11 @@ export function LimitMeter({ dashboard: d }: { dashboard: Dashboard }) {
             className="bg-ink-2 h-3.5 overflow-hidden rounded-full"
           >
             {/* Rendered on the client only, so this style is applied through the CSSOM (CSP-safe) */}
+            {/* Full-width bar clipped to the percentage: it grows on arrival and glides on
+                changes without the rounded end ever squashing */}
             <div
-              className={`h-full rounded-full ${d.over_limit ? "bg-accent" : "bg-mint"}`}
-              style={{ width: `${Math.min(percent, 100)}%` }}
+              className={`meter-fill h-full rounded-full ${d.over_limit ? "bg-accent" : "bg-mint"}`}
+              style={{ clipPath: `inset(0 ${100 - Math.min(percent, 100)}% 0 0 round 999px)` }}
             />
           </div>
           <span className="text-on-ink text-[13px] font-semibold">

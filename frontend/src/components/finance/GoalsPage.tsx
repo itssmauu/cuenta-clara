@@ -226,8 +226,8 @@ function GoalCard({
         className="bg-canvas h-3.5 overflow-hidden rounded-full"
       >
         <div
-          className={`h-full rounded-full ${goal.completed ? "bg-mint-ink" : "bg-primary"}`}
-          style={{ width: `${percent}%` }}
+          className={`meter-fill h-full rounded-full ${goal.completed ? "bg-mint-ink" : "bg-primary"}`}
+          style={{ clipPath: `inset(0 ${100 - percent}% 0 0 round 999px)` }}
         />
       </div>
       <p className="flex items-start gap-2 text-sm font-semibold">

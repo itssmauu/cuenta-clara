@@ -61,6 +61,8 @@ export function CategoryBreakdown({
               fill="var(--color-primary-bar)"
               maxBarSize={24}
               radius={[0, 4, 4, 0]}
+              animationDuration={600}
+              animationEasing="ease-out"
             >
               <LabelList
                 dataKey="label"
