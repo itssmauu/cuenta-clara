@@ -2,7 +2,7 @@ import path from "node:path";
 
 import { test } from "@playwright/test";
 
-import { completeOnboarding, register, uniqueEmail } from "./helpers";
+import { completeOnboarding, register, uniqueEmail, waitForSettled } from "./helpers";
 
 // Captures the README screenshots: `npm run screenshots` (skipped in normal runs)
 const OUT = path.resolve(__dirname, "../../docs/screenshots");
@@ -11,6 +11,7 @@ test("@screenshots capture the main screens", async ({ page }) => {
   await page.setViewportSize({ width: 1360, height: 900 });
 
   await page.goto("/");
+  await waitForSettled(page); // the hero fades in on load
   await page.screenshot({ path: `${OUT}/landing.png` });
 
   await page.goto("/register");

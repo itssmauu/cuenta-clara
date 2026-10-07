@@ -12,6 +12,35 @@ test.describe("public pages", () => {
     await expect(page).toHaveURL(/\/register$/);
   });
 
+  test("landing sections fade in on scroll and their figures count up", async ({ page }) => {
+    await page.goto("/");
+    const prediction = page.locator("#prediccion");
+    await expect(prediction).toHaveAttribute("data-reveal", "hidden");
+
+    await page.getByRole("heading", { name: /Si tienes \$100/ }).scrollIntoViewIfNeeded();
+    await expect(prediction).toHaveAttribute("data-reveal", "shown");
+    await expect(prediction.locator('[data-count-to="230"]').first()).toHaveText("$230");
+    // Screen readers get the final figure once, never the digits in motion
+    await expect(prediction.locator(".sr-only", { hasText: "$490" })).toHaveCount(1);
+    await expect(prediction.locator('[data-count-to="490"]')).toHaveAttribute(
+      "aria-hidden",
+      "true",
+    );
+
+    // Fully revealed, the page is still accessible
+    await page.keyboard.press("End");
+    await expect(page.locator('[data-reveal="hidden"]')).toHaveCount(0);
+    await expectAccessible(page);
+  });
+
+  test("with reduced motion nothing is hidden or animated", async ({ page }) => {
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.goto("/");
+
+    await expect(page.locator("#prediccion")).not.toHaveAttribute("data-reveal", /hidden|shown/);
+    await expect(page.locator('[data-reveal="hidden"]')).toHaveCount(0);
+  });
+
   for (const path of ["/", "/login", "/register", "/recuperar-contrasena", "/no-existe"]) {
     test(`${path} has no detectable accessibility violations`, async ({ page }) => {
       await page.goto(path);

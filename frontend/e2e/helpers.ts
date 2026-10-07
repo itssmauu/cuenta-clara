@@ -7,10 +7,8 @@ export function uniqueEmail(prefix = "e2e"): string {
   return `${prefix}.${Date.now()}.${Math.floor(Math.random() * 1e6)}@example.com`;
 }
 
-/** Fails the test on any WCAG 2.2 A/AA violation axe can detect on the current page. */
-export async function expectAccessible(page: Page) {
-  // Audit the settled page: mid-transition colors (e.g. a button turning active) would
-  // otherwise be measured halfway and report a contrast that the user never really sees
+/** Waits until the network is idle and every finite animation or transition has ended. */
+export async function waitForSettled(page: Page) {
   await page.waitForLoadState("networkidle");
   await page.evaluate(() =>
     Promise.all(
@@ -21,6 +19,13 @@ export async function expectAccessible(page: Page) {
         .map((a) => a.finished),
     ),
   );
+}
+
+/** Fails the test on any WCAG 2.2 A/AA violation axe can detect on the current page. */
+export async function expectAccessible(page: Page) {
+  // Audit the settled page: mid-transition colors (e.g. a button turning active) would
+  // otherwise be measured halfway and report a contrast that the user never really sees
+  await waitForSettled(page);
   const results = await new AxeBuilder({ page })
     .withTags(["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "wcag22aa"])
     .analyze();
