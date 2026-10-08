@@ -16,7 +16,6 @@ vi.mock("next/navigation", () => ({
 }));
 
 const settings: Settings = {
-  initial_balance: "100.00",
   balance_as_of: "2026-10-05",
   currency: "USD",
   income_period: "weekly",
@@ -27,6 +26,7 @@ const settings: Settings = {
 
 // The spec example: $100, spent $30, received $160 → $230
 const dashboard: DashboardData = {
+  account: { id: "a-main", name: "Gastos del día", kind: "spending", is_primary: true },
   period: "weekly",
   period_start: "2026-10-05",
   period_end: "2026-10-11",
@@ -38,6 +38,7 @@ const dashboard: DashboardData = {
   fixed_expenses: "0.00",
   variable_expenses: "30.00",
   spent: "30.00",
+  transfers: "0.00",
   available_balance: "230.00",
   spending_limit: "40.00",
   limit_remaining: "10.00",
@@ -104,6 +105,7 @@ beforeEach(() => {
         category_id: "c1",
         occurred_on: "2026-10-06",
         note: "Pasaje",
+        account_id: "a-main",
       },
     ],
     total: 1,
@@ -117,7 +119,7 @@ describe("Dashboard", () => {
     renderDashboard();
 
     const cards = await screen.findByRole("region", { name: "Resumen del periodo" });
-    expect(within(cards).getByText("Monto inicial").nextSibling).toHaveTextContent("$100.00");
+    expect(within(cards).getByText("Saldo inicial").nextSibling).toHaveTextContent("$100.00");
     expect(within(cards).getByText("Ingresos del periodo").nextSibling).toHaveTextContent(
       "$160.00",
     );
@@ -132,6 +134,7 @@ describe("Dashboard", () => {
     expect(financeApi.getDashboard).toHaveBeenCalledWith(
       "weekly",
       expect.stringMatching(/^\d{4}-\d{2}-\d{2}$/),
+      undefined,
     );
     expect(screen.getByRole("button", { name: "Semanal" })).toHaveAttribute("aria-pressed", "true");
   });
@@ -150,7 +153,7 @@ describe("Dashboard", () => {
     renderDashboard();
 
     await screen.findByText("Saldo disponible");
-    expect(financeApi.getDashboard).toHaveBeenCalledWith("daily", expect.any(String));
+    expect(financeApi.getDashboard).toHaveBeenCalledWith("daily", expect.any(String), undefined);
   });
 
   it("explains the limit status with words, not only color", async () => {
@@ -195,6 +198,7 @@ describe("Dashboard", () => {
       category_id: null,
       occurred_on: "2026-10-07",
       note: null,
+      account_id: "a-main",
     });
     renderDashboard();
     await screen.findByText("Saldo disponible");

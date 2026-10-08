@@ -11,6 +11,7 @@ import { SettingsPage } from "./SettingsPage";
 
 // 100 − 30 + 160 = 230, then +130 per week
 const forecast: Forecast = {
+  account: { id: "a-main", name: "Gastos del día", kind: "spending", is_primary: true },
   period: "weekly",
   currency: "USD",
   average_variable_spending: "0.00",
@@ -30,6 +31,7 @@ const forecast: Forecast = {
     income: "160.00",
     fixed_expenses: "30.00",
     variable_spending: "0.00",
+    transfers: "0.00",
     closing_balance: closing as string,
     is_current: current as boolean,
   })),
@@ -55,6 +57,7 @@ describe("ForecastPage", () => {
       undefined,
       expect.any(String),
       "average",
+      undefined,
     );
   });
 
@@ -69,6 +72,7 @@ describe("ForecastPage", () => {
       undefined,
       expect.any(String),
       "average",
+      undefined,
     );
     await user.click(screen.getByRole("button", { name: "Mensual" }));
     expect(financeApi.getForecast).toHaveBeenLastCalledWith(
@@ -76,6 +80,7 @@ describe("ForecastPage", () => {
       "monthly",
       expect.any(String),
       "average",
+      undefined,
     );
   });
 
@@ -98,6 +103,7 @@ describe("ForecastPage", () => {
       undefined,
       expect.any(String),
       "trend",
+      undefined,
     );
     const explanation = await screen.findByText(/regresión lineal/);
     expect(explanation).toHaveTextContent("últimos 6 periodos completos");
@@ -150,7 +156,6 @@ describe("SettingsPage", () => {
 
     expect(save).toHaveBeenCalledWith(
       expect.objectContaining({
-        initial_balance: "100.00",
         spending_limit: "50",
         income_period: "weekly",
         custom_period_days: null,
