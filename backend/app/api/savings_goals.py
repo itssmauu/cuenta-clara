@@ -9,6 +9,7 @@ from app.models import SavingsGoal
 from app.schemas.finance import ContributionIn, SavingsGoalIn, SavingsGoalOut
 from app.services import ownership
 from app.services import savings as savings_service
+from app.services.accounts import get_account
 from app.services.dashboard import cadence_for
 from app.services.settings import get_settings_for
 
@@ -24,6 +25,7 @@ def _out(goal: SavingsGoal, plan: savings_service.GoalPlan) -> SavingsGoalOut:
         target_amount=goal.target_amount,
         saved_amount=goal.saved_amount,
         due_date=goal.due_date,
+        account_id=goal.account_id,
         remaining=plan.remaining,
         progress_percent=plan.progress_percent,
         completed=plan.completed,
@@ -55,9 +57,18 @@ def list_goals(
     return [_with_plan(db, user, goal, today) for goal in goals]
 
 
+def _goal_data(db: DbSession, user: CurrentUser, body: SavingsGoalIn) -> dict[str, object]:
+    data = body.model_dump()
+    if data["account_id"] is None:
+        data.pop("account_id")  # unlinked on create, unchanged on update
+    else:
+        get_account(db, user, data["account_id"])  # 404 for someone else's account
+    return data
+
+
 @router.post("", response_model=SavingsGoalOut, status_code=status.HTTP_201_CREATED)
 def create_goal(body: SavingsGoalIn, db: DbSession, user: CurrentUser) -> SavingsGoalOut:
-    goal = ownership.create_owned(db, SavingsGoal, user, body.model_dump())
+    goal = ownership.create_owned(db, SavingsGoal, user, _goal_data(db, user, body))
     return _with_plan(db, user, goal, date.today())
 
 
@@ -66,7 +77,8 @@ def update_goal(
     goal_id: uuid.UUID, body: SavingsGoalIn, db: DbSession, user: CurrentUser
 ) -> SavingsGoalOut:
     goal = ownership.get_owned(db, SavingsGoal, goal_id, user)
-    return _with_plan(db, user, ownership.update_owned(db, goal, body.model_dump()), date.today())
+    data = _goal_data(db, user, body)
+    return _with_plan(db, user, ownership.update_owned(db, goal, data), date.today())
 
 
 @router.delete("/{goal_id}", status_code=status.HTTP_204_NO_CONTENT)
@@ -78,5 +90,7 @@ def delete_goal(goal_id: uuid.UUID, db: DbSession, user: CurrentUser) -> None:
 def contribute(
     goal_id: uuid.UUID, body: ContributionIn, db: DbSession, user: CurrentUser
 ) -> SavingsGoalOut:
-    goal = savings_service.contribute(db, user, goal_id, body.amount)
+    goal = savings_service.contribute(
+        db, user, goal_id, body.amount, from_account_id=body.from_account_id
+    )
     return _with_plan(db, user, goal, date.today())

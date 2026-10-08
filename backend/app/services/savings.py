@@ -9,8 +9,10 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from app.models import SavingsGoal, User
+from app.services.accounts import get_account
 from app.services.errors import BusinessRuleError, NotFoundError
 from app.services.periods import Cadence
+from app.services.transfers import create_transfer
 
 CENT = Decimal("0.01")
 
@@ -48,8 +50,21 @@ def plan_goal(
     return GoalPlan(remaining, progress, completed, False, periods, per_period)
 
 
-def contribute(db: Session, user: User, goal_id: uuid.UUID, amount: Decimal) -> SavingsGoal:
-    """Add (or, with a negative amount, withdraw) money. The row is locked against races."""
+def contribute(
+    db: Session,
+    user: User,
+    goal_id: uuid.UUID,
+    amount: Decimal,
+    *,
+    from_account_id: uuid.UUID | None = None,
+    today: date | None = None,
+) -> SavingsGoal:
+    """Add (or, with a negative amount, withdraw) money. The row is locked against races.
+
+    When the goal lives in an account and another account is given, the money really
+    moves: a deposit is a transfer from that account into the goal's account, and a
+    withdrawal sends it back. Both happen in one transaction with the new saved amount.
+    """
     goal = db.scalar(
         select(SavingsGoal)
         .where(SavingsGoal.id == goal_id, SavingsGoal.user_id == user.id)
@@ -61,6 +76,21 @@ def contribute(db: Session, user: User, goal_id: uuid.UUID, amount: Decimal) -> 
     if new_amount < 0:
         db.rollback()
         raise BusinessRuleError("No puedes retirar más de lo que llevas ahorrado.")
+    if from_account_id is not None:
+        get_account(db, user, from_account_id)  # 404 for someone else's account
+    if goal.account_id is not None and from_account_id not in (None, goal.account_id):
+        deposit = amount > 0
+        create_transfer(
+            db,
+            user,
+            from_account_id=from_account_id if deposit else goal.account_id,
+            to_account_id=goal.account_id if deposit else from_account_id,
+            amount=abs(amount),
+            occurred_on=today or date.today(),
+            note=f"{'Aporte a' if deposit else 'Retiro de'} la meta {goal.name}",
+            goal_id=goal.id,
+            commit=False,
+        )
     goal.saved_amount = new_amount
     db.commit()
     db.refresh(goal)
