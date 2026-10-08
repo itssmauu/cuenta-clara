@@ -6,7 +6,6 @@ from fastapi.testclient import TestClient
 URL = "/api/v1/settings"
 
 VALID = {
-    "initial_balance": "100.00",
     "balance_as_of": "2026-10-05",
     "currency": "USD",
     "income_period": "weekly",
@@ -24,7 +23,6 @@ def test_new_account_starts_with_default_settings(login_as: Callable[[str], Test
     body = response.json()
     assert body.pop("balance_as_of")  # defaults to the creation date
     assert body == {
-        "initial_balance": "0.00",
         "currency": "USD",
         "income_period": "monthly",
         "custom_period_days": None,
@@ -55,9 +53,7 @@ def test_custom_period_needs_days(login_as: Callable[[str], TestClient]) -> None
 @pytest.mark.parametrize(
     "override",
     [
-        {"initial_balance": "-1.00"},
-        {"initial_balance": "1.001"},  # more than 2 decimals
-        {"initial_balance": "12345678901.00"},  # does not fit NUMERIC(12, 2)
+        {"initial_balance": "100.00"},  # lives on the accounts now: unknown field
         {"currency": "usd"},
         {"spending_limit": "-5"},
         {"income_period": "yearly"},

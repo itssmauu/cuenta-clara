@@ -3,6 +3,8 @@ from collections.abc import Callable
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.auth_helpers import set_primary_balance
+
 API = "/api/v1"
 WEDNESDAY = "2026-10-07"
 
@@ -14,13 +16,13 @@ def ana(login_as: Callable[[str], TestClient]) -> TestClient:
     client.put(
         f"{API}/settings",
         json={
-            "initial_balance": "100.00",
             "balance_as_of": "2026-10-05",
             "income_period": "weekly",
             "spending_limit": "40.00",
             "onboarding_completed": True,
         },
     ).raise_for_status()
+    set_primary_balance(client, "100.00")
     return client
 
 

@@ -56,3 +56,19 @@ def post_with_cookies(path: str, cookies: dict[str, str], csrf: str | None = Non
         headers["X-CSRF-Token"] = csrf
     with TestClient(app, base_url="https://testserver") as other:
         return other.post(path, headers=headers)
+
+
+def set_primary_balance(client: TestClient, amount: str) -> dict[str, object]:
+    """Give the user's primary (day-to-day) account its initial balance; returns the account."""
+    primary = client.get("/api/v1/accounts").json()[0]
+    response = client.put(
+        f"/api/v1/accounts/{primary['id']}",
+        json={
+            "name": primary["name"],
+            "kind": primary["kind"],
+            "initial_balance": amount,
+            "is_primary": True,
+        },
+    )
+    response.raise_for_status()
+    return response.json()
