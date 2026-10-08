@@ -23,8 +23,7 @@ class UserSettings(IdMixin, TimestampMixin, Base):
     user_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("users.id", ondelete="CASCADE"), unique=True
     )
-    initial_balance: Mapped[Decimal] = mapped_column(server_default="0")
-    # The day initial_balance was true; nothing earlier counts toward the balance
+    # The day the accounts' initial balances were true; nothing earlier counts
     balance_as_of: Mapped[date] = mapped_column(Date, server_default=func.current_date())
     currency: Mapped[str] = mapped_column(String(3), server_default="USD")
     income_period: Mapped[Frequency] = mapped_column(

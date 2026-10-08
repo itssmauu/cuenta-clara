@@ -38,3 +38,5 @@ class FixedExpense(IdMixin, TimestampMixin, Base):
         ForeignKey("categories.id", ondelete="SET NULL"), index=True
     )
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # The account the expense is paid from
+    account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("accounts.id"), index=True)

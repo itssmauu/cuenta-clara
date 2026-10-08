@@ -25,5 +25,7 @@ class Transaction(IdMixin, TimestampMixin, Base):
     category_id: Mapped[uuid.UUID | None] = mapped_column(
         ForeignKey("categories.id", ondelete="SET NULL"), index=True
     )
+    # Which of the user's accounts the money goes in or out of
+    account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("accounts.id"), index=True)
     occurred_on: Mapped[date]
     note: Mapped[str | None] = mapped_column(String(255))
