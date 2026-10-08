@@ -14,16 +14,22 @@ import type { FixedExpenseValues } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
 
 import {
-  BalanceStep,
+  AccountsStep,
+  FIRST_ACCOUNT,
   FixedExpensesStep,
   IncomeStep,
   LimitStep,
+  type AccountsStepForm,
+  type AccountsStepValues,
   type IncomeStepForm,
   type IncomeStepValues,
 } from "./steps";
 
 const STEPS = [
-  { title: "Tu monto inicial", intro: "La base de todos los cálculos." },
+  {
+    title: "Tus cuentas",
+    intro: "¿Cuántas cuentas usas? Sepáralas como en tu banco: gastos, ahorro, fondos…",
+  },
   { title: "Tus gastos fijos", intro: "Lo que pagas sí o sí: internet, datos, pasaje…" },
   { title: "Tus ingresos", intro: "Cuánto recibes y cada cuánto." },
   { title: "Tu límite de gasto", intro: "Para saber si vas dentro o por encima." },
@@ -34,7 +40,11 @@ export function OnboardingWizard() {
   const { state } = useSessionLoader("onboarding");
   const [today] = useState(todayISO);
   const [step, setStep] = useState(0);
-  const [balance, setBalance] = useState("");
+  const [accountsForm, setAccountsForm] = useState<AccountsStepForm>({
+    accounts: [FIRST_ACCOUNT],
+    primary: "0",
+  });
+  const [accountsValues, setAccountsValues] = useState<AccountsStepValues | null>(null);
   const [fixedExpenses, setFixedExpenses] = useState<FixedExpenseValues[]>([]);
   const [income, setIncome] = useState<IncomeStepForm>({
     frequency: "weekly",
@@ -42,13 +52,18 @@ export function OnboardingWizard() {
     label: "",
     amount: "",
     start_date: today,
+    account_index: "0",
   });
   const [incomeValues, setIncomeValues] = useState<IncomeStepValues | null>(null);
   const [limit, setLimit] = useState("");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  // How many items were already saved, so a retry after a failure never duplicates them
-  const saved = useRef({ fixed: 0, income: false });
+  // What was already saved, so a retry after a failure never duplicates anything
+  const saved = useRef<{ accountIds: (string | undefined)[]; fixed: number; income: boolean }>({
+    accountIds: [],
+    fixed: 0,
+    income: false,
+  });
   const headingRef = useRef<HTMLHeadingElement>(null);
 
   useEffect(() => {
@@ -56,15 +71,35 @@ export function OnboardingWizard() {
     if (step > 0) headingRef.current?.focus();
   }, [step]);
 
+  /** The day-to-day account becomes the primary one registration created; the rest are new. */
+  async function saveAccounts(values: AccountsStepValues): Promise<string[]> {
+    const ids = saved.current.accountIds;
+    const primaryIndex = Number(values.primary);
+    if (ids[primaryIndex] === undefined) {
+      const [existing] = await financeApi.listAccounts(today);
+      const primary = values.accounts[primaryIndex]!;
+      await financeApi.updateAccount(existing!.id, { ...primary, is_primary: true });
+      ids[primaryIndex] = existing!.id;
+    }
+    for (const [index, account] of values.accounts.entries()) {
+      if (ids[index] !== undefined) continue;
+      ids[index] = (await financeApi.createAccount({ ...account, is_primary: false })).id;
+    }
+    return ids as string[];
+  }
+
   async function finish(spendingLimit: string) {
-    if (!incomeValues) return;
+    if (!incomeValues || !accountsValues) return;
     setLimit(spendingLimit);
     setSaving(true);
     setError(null);
     try {
+      const accountIds = await saveAccounts(accountsValues);
+      const primaryId = accountIds[Number(accountsValues.primary)]!;
+      // Fixed expenses are paid from the day-to-day account (editable later)
       for (; saved.current.fixed < fixedExpenses.length; saved.current.fixed++) {
         const item = fixedExpenses[saved.current.fixed]!;
-        await financeApi.createFixedExpense({ ...item, start_date: today });
+        await financeApi.createFixedExpense({ ...item, start_date: today, account_id: primaryId });
       }
       const custom =
         incomeValues.frequency === "custom" ? Number(incomeValues.custom_period_days) : null;
@@ -75,11 +110,11 @@ export function OnboardingWizard() {
           frequency: incomeValues.frequency,
           custom_period_days: custom,
           start_date: incomeValues.start_date,
+          account_id: accountIds[Number(incomeValues.account_index)] ?? primaryId,
         });
         saved.current.income = true;
       }
       await financeApi.saveSettings({
-        initial_balance: balance,
         balance_as_of: today,
         currency: "USD",
         income_period: incomeValues.frequency,
@@ -163,10 +198,11 @@ export function OnboardingWizard() {
         </div>
 
         {step === 0 ? (
-          <BalanceStep
-            initial={balance}
-            onNext={(value) => {
-              setBalance(value);
+          <AccountsStep
+            initial={accountsForm}
+            onNext={(values) => {
+              setAccountsValues(values);
+              setAccountsForm(values);
               setStep(1);
             }}
           />
@@ -182,7 +218,8 @@ export function OnboardingWizard() {
         ) : null}
         {step === 2 ? (
           <IncomeStep
-            initial={income}
+            initial={{ ...income, account_index: income.account_index || accountsForm.primary }}
+            accountNames={(accountsValues?.accounts ?? []).map((a) => a.name)}
             onBack={() => setStep(1)}
             onNext={(values) => {
               setIncomeValues(values);
