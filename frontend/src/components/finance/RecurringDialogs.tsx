@@ -10,7 +10,13 @@ import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { ApiError } from "@/lib/api";
-import { financeApi, type Category, type FixedExpense, type Income } from "@/lib/finance-api";
+import {
+  financeApi,
+  type Account,
+  type Category,
+  type FixedExpense,
+  type Income,
+} from "@/lib/finance-api";
 import {
   FREQUENCIES,
   FREQUENCY_LABELS,
@@ -23,6 +29,8 @@ import {
 } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
 
+import { accountOptions } from "./accounts-ui";
+
 const frequencyOptions = FREQUENCIES.map((value) => ({ value, label: FREQUENCY_LABELS[value] }));
 
 type DialogProps<T> = {
@@ -30,7 +38,14 @@ type DialogProps<T> = {
   item: T | null;
   onClose: () => void;
   onSaved: (message: string) => void;
+  /** With more than one account the dialog asks which one */
+  accounts?: Account[];
 };
+
+/** The account to preselect: the item's own, or the primary one. */
+function initialAccount(accounts: Account[], current: string | undefined): string {
+  return current ?? accounts.find((a) => a.is_primary)?.id ?? "";
+}
 
 function FormFooter({
   submitting,
@@ -64,11 +79,12 @@ function apiMessage(error: unknown, fallback: string) {
 
 // ── Incomes ─────────────────────────────────────────────
 
-export function IncomeDialog({ open, item, onClose, onSaved }: DialogProps<Income>) {
+export function IncomeDialog({ open, item, onClose, onSaved, accounts = [] }: DialogProps<Income>) {
   return (
     <Dialog open={open} onClose={onClose} title={item ? "Editar ingreso" : "Añadir ingreso"}>
       <IncomeFormBody
         item={item}
+        accounts={accounts}
         onCancel={onClose}
         onSaved={(m) => {
           onSaved(m);
@@ -81,10 +97,12 @@ export function IncomeDialog({ open, item, onClose, onSaved }: DialogProps<Incom
 
 function IncomeFormBody({
   item,
+  accounts,
   onCancel,
   onSaved,
 }: {
   item: Income | null;
+  accounts: Account[];
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -103,6 +121,7 @@ function IncomeFormBody({
       frequency: item?.frequency ?? "monthly",
       custom_period_days: item?.custom_period_days ? String(item.custom_period_days) : "",
       start_date: item?.start_date ?? todayISO(),
+      account_id: initialAccount(accounts, item?.account_id),
     },
   });
   const frequency = useWatch({ control, name: "frequency" });
@@ -167,6 +186,14 @@ function IncomeFormBody({
           error={errors.start_date?.message}
           {...register("start_date")}
         />
+        {accounts.length > 1 ? (
+          <SelectField
+            id="income-account"
+            label="¿A qué cuenta llega?"
+            options={accountOptions(accounts)}
+            {...register("account_id")}
+          />
+        ) : null}
       </div>
       <FormFooter submitting={isSubmitting} onCancel={onCancel} label="Guardar ingreso" />
     </form>
@@ -181,12 +208,14 @@ export function FixedExpenseDialog({
   onClose,
   onSaved,
   categories,
+  accounts = [],
 }: DialogProps<FixedExpense> & { categories: Category[] }) {
   return (
     <Dialog open={open} onClose={onClose} title={item ? "Editar gasto fijo" : "Añadir gasto fijo"}>
       <FixedExpenseFormBody
         item={item}
         categories={categories}
+        accounts={accounts}
         onCancel={onClose}
         onSaved={(m) => {
           onSaved(m);
@@ -200,11 +229,13 @@ export function FixedExpenseDialog({
 function FixedExpenseFormBody({
   item,
   categories,
+  accounts,
   onCancel,
   onSaved,
 }: {
   item: FixedExpense | null;
   categories: Category[];
+  accounts: Account[];
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -225,6 +256,7 @@ function FixedExpenseFormBody({
       due_day: item?.due_day ? String(item.due_day) : "",
       start_date: item?.start_date ?? todayISO(),
       category_id: item?.category_id ?? "",
+      account_id: initialAccount(accounts, item?.account_id),
     },
   });
   const frequency = useWatch({ control, name: "frequency" });
@@ -308,6 +340,14 @@ function FixedExpenseFormBody({
           error={errors.start_date?.message}
           {...register("start_date")}
         />
+        {accounts.length > 1 ? (
+          <SelectField
+            id="fixed-account"
+            label="¿De qué cuenta sale?"
+            options={accountOptions(accounts)}
+            {...register("account_id")}
+          />
+        ) : null}
       </div>
       <FormFooter submitting={isSubmitting} onCancel={onCancel} label="Guardar gasto fijo" />
     </form>

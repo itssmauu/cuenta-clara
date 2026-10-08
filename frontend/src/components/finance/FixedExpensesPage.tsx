@@ -16,18 +16,24 @@ import {
   type Category,
   type FixedExpense,
 } from "@/lib/finance-api";
-import { formatMoney } from "@/lib/format";
+import { formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
 import { CategoryChip } from "./CategoryChip";
 import { frequencyText } from "./IncomesPage";
 import { FixedExpenseDialog } from "./RecurringDialogs";
+import { accountName } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
 
 export function FixedExpensesPage() {
   const { settings } = useSession();
   const [expenses, reload] = useResource("fixed-expenses", financeApi.listFixedExpenses);
   const [categoryList] = useResource("categories", financeApi.listCategories);
+  const [today] = useState(todayISO);
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
+  // Which account each item uses only matters with more than one
+  const accounts = accountList.data ?? [];
+  const multiAccount = accounts.length > 1;
   const [editing, setEditing] = useState<{ item: FixedExpense | null } | null>(null);
   const [deleting, setDeleting] = useState<FixedExpense | null>(null);
   const [busy, setBusy] = useState(false);
@@ -140,6 +146,11 @@ export function FixedExpensesPage() {
                   <tr key={item.id} className="border-line border-t">
                     <th scope="row" className={`${td} text-left font-bold`}>
                       {item.name}
+                      {multiAccount ? (
+                        <span className="text-muted block text-xs font-semibold">
+                          Sale de {accountName(accounts, item.account_id)}
+                        </span>
+                      ) : null}
                     </th>
                     <td className={`${td} text-right font-extrabold tabular-nums`}>
                       {formatMoney(item.amount, settings.currency)}
@@ -179,6 +190,7 @@ export function FixedExpensesPage() {
         open={editing !== null}
         item={editing?.item ?? null}
         categories={categoryList.data ?? []}
+        accounts={accounts}
         onClose={() => setEditing(null)}
         onSaved={(message) => {
           showNotice(message);
