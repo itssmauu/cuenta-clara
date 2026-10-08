@@ -37,6 +37,7 @@ test("@screenshots capture the main screens", async ({ page }) => {
   await move.getByLabel("Nota (opcional)").fill("Ahorro de la semana");
   await move.getByRole("button", { name: "Mover dinero" }).click();
   await page.getByText("Ahorro de la semana").waitFor();
+  await page.getByText("Dinero movido entre tus cuentas.").waitFor({ state: "hidden" });
   await waitForSettled(page);
   await page.screenshot({ path: `${OUT}/cuentas.png`, fullPage: true });
   await page.goto("/dashboard");
@@ -48,6 +49,9 @@ test("@screenshots capture the main screens", async ({ page }) => {
   await dialog.getByRole("button", { name: "Guardar movimiento" }).click();
   await dialog.waitFor({ state: "hidden" });
   await page.getByText("Te pasaste por").first().waitFor();
+  // A clean shot: no toast and no chart tooltip under a leftover pointer
+  await page.getByText("Movimiento guardado.").waitFor({ state: "hidden" });
+  await page.mouse.move(0, 0);
   await waitForSettled(page);
   await page.screenshot({ path: `${OUT}/dashboard.png`, fullPage: true });
 
