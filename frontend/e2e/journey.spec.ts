@@ -132,19 +132,33 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
-  test("reports compare periods and export a CSV", async () => {
+  test("reports compare periods and download the report as CSV or PDF", async () => {
     await page.getByRole("link", { name: "Reportes" }).click();
     await expect(page.getByRole("heading", { name: /Este periodo frente a/ })).toBeVisible();
     await expectAccessible(page);
 
-    const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Descargar CSV" }).click();
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/^cuenta-clara-movimientos-.*.csv$/);
-    const csv = await (await download.createReadStream()).toArray();
-    const text = Buffer.concat(csv).toString("utf8");
-    expect(text).toContain("fecha,cuenta,tipo,monto,categoria,nota");
-    expect(text).toContain("Gastos del día,gasto,-25.00,Comida,Almuerzo");
+    async function download(name: string): Promise<{ filename: string; body: Buffer }> {
+      const downloadPromise = page.waitForEvent("download");
+      await page.getByRole("link", { name }).click();
+      const file = await downloadPromise;
+      const chunks = await (await file.createReadStream()).toArray();
+      return { filename: file.suggestedFilename(), body: Buffer.concat(chunks) };
+    }
+
+    // CSV: one-off movements AND the recurring items (the old export only had the former)
+    const csv = await download("Descargar CSV");
+    expect(csv.filename).toMatch(/^cuenta-clara-reporte-.*\.csv$/);
+    const text = csv.body.toString("utf8");
+    expect(text).toContain("fecha,cuenta,tipo,concepto,categoria,monto,nota");
+    expect(text).toContain("Gastos del día,Gasto,Almuerzo,Comida,-25.00,Almuerzo");
+    expect(text).toContain("Gastos del día,Gasto fijo,Pasaje,,-30.00,");
+    expect(text).toContain("Gastos del día,Ingreso fijo,Beca,,160.00,");
+
+    // PDF: the user picks the format before downloading
+    await page.getByRole("button", { name: "PDF · para leer o imprimir" }).click();
+    const pdf = await download("Descargar PDF");
+    expect(pdf.filename).toMatch(/^cuenta-clara-reporte-.*\.pdf$/);
+    expect(pdf.body.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   test("the forecast can use a trend estimate", async () => {
