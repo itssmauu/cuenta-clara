@@ -6,6 +6,7 @@ from app.api.deps import CurrentUser, DbSession
 from app.models import FixedExpense
 from app.schemas.finance import FixedExpenseIn, FixedExpenseOut
 from app.services import ownership
+from app.services.accounts import with_account
 from app.services.categories import ensure_usable
 
 router = APIRouter(prefix="/fixed-expenses", tags=["fixed expenses"])
@@ -20,7 +21,8 @@ def list_fixed_expenses(db: DbSession, user: CurrentUser) -> list[FixedExpenseOu
 @router.post("", response_model=FixedExpenseOut, status_code=status.HTTP_201_CREATED)
 def create_fixed_expense(body: FixedExpenseIn, db: DbSession, user: CurrentUser) -> FixedExpenseOut:
     ensure_usable(db, user, body.category_id)
-    expense = ownership.create_owned(db, FixedExpense, user, body.model_dump())
+    data = with_account(db, user, body.model_dump(), creating=True)
+    expense = ownership.create_owned(db, FixedExpense, user, data)
     return FixedExpenseOut.model_validate(expense)
 
 
@@ -35,7 +37,8 @@ def update_fixed_expense(
 ) -> FixedExpenseOut:
     expense = ownership.get_owned(db, FixedExpense, expense_id, user)
     ensure_usable(db, user, body.category_id)
-    return FixedExpenseOut.model_validate(ownership.update_owned(db, expense, body.model_dump()))
+    data = with_account(db, user, body.model_dump(), creating=False)
+    return FixedExpenseOut.model_validate(ownership.update_owned(db, expense, data))
 
 
 @router.delete("/{expense_id}", status_code=status.HTTP_204_NO_CONTENT)

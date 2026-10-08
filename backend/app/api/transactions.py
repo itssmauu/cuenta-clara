@@ -9,6 +9,7 @@ from app.models import Transaction, TransactionType
 from app.schemas.finance import TransactionIn, TransactionOut, TransactionPage
 from app.services import ownership
 from app.services import transactions as transaction_service
+from app.services.accounts import get_account, list_accounts, with_account
 from app.services.categories import ensure_usable, list_categories
 from app.services.export import transactions_csv
 
@@ -23,10 +24,15 @@ def list_transactions(
     date_to: Annotated[date | None, Query(alias="to")] = None,
     type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TransactionPage:
-    filters = transaction_service.TransactionFilters(date_from, date_to, type, category_id)
+    if account_id is not None:
+        get_account(db, user, account_id)  # 404 for someone else's account
+    filters = transaction_service.TransactionFilters(
+        date_from, date_to, type, category_id, account_id
+    )
     items, total = transaction_service.list_transactions(
         db, user, filters, limit=limit, offset=offset
     )
@@ -54,16 +60,22 @@ def export_transactions(
     date_to: Annotated[date | None, Query(alias="to")] = None,
     type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
+    account_id: uuid.UUID | None = None,
 ) -> Response:
     """The user's transactions matching the filters, as a CSV download."""
-    filters = transaction_service.TransactionFilters(date_from, date_to, type, category_id)
+    if account_id is not None:
+        get_account(db, user, account_id)
+    filters = transaction_service.TransactionFilters(
+        date_from, date_to, type, category_id, account_id
+    )
     items, _ = transaction_service.list_transactions(
         db, user, filters, limit=EXPORT_MAX_ROWS, offset=0
     )
     categories = {c.id: c for c in list_categories(db, user)}
+    accounts = {a.id: a.name for a in list_accounts(db, user)}
     filename = f"cuenta-clara-movimientos-{date.today().isoformat()}.csv"
     return Response(
-        content=transactions_csv(items, categories),
+        content=transactions_csv(items, categories, accounts),
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
@@ -72,7 +84,8 @@ def export_transactions(
 @router.post("", response_model=TransactionOut, status_code=status.HTTP_201_CREATED)
 def create_transaction(body: TransactionIn, db: DbSession, user: CurrentUser) -> TransactionOut:
     ensure_usable(db, user, body.category_id)
-    transaction = ownership.create_owned(db, Transaction, user, body.model_dump())
+    data = with_account(db, user, body.model_dump(), creating=True)
+    transaction = ownership.create_owned(db, Transaction, user, data)
     return TransactionOut.model_validate(transaction)
 
 
@@ -87,7 +100,8 @@ def update_transaction(
 ) -> TransactionOut:
     transaction = ownership.get_owned(db, Transaction, transaction_id, user)
     ensure_usable(db, user, body.category_id)
-    return TransactionOut.model_validate(ownership.update_owned(db, transaction, body.model_dump()))
+    data = with_account(db, user, body.model_dump(), creating=False)
+    return TransactionOut.model_validate(ownership.update_owned(db, transaction, data))
 
 
 @router.delete("/{transaction_id}", status_code=status.HTTP_204_NO_CONTENT)
