@@ -12,9 +12,9 @@ Proyecto personal de portafolio: backend en FastAPI, frontend en Next.js, Postgr
 | --- | --- | --- |
 | ![Landing](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Predicción de saldo por semana](docs/screenshots/prediccion.png) |
 
-| Metas de ahorro | Reportes | Móvil |
-| --- | --- | --- |
-| ![Metas de ahorro con progreso](docs/screenshots/metas.png) | ![Reportes: comparación y gasto por categoría](docs/screenshots/reportes.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
+| Cuentas | Metas de ahorro | Reportes | Móvil |
+| --- | --- | --- | --- |
+| ![Cuentas: gastos del día y ahorro, con el dinero movido entre ellas](docs/screenshots/cuentas.png) | ![Metas de ahorro con progreso](docs/screenshots/metas.png) | ![Reportes: comparación y gasto por categoría](docs/screenshots/reportes.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
 
 ## ¿Qué hace?
 
@@ -32,7 +32,9 @@ Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo in
 - **Ingresos y gastos fijos recurrentes**, que se suman y restan solos en sus fechas. Se pueden pausar sin borrarlos.
 - **Movimientos** sueltos con filtros por fecha, tipo y categoría.
 - **Predicción** del saldo para los próximos 4, 8 o 12 periodos.
-- **Configuración:** monto inicial, moneda, periodo, límite y categorías propias.
+- **Varias cuentas** (gastos del día, ahorro, fondos…) con su propio saldo. Solo un nombre: nunca números de cuenta.
+- **Mover dinero entre cuentas** sin que cuente como gasto. Dashboard, predicción y reportes por cuenta o de todas.
+- **Configuración:** moneda, periodo, límite y categorías propias.
 - **Metas de ahorro** con progreso y cuánto apartar por periodo para llegar a la fecha.
 - **Alerta al 80 % del límite** y **comparación con el periodo anterior** en el dashboard.
 - **Gasto por categoría** y **reportes** que comparan periodos.
@@ -131,6 +133,7 @@ cuenta-clara/
 - [x] **Fase 7:** resto de pantallas
 - [x] **Fase 8:** pulido, accesibilidad, E2E y documentación
 - [x] **Fase 9:** metas de ahorro, alertas al 80 % del límite, comparación con el periodo anterior, gasto por categoría, exportar a CSV y predicción con regresión lineal
+- [x] **Cuentas múltiples:** gastos, ahorro y fondos por separado, transferencias entre cuentas y metas que mueven dinero
 
 ## Calidad y pruebas
 
