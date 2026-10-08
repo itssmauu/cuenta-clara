@@ -17,6 +17,7 @@ import {
   financeApi,
   type AccountScope,
   type DashboardPeriod,
+  type ReportFormat,
   type TransactionType,
 } from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
@@ -63,6 +64,7 @@ export function ReportsPage() {
     financeApi.getDashboard(period, today, account),
   );
   const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
+  const [format, setFormat] = useState<ReportFormat>("csv");
   const [exportFilters, setExportFilters] = useState<{
     from: string;
     to: string;
@@ -194,13 +196,25 @@ export function ReportsPage() {
       >
         <div className="flex flex-col gap-1">
           <h2 id="export-title" className="font-display text-xl font-bold">
-            Exportar movimientos
+            Descargar reporte
           </h2>
           <p className="text-muted text-sm">
-            Descarga tus movimientos como CSV para abrirlos en Excel o Google Sheets. Deja las
-            fechas vacías para exportar todo.
+            Incluye tus movimientos, cada ingreso y gasto fijo en su fecha, y lo que moviste entre
+            cuentas{data?.account ? ` (cuenta ${data.account.name})` : ""}. Sin fechas, va desde que
+            empezaste a usar Cuenta Clara hasta hoy.
           </p>
         </div>
+        <SegmentedControl
+          label="Formato del reporte"
+          options={[
+            { value: "csv", label: "CSV · Excel" },
+            { value: "pdf", label: "PDF · para leer o imprimir" },
+          ]}
+          value={format}
+          onChange={setFormat}
+          layoutClass="grid grid-cols-2 self-start sm:flex"
+          optionClass="px-4 text-sm"
+        />
         <div className="grid gap-3 sm:grid-cols-[1fr_1fr_1fr_auto] sm:items-end">
           <TextField
             id="export-from"
@@ -230,18 +244,19 @@ export function ReportsPage() {
             ]}
           />
           <a
-            href={financeApi.exportUrl({
+            href={financeApi.reportUrl({
+              format,
               from: exportFilters.from || undefined,
               to: exportFilters.to || undefined,
               type: exportFilters.type || undefined,
-              // The CSV follows the account chosen above (all of them for "Todas")
-              account_id: account === "all" ? undefined : (data?.account?.id ?? undefined),
+              // Same account as the report above ("all" for every account)
+              account,
             })}
             download
             className={buttonClass("primary", "md", "min-h-12")}
           >
             <Download aria-hidden="true" className="size-4" />
-            Descargar CSV
+            {format === "pdf" ? "Descargar PDF" : "Descargar CSV"}
           </a>
         </div>
       </section>

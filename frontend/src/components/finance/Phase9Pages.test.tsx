@@ -179,7 +179,7 @@ describe("ReportsPage", () => {
     ).toEqual(["CATEGORÍAGASTADO", "Transporte$30.00", "Comida$25.00"]);
   });
 
-  it("builds the CSV link from the chosen filters", async () => {
+  it("builds the report link from the chosen filters, as CSV or PDF", async () => {
     const user = userEvent.setup();
     renderWithSession(<ReportsPage />);
 
@@ -188,7 +188,13 @@ describe("ReportsPage", () => {
 
     expect(screen.getByRole("link", { name: "Descargar CSV" })).toHaveAttribute(
       "href",
-      "/api/v1/transactions/export?from=2026-10-01&type=expense&account_id=a-main",
+      "/api/v1/reports/export?format=csv&from=2026-10-01&type=expense",
+    );
+
+    await user.click(screen.getByRole("button", { name: "PDF · para leer o imprimir" }));
+    expect(screen.getByRole("link", { name: "Descargar PDF" })).toHaveAttribute(
+      "href",
+      "/api/v1/reports/export?format=pdf&from=2026-10-01&type=expense",
     );
   });
 });

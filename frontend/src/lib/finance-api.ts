@@ -127,6 +127,8 @@ export type Forecast = {
 
 export type Estimator = "average" | "trend";
 
+export type ReportFormat = "csv" | "pdf";
+
 export type SavingsGoalInput = {
   name: string;
   target_amount: Money;
@@ -348,6 +350,18 @@ export const financeApi = {
     category_id?: string;
     account_id?: string;
   }) => `/api/v1/transactions/export${query(params)}`,
+
+  /**
+   * URL of the movements report: one-off movements, every occurrence of recurring
+   * incomes and fixed expenses, and transfers. Empty dates = since tracking began, until today.
+   */
+  reportUrl: (params: {
+    format: ReportFormat;
+    from?: string;
+    to?: string;
+    type?: TransactionType;
+    account?: AccountScope;
+  }) => `/api/v1/reports/export${query(params)}`,
 
   getDashboard: (period: DashboardPeriod, date: string, account?: AccountScope) =>
     request<Dashboard>(`/dashboard${query({ period, date, account })}`),
