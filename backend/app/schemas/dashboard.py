@@ -3,10 +3,21 @@ from datetime import date
 from decimal import Decimal
 from typing import Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
-from app.models import Frequency
+from app.models import AccountKind, Frequency
 from app.schemas.finance import TransactionOut
+
+
+class AccountRef(BaseModel):
+    """The single account a dashboard or forecast is about."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    id: uuid.UUID
+    name: str
+    kind: AccountKind
+    is_primary: bool
 
 
 class SeriesPoint(BaseModel):
@@ -33,6 +44,8 @@ class CategorySpendingOut(BaseModel):
 
 
 class DashboardOut(BaseModel):
+    # The account shown; null when the dashboard adds up all the user's accounts
+    account: AccountRef | None
     period: Frequency
     period_start: date
     period_end: date
@@ -46,6 +59,8 @@ class DashboardOut(BaseModel):
     fixed_expenses: Decimal
     variable_expenses: Decimal
     spent: Decimal
+    # Net money moved into (+) or out of (−) this account in the period: not income or spending
+    transfers: Decimal
     available_balance: Decimal
 
     # Spending limit converted to the selected period; null when the user has none
@@ -78,11 +93,13 @@ class ForecastPeriodOut(BaseModel):
     income: Decimal
     fixed_expenses: Decimal
     variable_spending: Decimal
+    transfers: Decimal
     closing_balance: Decimal
     is_current: bool
 
 
 class ForecastOut(BaseModel):
+    account: AccountRef | None
     period: Frequency
     currency: str
     # Mean variable spending per period, used for future periods
