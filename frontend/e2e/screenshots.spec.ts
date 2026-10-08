@@ -21,6 +21,25 @@ test("@screenshots capture the main screens", async ({ page }) => {
 
   await register(page, "Ana", uniqueEmail("screens"));
   await completeOnboarding(page);
+
+  // A savings account next to the day-to-day one, with money moved into it
+  await page.goto("/cuentas");
+  await page.getByRole("button", { name: "Nueva cuenta" }).click();
+  const account = page.getByRole("dialog", { name: "Nueva cuenta" });
+  await account.getByLabel("Nombre").fill("Ahorro");
+  await account.getByLabel("¿Para qué la usas?").selectOption("savings");
+  await account.getByLabel(/¿Cuánto tenía/).fill("400");
+  await account.getByRole("button", { name: "Guardar cuenta" }).click();
+  await page.getByRole("article", { name: "Ahorro" }).waitFor();
+  await page.getByRole("button", { name: "Mover dinero" }).first().click();
+  const move = page.getByRole("dialog", { name: "Mover dinero entre cuentas" });
+  await move.getByLabel("Monto").fill("50");
+  await move.getByLabel("Nota (opcional)").fill("Ahorro de la semana");
+  await move.getByRole("button", { name: "Mover dinero" }).click();
+  await page.getByText("Ahorro de la semana").waitFor();
+  await waitForSettled(page);
+  await page.screenshot({ path: `${OUT}/cuentas.png`, fullPage: true });
+  await page.goto("/dashboard");
   await page.getByRole("button", { name: "Añadir movimiento" }).click();
   const dialog = page.getByRole("dialog", { name: "Añadir movimiento" });
   await dialog.getByLabel("Monto").fill("25");
@@ -29,6 +48,7 @@ test("@screenshots capture the main screens", async ({ page }) => {
   await dialog.getByRole("button", { name: "Guardar movimiento" }).click();
   await dialog.waitFor({ state: "hidden" });
   await page.getByText("Te pasaste por").first().waitFor();
+  await waitForSettled(page);
   await page.screenshot({ path: `${OUT}/dashboard.png`, fullPage: true });
 
   await page.getByRole("link", { name: "Predicción" }).click();

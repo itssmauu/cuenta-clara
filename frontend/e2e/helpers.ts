@@ -57,7 +57,8 @@ export async function register(page: Page, name: string, email: string) {
 /** The spec example: $100, weekly bus fare $30, weekly grant $160, $40 limit. */
 export async function completeOnboarding(page: Page) {
   await expect(page).toHaveURL(/\/onboarding$/);
-  await page.getByLabel("¿Con cuánto dinero cuentas hoy?").fill("100");
+  // One day-to-day account holding $100
+  await page.getByRole("group", { name: "Cuenta 1" }).getByLabel("¿Cuánto tiene hoy?").fill("100");
   await page.getByRole("button", { name: "Continuar" }).click();
 
   await page.getByLabel("Nombre").fill("Pasaje");
