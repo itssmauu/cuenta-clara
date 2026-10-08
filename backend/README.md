@@ -73,7 +73,11 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`; paginación `limit` (≤ 100) y `offset` |
 | `GET` / `PUT` / `DELETE` | `/api/v1/transactions/{id}` | |
 | `GET` | `/api/v1/dashboard` | Saldo, ingresos y gastos del periodo, límite, serie de 6 periodos, próximos gastos fijos y últimos movimientos. Parámetros: `period` (`daily`/`weekly`/`biweekly`/`monthly`) y `date` |
-| `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period` y `date` |
+| `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period`, `date` y `estimator` (`average` o `trend`) |
+| `GET` / `POST` | `/api/v1/savings-goals` | Metas de ahorro con progreso y plan por periodo (`?date=` para el plan) |
+| `PUT` / `DELETE` | `/api/v1/savings-goals/{id}` | |
+| `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0 |
+| `GET` | `/api/v1/transactions/export` | CSV de movimientos con los mismos filtros que la lista |
 
 Todas las rutas de datos requieren sesión y solo ven los datos del usuario autenticado. Un recurso ajeno responde `404`.
 

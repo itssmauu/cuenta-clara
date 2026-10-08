@@ -19,7 +19,8 @@ import { periodRange, periodTick, PERIOD_ADJECTIVE } from "@/components/dashboar
 import { niceScale } from "@/components/dashboard/SpendingChart";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
-import { financeApi, type DashboardPeriod, type Forecast } from "@/lib/finance-api";
+import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { financeApi, type DashboardPeriod, type Estimator, type Forecast } from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
@@ -27,6 +28,11 @@ import { useResource } from "@/lib/use-resource";
 import { td, th } from "./RowActions";
 
 const HORIZONS = [4, 8, 12];
+
+const ESTIMATORS = [
+  { value: "average", label: "Promedio" },
+  { value: "trend", label: "Tendencia" },
+] as const satisfies readonly { value: Estimator; label: string }[];
 
 const COLOR = {
   line: "var(--color-primary)",
@@ -133,9 +139,11 @@ export function ForecastPage() {
   const [horizon, setHorizon] = useState(4);
   // undefined = the user's own income period (may be a custom length)
   const [period, setPeriod] = useState<DashboardPeriod | undefined>(undefined);
+  const [estimator, setEstimator] = useState<Estimator>("average");
 
-  const [forecast, reload] = useResource(`forecast:${horizon}:${period ?? "user"}:${today}`, () =>
-    financeApi.getForecast(horizon, period, today),
+  const [forecast, reload] = useResource(
+    `forecast:${horizon}:${period ?? "user"}:${estimator}:${today}`,
+    () => financeApi.getForecast(horizon, period, today, estimator),
   );
   const data = forecast.data;
   const money = (value: string) => formatMoney(value, data?.currency ?? settings.currency);
@@ -150,45 +158,31 @@ export function ForecastPage() {
         subtitle="Tu saldo proyectado para los próximos periodos"
         actions={
           <>
-            <div
-              role="group"
-              aria-label="Periodo"
-              className="grid w-full grid-cols-4 gap-1 rounded-full bg-white p-1 sm:flex sm:w-auto"
-            >
-              {PERIOD_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  type="button"
-                  aria-pressed={activePeriod === option}
-                  onClick={() => setPeriod(option)}
-                  className={`min-h-11 cursor-pointer rounded-full px-1 text-[13px] font-bold transition-colors duration-200 sm:px-4 sm:text-sm ${
-                    activePeriod === option ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {FREQUENCY_LABELS[option]}
-                </button>
-              ))}
-            </div>
-            <div
-              role="group"
-              aria-label="Cuántos periodos"
-              className="flex gap-1 rounded-full bg-white p-1"
-            >
-              {HORIZONS.map((n) => (
-                <button
-                  key={n}
-                  type="button"
-                  aria-label={`${n} periodos`}
-                  aria-pressed={horizon === n}
-                  onClick={() => setHorizon(n)}
-                  className={`min-h-11 min-w-11 cursor-pointer rounded-full px-3 text-sm font-bold transition-colors duration-200 ${
-                    horizon === n ? "bg-ink text-white" : "hover:bg-ink/5"
-                  }`}
-                >
-                  {n}
-                </button>
-              ))}
-            </div>
+            <SegmentedControl
+              label="Periodo"
+              options={PERIOD_OPTIONS.map((option) => ({
+                value: option,
+                label: FREQUENCY_LABELS[option],
+              }))}
+              // A custom period has no button: then nothing looks selected
+              value={PERIOD_OPTIONS.find((option) => option === activePeriod)}
+              onChange={setPeriod}
+              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
+            />
+            <SegmentedControl
+              label="Cuántos periodos"
+              options={HORIZONS.map((n) => ({ value: n, label: n, ariaLabel: `${n} periodos` }))}
+              value={horizon}
+              onChange={setHorizon}
+              optionClass="px-3 text-sm"
+            />
+            <SegmentedControl
+              label="Cómo estimar el gasto"
+              options={ESTIMATORS}
+              value={estimator}
+              onChange={setEstimator}
+            />
           </>
         }
       />
@@ -229,10 +223,9 @@ export function ForecastPage() {
               <h2 className="font-display text-base font-bold">Cómo se calcula</h2>
               <p className="text-on-tint text-sm leading-relaxed">
                 El periodo actual usa tus datos reales. Los siguientes suman tus ingresos
-                recurrentes, restan tus gastos fijos y un gasto variable estimado de{" "}
-                <strong className="text-ink">{money(data.average_variable_spending)}</strong> por
-                periodo (tu promedio reciente).
+                recurrentes y restan tus gastos fijos y un gasto variable estimado.
               </p>
+              <EstimatorExplanation forecast={data} requested={estimator} money={money} />
               {firstNegative ? (
                 <p className="text-ink mt-1 flex items-start gap-2 text-sm font-bold">
                   <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
@@ -334,5 +327,44 @@ export function ForecastPage() {
         </div>
       )}
     </>
+  );
+}
+
+/** Says which estimate was used and, for the trend, what the regression found. */
+function EstimatorExplanation({
+  forecast,
+  requested,
+  money,
+}: {
+  forecast: Forecast;
+  requested: Estimator;
+  money: (value: string) => string;
+}) {
+  if (forecast.estimator === "trend" && forecast.trend_per_period !== null) {
+    const slope = Number(forecast.trend_per_period);
+    const direction = slope > 0 ? "sube" : slope < 0 ? "baja" : "se mantiene";
+    return (
+      <p className="text-on-tint text-sm leading-relaxed">
+        <strong className="text-ink">Tendencia:</strong> una regresión lineal sobre tus últimos{" "}
+        {forecast.history_points} periodos completos indica que tu gasto variable {direction}
+        {slope !== 0 ? (
+          <>
+            {" "}
+            <strong className="text-ink">{money(Math.abs(slope).toFixed(2))}</strong> por periodo
+          </>
+        ) : null}
+        . Qué tan bien explica la línea tu historial (R²):{" "}
+        <strong className="text-ink">{forecast.trend_r_squared}</strong> de 1.
+      </p>
+    );
+  }
+  return (
+    <p className="text-on-tint text-sm leading-relaxed">
+      <strong className="text-ink">Promedio:</strong> gasto variable estimado de{" "}
+      <strong className="text-ink">{money(forecast.average_variable_spending)}</strong> por periodo.
+      {requested === "trend"
+        ? ` Para estimar una tendencia hacen falta al menos 3 periodos completos (tienes ${forecast.history_points}), así que por ahora usamos el promedio.`
+        : null}
+    </p>
   );
 }

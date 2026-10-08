@@ -6,6 +6,7 @@ from fastapi import APIRouter, Query
 from app.api.deps import CurrentUser, DbSession
 from app.models import Frequency
 from app.schemas.dashboard import (
+    CategorySpendingOut,
     DashboardOut,
     ForecastOut,
     ForecastPeriodOut,
@@ -15,6 +16,7 @@ from app.schemas.dashboard import (
 from app.schemas.finance import TransactionOut
 from app.services import dashboard as dashboard_service
 from app.services import projections
+from app.services.categories import list_categories
 from app.services.periods import Cadence
 
 router = APIRouter(tags=["dashboard"])
@@ -56,6 +58,12 @@ def get_dashboard(
         limit_remaining=result.limit_remaining,
         limit_used_percent=result.limit_used_percent,
         over_limit=result.over_limit,
+        limit_status=result.limit_status,
+        previous_period_start=result.previous_period.start,
+        previous_period_end=result.previous_period.end,
+        previous_income=result.previous_totals.income,
+        previous_spent=result.previous_totals.spent,
+        spending_by_category=_by_category(db, user, result.by_category),
         series=[
             SeriesPoint(
                 period_start=point.period.start,
@@ -84,6 +92,24 @@ def get_dashboard(
     )
 
 
+def _by_category(
+    db: DbSession, user: CurrentUser, rows: list[projections.CategorySpending]
+) -> list[CategorySpendingOut]:
+    names = {c.id: c for c in list_categories(db, user)}
+    out = []
+    for row in rows:
+        category = names.get(row.category_id) if row.category_id else None
+        out.append(
+            CategorySpendingOut(
+                category_id=row.category_id,
+                name=category.name if category else "Sin categoría",
+                color=category.color if category else None,
+                amount=row.amount,
+            )
+        )
+    return out
+
+
 @router.get("/forecast", response_model=ForecastOut)
 def get_forecast(
     db: DbSession,
@@ -91,17 +117,25 @@ def get_forecast(
     periods: Annotated[int, Query(ge=1, le=12)] = 4,
     period: PeriodParam = None,
     reference_date: DateParam = None,
+    estimator: Annotated[
+        Literal["average", "trend"],
+        Query(description="average = recent mean; trend = linear regression on history"),
+    ] = "average",
 ) -> ForecastOut:
     data, settings = dashboard_service.load_finance_data(db, user)
     cadence = _cadence(period, data.limit_cadence)
-    average, rows = projections.build_forecast(
-        data, cadence, reference_date or date.today(), periods
+    forecast = projections.build_forecast(
+        data, cadence, reference_date or date.today(), periods, estimator=estimator
     )
 
     return ForecastOut(
         period=cadence.frequency,
         currency=settings.currency,
-        average_variable_spending=average,
+        average_variable_spending=forecast.average,
+        estimator=forecast.estimator,
+        trend_per_period=forecast.trend_per_period,
+        trend_r_squared=forecast.trend_r_squared,
+        history_points=forecast.history_points,
         periods=[
             ForecastPeriodOut(
                 period_start=row.period.start,
@@ -113,6 +147,6 @@ def get_forecast(
                 closing_balance=row.closing_balance,
                 is_current=row.is_current,
             )
-            for row in rows
+            for row in forecast.periods
         ],
     )

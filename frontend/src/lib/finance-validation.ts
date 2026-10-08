@@ -172,3 +172,23 @@ export type IncomeForm = z.input<typeof incomeSchema>;
 export type IncomeValues = z.output<typeof incomeSchema>;
 export type TransactionForm = z.input<typeof transactionSchema>;
 export type TransactionValues = z.output<typeof transactionSchema>;
+
+export const goalSchema = z.object({
+  name: z.string().trim().min(1, { error: "Escribe un nombre para la meta." }).max(100),
+  target_amount: money({ allowZero: false }),
+  saved_amount: money({ allowZero: true }),
+  // Empty = no deadline
+  due_date: z.union([z.literal(""), isoDate]).transform((value) => value || null),
+});
+
+export const contributionSchema = z
+  .object({
+    direction: z.enum(["deposit", "withdraw"]),
+    amount: money({ allowZero: false }),
+  })
+  // The API takes a signed amount: negative means taking money out of the goal
+  .transform(({ direction, amount }) => (direction === "withdraw" ? `-${amount}` : amount));
+
+export type GoalForm = z.input<typeof goalSchema>;
+export type GoalValues = z.output<typeof goalSchema>;
+export type ContributionForm = z.input<typeof contributionSchema>;

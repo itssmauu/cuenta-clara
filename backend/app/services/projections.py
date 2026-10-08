@@ -16,8 +16,11 @@ from decimal import ROUND_HALF_UP, Decimal
 
 from app.models import Frequency
 from app.services.periods import Cadence, Period, recurring_dates
+from app.services.trend import MIN_POINTS, fit_line
 
 ZERO = Decimal("0.00")
+# Warn the user once they have used this share of the period's spending limit
+WARNING_PERCENT = 80
 CENT = Decimal("0.01")
 
 
@@ -61,6 +64,7 @@ class OneOff:
     on: date
     amount: Decimal
     is_income: bool
+    category_id: uuid.UUID | None = None
 
 
 @dataclass(frozen=True)
@@ -108,6 +112,30 @@ def totals(data: FinanceData, window: Period) -> Totals:
     return Totals(money(income), money(fixed), money(variable))
 
 
+@dataclass(frozen=True)
+class CategorySpending:
+    category_id: uuid.UUID | None  # None = uncategorized
+    amount: Decimal
+
+
+def spending_by_category(data: FinanceData, window: Period) -> list[CategorySpending]:
+    """Fixed and variable spending in `window`, grouped by category, largest first."""
+    tracked = window.clip_start(data.balance_as_of)
+    if tracked is None:
+        return []
+    amounts: dict[uuid.UUID | None, Decimal] = {}
+    for expense in data.fixed_expenses:
+        spent = expense.total_in(tracked)
+        if spent:
+            amounts[expense.category_id] = amounts.get(expense.category_id, ZERO) + spent
+    for t in data.transactions:
+        if not t.is_income and t.on in tracked:
+            amounts[t.category_id] = amounts.get(t.category_id, ZERO) + t.amount
+    result = [CategorySpending(cid, money(amount)) for cid, amount in amounts.items()]
+    # Largest first; on a tie, named categories before "uncategorized"
+    return sorted(result, key=lambda c: (-c.amount, c.category_id is None))
+
+
 def balance_at_end_of(data: FinanceData, day: date) -> Decimal:
     """Balance after everything that happened up to and including `day`."""
     if day < data.balance_as_of:
@@ -153,6 +181,9 @@ class Dashboard:
     limit: Decimal | None
     series: list[PeriodSpending]
     upcoming: list[UpcomingExpense]
+    previous_period: Period
+    previous_totals: Totals
+    by_category: list[CategorySpending]
 
     @property
     def limit_remaining(self) -> Decimal | None:
@@ -168,6 +199,16 @@ class Dashboard:
             return None
         percent = self.totals.spent * 100 / self.limit
         return int(percent.quantize(Decimal(1), rounding=ROUND_HALF_UP))
+
+    @property
+    def limit_status(self) -> str:
+        """none (no limit) · ok · warning (80 % or more used) · over (went past it)."""
+        percent = self.limit_used_percent
+        if self.limit is None or percent is None:
+            return "none"
+        if self.over_limit:
+            return "over"
+        return "warning" if percent >= WARNING_PERCENT else "ok"
 
 
 def build_dashboard(
@@ -188,6 +229,7 @@ def build_dashboard(
     while len(periods) < history:
         periods.insert(0, cadence.previous(periods[0]))
     series = [PeriodSpending(p, totals(data, p).spent, limit) for p in periods]
+    previous = cadence.previous(current)
 
     return Dashboard(
         period=current,
@@ -197,6 +239,9 @@ def build_dashboard(
         limit=limit,
         series=series,
         upcoming=next_fixed_expenses(data, today, upcoming_limit),
+        previous_period=previous,
+        previous_totals=totals(data, previous),
+        by_category=spending_by_category(data, current),
     )
 
 
@@ -232,6 +277,18 @@ class ForecastPeriod:
         )
 
 
+def variable_spending_history(
+    data: FinanceData, cadence: Cadence, current: Period, *, max_periods: int
+) -> list[Decimal]:
+    """Variable spending of the last fully tracked periods, oldest first."""
+    samples: list[Decimal] = []
+    period = cadence.previous(current)
+    while len(samples) < max_periods and period.start >= data.balance_as_of:
+        samples.insert(0, totals(data, period).variable_expenses)
+        period = cadence.previous(period)
+    return samples
+
+
 def average_variable_spending(
     data: FinanceData, cadence: Cadence, current: Period, *, max_periods: int = 6
 ) -> Decimal:
@@ -240,22 +297,45 @@ def average_variable_spending(
     Without any complete period yet (a brand-new user), the current period's spending
     so far is the best estimate available.
     """
-    samples: list[Decimal] = []
-    period = cadence.previous(current)
-    while len(samples) < max_periods and period.start >= data.balance_as_of:
-        samples.append(totals(data, period).variable_expenses)
-        period = cadence.previous(period)
+    samples = variable_spending_history(data, cadence, current, max_periods=max_periods)
     if not samples:
         return totals(data, current).variable_expenses
     return money(sum(samples, ZERO) / len(samples))
 
 
+@dataclass(frozen=True)
+class Forecast:
+    periods: list[ForecastPeriod]
+    average: Decimal
+    # "average" or "trend"; trend falls back to average with too little history
+    estimator: str
+    # Change in variable spending per period found by the regression (trend only)
+    trend_per_period: Decimal | None = None
+    trend_r_squared: Decimal | None = None
+    history_points: int = 0
+
+
+TREND_HISTORY = 8
+
+
 def build_forecast(
-    data: FinanceData, cadence: Cadence, today: date, periods: int
-) -> tuple[Decimal, list[ForecastPeriod]]:
-    """Projected balance for `periods` periods, starting with the current one."""
+    data: FinanceData, cadence: Cadence, today: date, periods: int, *, estimator: str = "average"
+) -> Forecast:
+    """Projected balance for `periods` periods, starting with the current one.
+
+    Future variable spending is either the recent average or, with estimator="trend",
+    a least-squares line fitted to the last periods (see trend.py), never below zero.
+    """
     current = cadence.containing(today)
     average = average_variable_spending(data, cadence, current)
+    history = variable_spending_history(data, cadence, current, max_periods=TREND_HISTORY)
+    fit = fit_line(history) if estimator == "trend" and len(history) >= MIN_POINTS else None
+
+    def estimate(index: int) -> Decimal:
+        if fit is None:
+            return average
+        # The history covers x = 0 … n-1, so the current period is x = n
+        return money(max(fit.predict(len(history) + index), ZERO))
 
     forecast: list[ForecastPeriod] = []
     period = current
@@ -268,10 +348,17 @@ def build_forecast(
             opening_balance=opening,
             income=period_totals.income,
             fixed_expenses=period_totals.fixed_expenses,
-            variable_spending=period_totals.variable_expenses if is_current else average,
+            variable_spending=period_totals.variable_expenses if is_current else estimate(index),
             is_current=is_current,
         )
         forecast.append(row)
         opening = row.closing_balance
         period = cadence.next(period)
-    return average, forecast
+    return Forecast(
+        periods=forecast,
+        average=average,
+        estimator="trend" if fit else "average",
+        trend_per_period=money(fit.slope) if fit else None,
+        trend_r_squared=fit.r_squared.quantize(CENT) if fit else None,
+        history_points=len(history),
+    )

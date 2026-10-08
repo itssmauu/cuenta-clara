@@ -59,6 +59,84 @@
   --radius-field: 14px;
   --radius-card: 28px;
   --radius-panel: 36px;
+
+  /*
+   * Motion. The built-in curves are too weak: entrances use a strong ease-out,
+   * things that move across the screen a strong ease-in-out. App UI stays under
+   * 300ms (it is used every day); only the landing takes longer.
+   */
+  --ease-out-strong: cubic-bezier(0.23, 1, 0.32, 1);
+  --ease-in-out-strong: cubic-bezier(0.77, 0, 0.175, 1);
+  --animate-fade-up: fade-up 800ms var(--ease-out-strong) both;
+  --animate-rise-in: rise-in 300ms var(--ease-out-strong) both;
+  --animate-value-in: value-in 280ms var(--ease-out-strong) both;
+  --animate-float: float 7s ease-in-out infinite;
+
+  @keyframes fade-up {
+    from {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+  }
+
+  /* Hero headline: fades and sharpens into place */
+  @keyframes blur-up {
+    from {
+      opacity: 0;
+      filter: blur(8px);
+      transform: translateY(16px);
+    }
+  }
+
+  /* App content arriving after its skeleton: short and close */
+  @keyframes rise-in {
+    from {
+      opacity: 0;
+      transform: translateY(6px);
+    }
+  }
+
+  /* A figure that changed (another period): a brief blur bridges old and new */
+  @keyframes value-in {
+    from {
+      opacity: 0;
+      filter: blur(3px);
+      transform: translateY(3px);
+    }
+  }
+
+  @keyframes float {
+    50% {
+      transform: translateY(-10px);
+    }
+  }
+
+  /* A check that pops in when a password rule is met */
+  @keyframes pop {
+    from {
+      opacity: 0;
+      scale: 0.5;
+    }
+  }
+
+  /* A short "no" shake for a failed sign-in */
+  @keyframes shake {
+    20%,
+    60% {
+      translate: -4px 0;
+    }
+    40%,
+    80% {
+      translate: 4px 0;
+    }
+  }
+}
+
+/* Integer that CSS itself can count up (no JavaScript, so it works on server pages) */
+@property --count {
+  syntax: "<integer>";
+  inherits: false;
+  initial-value: 0;
 }
 
 @layer base {
@@ -89,6 +167,321 @@
     *::after {
       animation-duration: 0.01ms !important;
       transition-duration: 0.01ms !important;
+    }
+  }
+}
+
+/*
+ * Landing scroll reveal (ScrollReveal.tsx). The script marks as "hidden" only the
+ * [data-reveal] blocks still below the fold, so without JavaScript, with reduced
+ * motion or for content already on screen nothing is ever hidden. The hidden state
+ * has no transition: hiding is instant and off screen, only the reveal animates.
+ */
+@layer components {
+  [data-reveal="hidden"] {
+    opacity: 0;
+    transform: translateY(32px);
+  }
+
+  [data-reveal="shown"] {
+    transition:
+      opacity 800ms var(--ease-out-strong),
+      transform 800ms var(--ease-out-strong);
+  }
+
+  /* Bars grow from their baseline; clip-path keeps the rounded ends undistorted */
+  [data-reveal="hidden"] .reveal-grow-y {
+    clip-path: inset(100% 0 0 0);
+  }
+
+  [data-reveal="hidden"] .reveal-grow-x {
+    clip-path: inset(0 100% 0 0);
+  }
+
+  /* Progress rings: the stroke draws up to --ring-offset (of 100) */
+  .reveal-ring {
+    stroke-dasharray: 100;
+    stroke-dashoffset: var(--ring-offset);
+  }
+
+  [data-reveal="hidden"] .reveal-ring {
+    stroke-dashoffset: 100;
+  }
+
+  [data-reveal="shown"] .reveal-ring {
+    transition: stroke-dashoffset 1200ms var(--ease-out-strong) 200ms;
+  }
+
+  /* Small messages that pop in once the demo has played */
+  [data-reveal="hidden"] .reveal-pop {
+    opacity: 0;
+    transform: translateY(8px) scale(0.92);
+  }
+
+  [data-reveal="shown"] .reveal-pop {
+    transition:
+      opacity 400ms var(--ease-out-strong),
+      transform 500ms var(--ease-out-strong);
+  }
+
+  /* Feature band: two identical lists slide by half the track for a seamless loop */
+  @media (prefers-reduced-motion: no-preference) {
+    .marquee-track {
+      animation: marquee 45s linear infinite;
+    }
+
+    .marquee:is(:hover, :focus-within, [data-paused]) .marquee-track {
+      animation-play-state: paused;
+    }
+  }
+
+  @keyframes marquee {
+    to {
+      transform: translateX(-50%);
+    }
+  }
+
+  /* Without motion it is one static, wrapped list: see the motion-reduce: classes in Marquee.tsx */
+
+  /* Rows and labels slide in from the left */
+  [data-reveal="hidden"] .reveal-slide-x {
+    opacity: 0;
+    transform: translateX(-24px);
+  }
+
+  /* An explicit end value: clip-path cannot interpolate from inset() to none */
+  [data-reveal="shown"] :is(.reveal-grow-y, .reveal-grow-x) {
+    clip-path: inset(0);
+  }
+
+  [data-reveal="shown"] :is(.reveal-grow-y, .reveal-grow-x, .reveal-slide-x) {
+    transition:
+      clip-path 900ms var(--ease-out-strong),
+      opacity 600ms var(--ease-out-strong),
+      transform 700ms var(--ease-out-strong);
+  }
+
+  @media print {
+    [data-reveal] {
+      opacity: 1 !important;
+      transform: none !important;
+    }
+  }
+}
+
+/* App motion: toasts, dialogs, staggered content and meters */
+@layer components {
+  /* Toast: rises from the bottom edge and leaves the same way, faster than it came */
+  .toast {
+    transition:
+      transform 400ms var(--ease-out-strong),
+      opacity 400ms var(--ease-out-strong);
+  }
+
+  .toast[data-leaving] {
+    opacity: 0;
+    transform: translateY(100%);
+    transition-duration: 200ms;
+  }
+
+  @starting-style {
+    .toast {
+      opacity: 0;
+      transform: translateY(100%);
+    }
+  }
+
+  /* Dialogs: modals are not anchored to a trigger, so they scale from the center */
+  .app-dialog {
+    transition:
+      opacity 220ms var(--ease-out-strong),
+      transform 220ms var(--ease-out-strong),
+      overlay 220ms allow-discrete,
+      display 220ms allow-discrete;
+  }
+
+  .app-dialog:not([open]) {
+    opacity: 0;
+    transform: scale(0.96);
+    transition-duration: 150ms;
+  }
+
+  .app-dialog::backdrop {
+    background-color: color-mix(in srgb, var(--color-ink) 60%, transparent);
+    transition:
+      background-color 220ms var(--ease-out-strong),
+      overlay 220ms allow-discrete,
+      display 220ms allow-discrete;
+  }
+
+  .app-dialog:not([open])::backdrop {
+    background-color: transparent;
+  }
+
+  @starting-style {
+    .app-dialog[open] {
+      opacity: 0;
+      transform: scale(0.96);
+    }
+
+    .app-dialog[open]::backdrop {
+      background-color: transparent;
+    }
+  }
+
+  /* Content that replaces a skeleton: children arrive 50ms apart */
+  .stagger-in > * {
+    animation: var(--animate-rise-in);
+  }
+
+  .stagger-in > :nth-child(2) {
+    animation-delay: 50ms;
+  }
+
+  .stagger-in > :nth-child(3) {
+    animation-delay: 100ms;
+  }
+
+  .stagger-in > :nth-child(4) {
+    animation-delay: 150ms;
+  }
+
+  .stagger-in > :nth-child(n + 5) {
+    animation-delay: 200ms;
+  }
+
+  /* Meter fills: grow from the start the first time, glide on later changes */
+  .meter-fill {
+    transition: clip-path 700ms var(--ease-out-strong);
+  }
+
+  @starting-style {
+    .meter-fill {
+      clip-path: inset(0 100% 0 0 round 999px);
+    }
+  }
+
+  /* Segmented controls: the active pill slides between options */
+  .segmented-overlay[data-ready] {
+    transition: clip-path 260ms var(--ease-out-strong);
+  }
+
+  /* Sidebar: the active background slides to the new page */
+  .nav-indicator[data-ready] {
+    transition:
+      transform 260ms var(--ease-out-strong),
+      opacity 150ms ease;
+  }
+}
+
+/* Sign-in panel: an illustrative projection that draws itself and keeps breathing */
+@layer components {
+  /* Counts from 0 to --to (set per element with a class such as [--to:490]) */
+  .count-up {
+    counter-reset: count var(--count);
+    animation: count-up 1600ms var(--ease-out-strong) 400ms both;
+  }
+
+  .count-up::after {
+    content: counter(count);
+  }
+
+  @keyframes count-up {
+    to {
+      --count: var(--to);
+    }
+  }
+
+  /* The chart is revealed left to right, like a line being drawn */
+  .chart-draw {
+    animation: chart-draw 1600ms var(--ease-in-out-strong) 200ms both;
+  }
+
+  @keyframes chart-draw {
+    from {
+      clip-path: inset(0 100% 0 0);
+    }
+    to {
+      clip-path: inset(0 0 0 0);
+    }
+  }
+
+  /* Background bars of the sign-in panel: rise in a wave from the left */
+  .live-bar {
+    transform-origin: bottom;
+    animation: bar-grow 1100ms var(--ease-out-strong) var(--d) both;
+  }
+
+  @keyframes bar-grow {
+    from {
+      transform: scaleY(0);
+    }
+  }
+
+  /* Tabs between sign-in and sign-up: the active pill slides across */
+  .auth-tabs-overlay {
+    transition: clip-path 320ms var(--ease-out-strong);
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* The prediction band widens and narrows: the future is an estimate, not a fact */
+    .band-breathe {
+      transform-origin: 50% 50%;
+      transform-box: fill-box;
+      animation: band-breathe 4s ease-in-out infinite;
+    }
+
+    @keyframes band-breathe {
+      50% {
+        opacity: 0.55;
+        transform: scaleY(1.12);
+      }
+    }
+
+    /* "Today" pulses like a live marker */
+    .pulse-ring {
+      transform-origin: center;
+      transform-box: fill-box;
+      animation: pulse-ring 2.4s var(--ease-out-strong) infinite;
+    }
+
+    @keyframes pulse-ring {
+      from {
+        opacity: 0.7;
+        transform: scale(1);
+      }
+      to {
+        opacity: 0;
+        transform: scale(3.2);
+      }
+    }
+
+    /* ...then keep moving like live data (scale composes with the transform above) */
+    .live-bar {
+      animation:
+        bar-grow 1100ms var(--ease-out-strong) var(--d) both,
+        bar-breathe 4.5s ease-in-out calc(var(--d) + 1200ms) infinite alternate;
+    }
+
+    @keyframes bar-breathe {
+      to {
+        scale: 1 0.78;
+      }
+    }
+
+    .float-slow {
+      animation: float 6s ease-in-out infinite;
+    }
+
+    .float-slower {
+      animation: float 8s ease-in-out 1.2s infinite;
+    }
+  }
+
+  /* Without motion, the travelling dot is simply not there */
+  @media (prefers-reduced-motion: reduce) {
+    .motion-only {
+      display: none;
     }
   }
 }

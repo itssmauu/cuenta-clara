@@ -32,3 +32,12 @@ export function todayISO(now: Date = new Date()): string {
   const pad = (n: number) => String(n).padStart(2, "0");
   return `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
 }
+
+function toCents(value: string): number {
+  return Math.round(Number(value) * 100);
+}
+
+/** a − b for money strings, exact to the cent ("55.00" − "40.00" → "15.00"). */
+export function subtractMoney(a: string, b: string): string {
+  return ((toCents(a) - toCents(b)) / 100).toFixed(2);
+}

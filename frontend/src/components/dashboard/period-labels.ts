@@ -26,6 +26,15 @@ export const CURRENT_PERIOD_NAME: Record<DashboardPeriod, string> = {
   monthly: "este mes",
 };
 
+/** "la semana anterior", used in comparisons */
+export const PREVIOUS_PERIOD_NAME: Record<Frequency, string> = {
+  daily: "ayer",
+  weekly: "la semana anterior",
+  biweekly: "la quincena anterior",
+  monthly: "el mes anterior",
+  custom: "el periodo anterior",
+};
+
 export const PERIOD_ADJECTIVE: Record<Frequency, string> = {
   daily: "diario",
   weekly: "semanal",

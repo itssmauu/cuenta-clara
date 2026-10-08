@@ -30,3 +30,10 @@ class ConflictError(DomainError):
 class InvalidReferenceError(DomainError):
     status_code = 422
     message = "El registro relacionado no existe."
+
+
+class BusinessRuleError(DomainError):
+    """A valid request that breaks a rule of the domain (e.g. withdrawing more than saved)."""
+
+    status_code = 422
+    message = "La operación no está permitida."

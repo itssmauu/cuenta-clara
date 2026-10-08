@@ -77,7 +77,30 @@ export type Forecast = {
   period: Frequency;
   currency: string;
   average_variable_spending: Money;
+  estimator: Estimator;
+  trend_per_period: Money | null;
+  trend_r_squared: string | null;
+  history_points: number;
   periods: ForecastPeriod[];
+};
+
+export type Estimator = "average" | "trend";
+
+export type SavingsGoalInput = {
+  name: string;
+  target_amount: Money;
+  saved_amount: Money;
+  due_date: string | null;
+};
+
+export type SavingsGoal = SavingsGoalInput & {
+  id: string;
+  remaining: Money;
+  progress_percent: number;
+  completed: boolean;
+  overdue: boolean;
+  periods_left: number | null;
+  suggested_per_period: Money | null;
 };
 
 export type TransactionPage = {
@@ -103,6 +126,15 @@ export type UpcomingFixedExpense = {
   category_id: string | null;
 };
 
+export type LimitStatus = "none" | "ok" | "warning" | "over";
+
+export type CategorySpending = {
+  category_id: string | null;
+  name: string;
+  color: string | null;
+  amount: Money;
+};
+
 export type Dashboard = {
   period: Frequency;
   period_start: string;
@@ -120,6 +152,12 @@ export type Dashboard = {
   limit_remaining: Money | null;
   limit_used_percent: number | null;
   over_limit: boolean;
+  limit_status: LimitStatus;
+  previous_period_start: string;
+  previous_period_end: string;
+  previous_income: Money;
+  previous_spent: Money;
+  spending_by_category: CategorySpending[];
   series: SeriesPoint[];
   upcoming_fixed_expenses: UpcomingFixedExpense[];
   recent_transactions: Transaction[];
@@ -218,8 +256,32 @@ export const financeApi = {
     request<Transaction>(`/transactions/${id}`, { method: "PUT", body: data }),
   deleteTransaction: (id: string) => request<void>(`/transactions/${id}`, { method: "DELETE" }),
 
-  getForecast: (periods: number, period: DashboardPeriod | undefined, date: string) =>
-    request<Forecast>(`/forecast${query({ periods, period, date })}`),
+  getForecast: (
+    periods: number,
+    period: DashboardPeriod | undefined,
+    date: string,
+    estimator: Estimator = "average",
+  ) => request<Forecast>(`/forecast${query({ periods, period, date, estimator })}`),
+
+  listGoals: (date: string) => request<SavingsGoal[]>(`/savings-goals${query({ date })}`),
+  createGoal: (data: SavingsGoalInput) =>
+    request<SavingsGoal>("/savings-goals", { method: "POST", body: data }),
+  updateGoal: (id: string, data: SavingsGoalInput) =>
+    request<SavingsGoal>(`/savings-goals/${id}`, { method: "PUT", body: data }),
+  deleteGoal: (id: string) => request<void>(`/savings-goals/${id}`, { method: "DELETE" }),
+  contribute: (id: string, amount: Money) =>
+    request<SavingsGoal>(`/savings-goals/${id}/contributions`, {
+      method: "POST",
+      body: { amount },
+    }),
+
+  /** URL of the CSV download (a plain GET: the browser sends the session cookie). */
+  exportUrl: (params: {
+    from?: string;
+    to?: string;
+    type?: TransactionType;
+    category_id?: string;
+  }) => `/api/v1/transactions/export${query(params)}`,
 
   getDashboard: (period: DashboardPeriod, date: string) =>
     request<Dashboard>(`/dashboard${query({ period, date })}`),

@@ -113,7 +113,15 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
               cursor={{ fill: "var(--color-canvas)" }}
               isAnimationActive={false}
             />
-            <Bar dataKey="spent" name="Gastado" maxBarSize={24} radius={[4, 4, 0, 0]}>
+            {/* Recharts defaults to 1.5s: far too slow for a screen seen every day */}
+            <Bar
+              dataKey="spent"
+              name="Gastado"
+              maxBarSize={24}
+              radius={[4, 4, 0, 0]}
+              animationDuration={600}
+              animationEasing="ease-out"
+            >
               {points.map((point) => (
                 <Cell key={point.range} fill={point.over ? COLOR.over : COLOR.within} />
               ))}

@@ -5,6 +5,7 @@ from app.models.enums import Frequency, TransactionType
 from app.models.fixed_expense import FixedExpense
 from app.models.income import Income
 from app.models.refresh_token import RefreshToken
+from app.models.savings_goal import SavingsGoal
 from app.models.transaction import Transaction
 from app.models.user import User
 from app.models.user_settings import UserSettings
@@ -16,6 +17,7 @@ __all__ = [
     "Frequency",
     "Income",
     "RefreshToken",
+    "SavingsGoal",
     "Transaction",
     "TransactionType",
     "User",

@@ -9,7 +9,7 @@ frontend/
 ├─ src/
 │  ├─ app/                 # rutas públicas: /, /login, /register, /recuperar-contrasena
 │  │  ├─ (auth)/           # layout compartido de login y registro
-│  │  ├─ (app)/            # rutas privadas con barra lateral: /dashboard, /ingresos, /gastos…
+│  │  ├─ (app)/            # rutas privadas con barra lateral: /dashboard, /ingresos, /gastos, /metas, /reportes…
 │  │  ├─ onboarding/       # asistente de 4 pasos del primer ingreso
 │  │  ├─ globals.css       # tokens de diseño (@theme) y estilos base
 │  │  └─ layout.tsx        # fuentes Sora + Manrope (next/font)
@@ -17,14 +17,14 @@ frontend/
 │  │  ├─ landing/          # secciones de la landing (componentes de servidor)
 │  │  ├─ auth/             # formularios de acceso (componentes de cliente)
 │  │  ├─ app/              # sesión, barra lateral, encabezado de página
-│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla de gastos del periodo
-│  │  ├─ finance/          # Ingresos, Gastos, Gastos fijos, Predicción, Configuración y sus diálogos
+│  │  ├─ dashboard/        # tarjetas, gráfica gasto vs. límite, tabla de gastos del periodo, gasto por categoría
+│  │  ├─ finance/          # Ingresos, Gastos, Gastos fijos, Metas, Reportes, Predicción, Configuración y sus diálogos
 │  │  ├─ onboarding/       # pasos del asistente
 │  │  └─ ui/               # botones, campos, diálogos, avisos, estados vacíos
 │  ├─ lib/
 │  │  ├─ api.ts            # cliente de la API (CSRF, refresh automático, errores)
-│  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, dashboard
-│  │  ├─ format.ts         # dinero ($1,234.50) y fechas locales
+│  │  ├─ finance-api.ts    # llamadas tipadas: ajustes, categorías, movimientos, metas, dashboard, exportación
+│  │  ├─ format.ts         # dinero ($1,234.50, restas en centavos) y fechas locales
 │  │  ├─ use-resource.ts   # carga de datos en el cliente con estados de carga y error
 │  │  └─ validation.ts     # esquemas Zod (reflejan la política del backend)
 │  └─ proxy.ts             # Content-Security-Policy con nonce por petición
@@ -70,6 +70,11 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e
   - Objetivos táctiles de 44 px como mínimo.
   - Contraste AA.
   - Se respeta `prefers-reduced-motion`.
+- **Movimiento:**
+  - Curvas propias (`--ease-out-strong`, `--ease-in-out-strong`) y animaciones de menos de 300 ms en la app.
+  - Solo se animan `transform`, `opacity` y `clip-path`.
+  - Componentes: `SegmentedControl` (píldora deslizante), toasts, diálogos animados y el indicador del menú.
+  - Detalle en D-057 y D-058 de [`docs/decisions.md`](../docs/decisions.md).
 - **Seguridad:**
   - Los tokens de sesión viven en cookies `HttpOnly`: JavaScript nunca los ve.
   - La CSP solo permite scripts con el nonce de cada petición.

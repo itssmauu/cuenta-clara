@@ -3,7 +3,6 @@
 import {
   ArrowDownCircle,
   ArrowUpCircle,
-  Clock,
   FileText,
   LayoutDashboard,
   LogOut,
@@ -17,13 +16,13 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
+import { useLayoutEffect, useRef, useState } from "react";
 
 import { Logo } from "@/components/ui/Logo";
 
 import { useSession } from "./session";
 
-type NavItem = { href: string; label: string; icon: LucideIcon; soon?: boolean };
+type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const mainNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -31,40 +30,33 @@ const mainNav: NavItem[] = [
   { href: "/gastos", label: "Gastos", icon: ArrowDownCircle },
   { href: "/gastos-fijos", label: "Gastos fijos", icon: Repeat },
   { href: "/prediccion", label: "Predicción", icon: TrendingUp },
-  { href: "/metas", label: "Metas de ahorro", icon: Target, soon: true },
-  { href: "/reportes", label: "Reportes", icon: FileText, soon: true },
+  { href: "/metas", label: "Metas de ahorro", icon: Target },
+  { href: "/reportes", label: "Reportes", icon: FileText },
 ];
 
 const itemClass =
   "flex min-h-11 items-center gap-3 rounded-[14px] px-3 text-[15px] font-semibold transition-colors duration-200";
 
-function NavLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }) {
+function NavLink({
+  item,
+  onNavigate,
+  slidingIndicator = false,
+}: {
+  item: NavItem;
+  onNavigate: () => void;
+  /** The active background is drawn by the list's sliding indicator instead. */
+  slidingIndicator?: boolean;
+}) {
   const pathname = usePathname();
   const Icon = item.icon;
-
-  if (item.soon) {
-    // Not built yet: shown so the product's shape is visible, but not a dead link
-    return (
-      <span
-        aria-disabled="true"
-        title="Próximamente"
-        className={`${itemClass} text-on-ink-muted cursor-not-allowed whitespace-nowrap`}
-      >
-        <Icon aria-hidden="true" className="size-5 shrink-0" />
-        {item.label}
-        <Clock aria-hidden="true" className="ml-auto size-4 shrink-0" />
-        <span className="sr-only"> (próximamente)</span>
-      </span>
-    );
-  }
-
   const active = pathname === item.href;
+  const activeClass = slidingIndicator ? "text-white" : "bg-primary text-white";
   return (
     <Link
       href={item.href}
       onClick={onNavigate}
       aria-current={active ? "page" : undefined}
-      className={`${itemClass} ${active ? "bg-primary text-white" : "text-on-ink hover:bg-ink-3"}`}
+      className={`relative ${itemClass} ${active ? activeClass : "text-on-ink hover:bg-ink-3"}`}
     >
       <Icon aria-hidden="true" className="size-5" />
       {item.label}
@@ -72,10 +64,48 @@ function NavLink({ item, onNavigate }: { item: NavItem; onNavigate: () => void }
   );
 }
 
+/**
+ * The violet background behind the current page. It lives once in the list and
+ * slides to the new page on navigation, so the eye follows where you went.
+ */
+function useNavIndicator(pathname: string) {
+  const navRef = useRef<HTMLElement>(null);
+  const indicatorRef = useRef<HTMLSpanElement>(null);
+
+  useLayoutEffect(() => {
+    const nav = navRef.current;
+    const indicator = indicatorRef.current;
+    if (!nav || !indicator) return;
+
+    const place = () => {
+      const active = nav.querySelector<HTMLElement>('[aria-current="page"]');
+      if (!active || active.offsetHeight === 0) {
+        indicator.style.opacity = "0";
+        return;
+      }
+      indicator.style.opacity = "1";
+      indicator.style.height = `${active.offsetHeight}px`;
+      indicator.style.transform = `translateY(${active.offsetTop}px)`;
+      // From the first visible placement on, changes animate
+      requestAnimationFrame(() => (indicator.dataset.ready = ""));
+    };
+    place();
+
+    // The phone menu starts hidden: place the indicator once it opens
+    if (typeof ResizeObserver === "undefined") return;
+    const observer = new ResizeObserver(place);
+    observer.observe(nav);
+    return () => observer.disconnect();
+  }, [pathname]);
+
+  return { navRef, indicatorRef };
+}
+
 export function Sidebar() {
   const { user, logout } = useSession();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
+  const { navRef, indicatorRef } = useNavIndicator(usePathname());
 
   return (
     <aside className="bg-ink rounded-[32px] p-4 text-white lg:sticky lg:top-5 lg:flex lg:max-h-[calc(100dvh-40px)] lg:min-h-[860px] lg:w-[250px] lg:shrink-0 lg:flex-col lg:gap-7 lg:px-5 lg:py-7">
@@ -101,10 +131,15 @@ export function Sidebar() {
         id="app-nav"
         className={`${open ? "flex" : "hidden"} mt-4 flex-1 flex-col gap-7 lg:mt-0 lg:flex`}
       >
-        <nav aria-label="Principal" className="flex flex-col gap-1.5">
+        <nav ref={navRef} aria-label="Principal" className="relative flex flex-col gap-1.5">
+          <span
+            ref={indicatorRef}
+            aria-hidden="true"
+            className="nav-indicator bg-primary pointer-events-none absolute inset-x-0 top-0 rounded-[14px] opacity-0"
+          />
           <p className="text-on-ink-muted px-3 pb-1.5 text-xs font-bold tracking-[0.08em]">MENÚ</p>
           {mainNav.map((item) => (
-            <NavLink key={item.href} item={item} onNavigate={close} />
+            <NavLink key={item.href} item={item} onNavigate={close} slidingIndicator />
           ))}
         </nav>
 

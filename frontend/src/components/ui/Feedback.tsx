@@ -3,9 +3,14 @@
 import { CheckCircle2, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
+const LEAVE_MS = 200;
+
+/** Each confirmation gets its own id, so saving twice in a row shows (and times) it twice. */
+export type NoticeMessage = { text: string; id: number } | null;
+
 /** A short confirmation ("Ingreso guardado") announced to screen readers, gone after a few seconds. */
 export function useNotice(timeoutMs = 4000) {
-  const [message, setMessage] = useState<string | null>(null);
+  const [message, setMessage] = useState<NoticeMessage>(null);
 
   useEffect(() => {
     if (!message) return;
@@ -13,18 +18,42 @@ export function useNotice(timeoutMs = 4000) {
     return () => clearTimeout(timer);
   }, [message, timeoutMs]);
 
-  const show = useCallback((text: string) => setMessage(text), []);
+  const show = useCallback((text: string) => setMessage({ text, id: Date.now() }), []);
   return [message, show] as const;
 }
 
-export function Notice({ message }: { message: string | null }) {
+/**
+ * A toast at the bottom of the screen: it floats over the page instead of pushing
+ * the content down, rises in and leaves the way it came. It never takes clicks,
+ * so it cannot get in the way of what is underneath.
+ */
+export function Notice({ message }: { message: NoticeMessage }) {
+  // Keep the last message on screen while it animates out
+  const [shown, setShown] = useState(message);
+  if (message && message !== shown) setShown(message);
+  const leaving = shown !== null && message === null;
+
+  useEffect(() => {
+    if (!leaving) return;
+    const timer = setTimeout(() => setShown(null), LEAVE_MS);
+    return () => clearTimeout(timer);
+  }, [leaving]);
+
   // The live region always exists so screen readers notice when text appears in it
   return (
-    <div role="status" aria-live="polite" className="empty:hidden">
-      {message ? (
-        <p className="bg-mint-tint text-ink flex items-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold">
-          <CheckCircle2 aria-hidden="true" className="size-5 shrink-0" />
-          {message}
+    <div
+      role="status"
+      aria-live="polite"
+      className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4 sm:bottom-6"
+    >
+      {shown ? (
+        <p
+          key={shown.id}
+          data-leaving={leaving || undefined}
+          className="toast bg-ink flex items-center gap-2.5 rounded-full py-3 pr-5 pl-3.5 text-sm font-bold text-white shadow-[0_12px_32px_-8px_rgb(21_25_61/0.45)]"
+        >
+          <CheckCircle2 aria-hidden="true" className="text-mint size-5 shrink-0" />
+          {shown.text}
         </p>
       ) : null}
     </div>

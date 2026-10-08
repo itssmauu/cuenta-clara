@@ -6,9 +6,9 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 
-import { buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { PasswordField } from "@/components/ui/PasswordField";
+import { SubmitButton } from "@/components/ui/SubmitButton";
 import { TextField } from "@/components/ui/TextField";
 import { ApiError, authApi } from "@/lib/api";
 import { loginSchema, type LoginValues } from "@/lib/validation";
@@ -38,8 +38,17 @@ export function LoginForm() {
   }
 
   return (
-    <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-[18px]">
-      {serverError ? <FormAlert title={serverError} /> : null}
+    <form
+      noValidate
+      onSubmit={handleSubmit(onSubmit)}
+      className="stagger-in flex flex-col gap-[18px]"
+    >
+      {/* A short shake says "no" before the words do */}
+      {serverError ? (
+        <div className="motion-safe:animate-[shake_360ms_ease-in-out]">
+          <FormAlert title={serverError} />
+        </div>
+      ) : null}
 
       <TextField
         id="email"
@@ -65,14 +74,7 @@ export function LoginForm() {
         ¿Olvidaste tu contraseña?
       </Link>
 
-      <button
-        type="submit"
-        disabled={isSubmitting}
-        aria-busy={isSubmitting}
-        className={buttonClass("primary", "lg", "min-h-[52px] font-extrabold")}
-      >
-        {isSubmitting ? "Entrando…" : "Entrar"}
-      </button>
+      <SubmitButton busy={isSubmitting} label="Entrar" busyLabel="Entrando…" />
     </form>
   );
 }

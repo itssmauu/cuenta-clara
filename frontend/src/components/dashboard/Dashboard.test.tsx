@@ -43,6 +43,14 @@ const dashboard: DashboardData = {
   limit_remaining: "10.00",
   limit_used_percent: 75,
   over_limit: false,
+  limit_status: "ok",
+  previous_period_start: "2026-09-28",
+  previous_period_end: "2026-10-04",
+  previous_income: "160.00",
+  previous_spent: "45.00",
+  spending_by_category: [
+    { category_id: "c1", name: "Transporte", color: "#5B4BDB", amount: "30.00" },
+  ],
   series: [
     {
       period_start: "2026-09-28",
@@ -200,6 +208,42 @@ describe("Dashboard", () => {
       expect.objectContaining({ type: "expense", amount: "12", category_id: null }),
     );
     expect(financeApi.getDashboard).toHaveBeenCalledTimes(2);
+  });
+
+  it("compares income and spending with the previous period", async () => {
+    renderDashboard();
+
+    const cards = await screen.findByRole("region", { name: "Resumen del periodo" });
+    expect(cards).toHaveTextContent("Igual que la semana anterior"); // income 160 vs 160
+    expect(cards).toHaveTextContent("$15.00 menos que la semana anterior"); // spent 30 vs 45
+  });
+
+  it("alerts at 80 % of the limit", async () => {
+    vi.mocked(financeApi.getDashboard).mockResolvedValue({
+      ...dashboard,
+      limit_status: "warning",
+      limit_used_percent: 85,
+      limit_remaining: "6.00",
+    });
+    renderDashboard();
+
+    expect(
+      await screen.findByText("Atención: llevas el 85% de tu límite semanal. Te quedan $6.00."),
+    ).toBeInTheDocument();
+  });
+
+  it("does not alert while well within the limit", async () => {
+    renderDashboard();
+
+    await screen.findByText("Saldo disponible");
+    expect(screen.queryByText(/Atención: llevas el/)).toBeNull();
+  });
+
+  it("shows spending by category", async () => {
+    renderDashboard();
+
+    const section = await screen.findByRole("region", { name: "Gasto por categoría" });
+    expect(within(section).getByRole("table")).toHaveTextContent("Transporte$30.00");
   });
 
   it("shows an error with a retry button when the dashboard fails", async () => {

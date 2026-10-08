@@ -146,3 +146,40 @@ class TransactionPage(OutputModel):
     total: int
     limit: int
     offset: int
+
+
+# ── Savings goals ───────────────────────────────────────
+
+
+class SavingsGoalIn(InputModel):
+    name: Label
+    target_amount: PositiveMoney
+    saved_amount: NonNegativeMoney = Decimal("0")
+    due_date: date | None = None
+
+
+class ContributionIn(InputModel):
+    # Positive = put money in; negative = take it out
+    amount: Annotated[Decimal, Field(max_digits=12, decimal_places=2)]
+
+    @model_validator(mode="after")
+    def _not_zero(self) -> Self:
+        if self.amount == 0:
+            raise ValueError("El monto no puede ser 0.")
+        return self
+
+
+class SavingsGoalOut(OutputModel):
+    id: uuid.UUID
+    name: str
+    target_amount: Decimal
+    saved_amount: Decimal
+    due_date: date | None
+    remaining: Decimal
+    progress_percent: int
+    completed: bool
+    overdue: bool
+    periods_left: int | None
+    suggested_per_period: Decimal | None
+    created_at: datetime
+    updated_at: datetime

@@ -2,14 +2,15 @@ import uuid
 from datetime import date
 from typing import Annotated
 
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.models import Transaction, TransactionType
 from app.schemas.finance import TransactionIn, TransactionOut, TransactionPage
 from app.services import ownership
 from app.services import transactions as transaction_service
-from app.services.categories import ensure_usable
+from app.services.categories import ensure_usable, list_categories
+from app.services.export import transactions_csv
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -34,6 +35,37 @@ def list_transactions(
         total=total,
         limit=limit,
         offset=offset,
+    )
+
+
+EXPORT_MAX_ROWS = 10_000
+
+
+# Declared before "/{transaction_id}" so "export" is not parsed as an id
+@router.get(
+    "/export",
+    response_class=Response,
+    responses={200: {"content": {"text/csv": {}}, "description": "CSV file"}},
+)
+def export_transactions(
+    db: DbSession,
+    user: CurrentUser,
+    date_from: Annotated[date | None, Query(alias="from")] = None,
+    date_to: Annotated[date | None, Query(alias="to")] = None,
+    type: TransactionType | None = None,
+    category_id: uuid.UUID | None = None,
+) -> Response:
+    """The user's transactions matching the filters, as a CSV download."""
+    filters = transaction_service.TransactionFilters(date_from, date_to, type, category_id)
+    items, _ = transaction_service.list_transactions(
+        db, user, filters, limit=EXPORT_MAX_ROWS, offset=0
+    )
+    categories = {c.id: c for c in list_categories(db, user)}
+    filename = f"cuenta-clara-movimientos-{date.today().isoformat()}.csv"
+    return Response(
+        content=transactions_csv(items, categories),
+        media_type="text/csv; charset=utf-8",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
 
 

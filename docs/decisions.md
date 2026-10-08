@@ -214,3 +214,106 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 ## D-050 · Selector de periodo en grilla en móviles
 
 **Fase 8.** En 375 px los cuatro botones Diario/Semanal/Quincenal/Mensual se partían en dos líneas. En pantallas pequeñas se muestran como una grilla de 4 columnas a todo el ancho, y desde `sm` vuelven a ser píldoras en línea. El problema apareció al revisar las capturas generadas por Playwright.
+
+## D-051 · Metas de ahorro: seguimiento, no movimiento de saldo
+
+**Fase 9.** Una meta registra cuánto se apartó para algo, pero **aportar no resta del saldo disponible**: el dinero apartado sigue siendo del usuario y suele estar en la misma cuenta. Así no hay doble conteo con las transacciones. Cada meta muestra su progreso y, si tiene fecha objetivo, **cuánto apartar por periodo** (el periodo del usuario) para llegar a tiempo: lo que falta dividido entre los periodos restantes, contando el actual y redondeando hacia arriba al centavo. Se calcula en el backend con una función pura (`services/savings.py`). Retirar más de lo ahorrado se rechaza con 422.
+
+## D-052 · Alerta al 80 % del límite
+
+**Fase 9.** `/dashboard` devuelve `limit_status`: `none`, `ok`, `warning` (80 % o más del límite usado) u `over`. Con `warning` u `over`, el dashboard muestra un aviso con `role="status"`, icono y texto ("Atención: llevas el 85 % de tu límite semanal. Te quedan $6.00"). El umbral está en una constante (`WARNING_PERCENT`).
+
+## D-053 · Comparación con el periodo anterior
+
+**Fase 9.** `/dashboard` incluye ingresos y gasto del periodo anterior. Las tarjetas muestran la diferencia con flecha y palabras ("$15.00 menos que la semana anterior"), sin colores de "bueno/malo": gastar más no siempre es malo y el color solo confundiría. La resta se hace en centavos enteros (`subtractMoney`) para no usar floats con dinero.
+
+## D-054 · Gasto por categoría con barras de un solo color
+
+**Fase 9.** Suma gastos fijos y variables del periodo por categoría, de mayor a menor ("Sin categoría" al final en empates). Las barras horizontales son todas del mismo color porque comparan magnitudes; la identidad la da el nombre, y el color de cada categoría aparece como punto en la tabla. Valor al final de cada barra y tabla equivalente.
+
+## D-055 · Exportar a CSV de forma segura
+
+**Fase 9.** `GET /transactions/export` devuelve los movimientos del usuario con los mismos filtros que la lista (máximo 10 000 filas). Para que un archivo abierto en Excel no ejecute nada, cualquier texto del usuario que empiece con `= + - @`, tabulación o retorno se prefija con `'` (*CSV/formula injection*). Los montos son números con signo (gastos negativos), no texto del usuario. Lleva BOM UTF-8 para que Excel muestre bien las tildes.
+
+## D-056 · Predicción con regresión lineal, opcional y explicable
+
+**Fase 9.** El "aprendizaje automático sencillo" es una regresión lineal por mínimos cuadrados (`services/trend.py`, sin dependencias) sobre el gasto variable de hasta 8 periodos completos. Se proyecta la línea hacia adelante, nunca por debajo de 0. Es **opcional** (`estimator=trend`) y la página explica qué encontró: cuánto sube o baja el gasto por periodo y el R². Con menos de 3 periodos completos usa el promedio y lo dice. Se eligió algo pequeño y explicable en vez de un modelo opaco: con el historial de una persona, una línea es honesta sobre lo poco que se puede predecir.
+
+## D-057 · Animaciones de la landing
+
+**Fase 9 (ajuste de diseño).** Solo en la landing, que es una página de marketing que se ve pocas veces. La app de uso diario no se anima así.
+
+- **Hero:** entra con un desvanecido hacia arriba escalonado, hecho solo con CSS, para que no parpadee al cargar.
+- **Secciones:** aparecen con un desvanecido al llegar a la pantalla (`ScrollReveal.tsx`, con `IntersectionObserver`), una sola vez.
+- **Estadísticas:** las barras crecen de izquierda a derecha (con `clip-path`, que no deforma los bordes redondeados) y las cifras cuentan desde 0.
+- **Botones:** crecen un 4 % al pasar el mouse. El `hover:` de Tailwind solo aplica en dispositivos con puntero.
+- **Accesibilidad y robustez:**
+  - Sin JavaScript, con `prefers-reduced-motion` o en contenido ya visible al cargar, no se oculta nada.
+  - Los lectores de pantalla oyen la cifra final una sola vez; los dígitos en movimiento están ocultos para ellos.
+  - Saltar con Fin o con un enlace revela también lo que quedó atrás.
+- Sin librerías nuevas: transiciones CSS y un `requestAnimationFrame` para el conteo.
+
+## D-058 · Pulido de interacción en la app (filosofía de Emil Kowalski)
+
+**Fase 9 (ajuste de diseño).** La app se usa a diario, así que cada animación debe tener un propósito y ser corta. Lo que se usa muchas veces al día apenas se mueve.
+
+| Antes | Después | Por qué |
+| --- | --- | --- |
+| Aviso verde que empujaba el contenido hacia abajo | *Toast* oscuro flotante abajo: sube en 400 ms, sale por donde entró en 200 ms, no bloquea clics | Sin saltos de diseño; la salida es más rápida que la entrada |
+| El periodo activo cambiaba de color de golpe | Una "píldora" se desliza a la opción elegida (capa duplicada recortada con `clip-path`, 260 ms) | Muestra de dónde a dónde cambió y el color del texto cambia sin mezclas |
+| Fondo activo del menú saltaba de página en página | Indicador que se desliza a la nueva página (`transform`, 260 ms) | Continuidad espacial al navegar |
+| Diálogos que aparecían de golpe | Escala 0.96→1 con opacidad (220 ms) y salida en 150 ms, con `@starting-style` | Los modales no tienen origen, por eso escalan desde el centro |
+| Botones con `scale(0.98)` y la curva `ease-out` del navegador | `scale(0.97)` al presionar, curva `cubic-bezier(0.23, 1, 0.32, 1)` | Respuesta inmediata al toque |
+| Barras de medidores animando `width` | `clip-path` sobre una barra completa: crecen al aparecer y se deslizan al cambiar | Solo propiedades baratas; el borde redondeado no se deforma |
+| Cifras que cambiaban de golpe al cambiar de periodo | Entran con un leve desenfoque (280 ms) | El desenfoque une el valor viejo y el nuevo |
+| Gráficas de Recharts animando 1.5 s | 600 ms con *ease-out* | Una pantalla diaria no puede hacer esperar |
+| "Dashboard / Resumen de tus finanzas" | "Hola, Ana · Tu resumen de esta semana · 5 oct – 11 oct" e iconos en cada tarjeta | Menos genérico y con más contexto |
+
+**Landing:** brillos de marca y una cuadrícula tenue dan profundidad al hero. El titular entra enfocándose (desenfoque → nítido) y el teléfono flota (CSS) y se inclina hacia el cursor con un resorte (inercia, no seguimiento rígido), solo con mouse o trackpad.
+
+**Accesibilidad:**
+- Con `prefers-reduced-motion` no hay desplazamientos ni flotación.
+- Las copias decorativas (la píldora y el indicador) están ocultas a lectores de pantalla y no reciben clics.
+- La auditoría axe sigue pasando en todas las pantallas.
+
+## D-059 · Inicio de sesión y registro con una proyección animada
+
+**Fase 9 (ajuste de diseño).** El panel oscuro tenía solo texto. Ahora muestra lo que hace el producto: predecir.
+
+- **Proyección ilustrativa:** usa las cifras del ejemplo del producto (100 − 30 + 160 = 230, luego +130 por semana) y lleva la etiqueta "Ejemplo", así que no pretende ser información real del visitante.
+  - La línea se dibuja de izquierda a derecha.
+  - La franja de estimación "respira", porque el futuro es una estimación, no un hecho.
+  - "Hoy" late como un marcador en vivo.
+  - Un punto recorre la predicción.
+  - Las cifras cuentan desde 0 con `@property` y `counter()`, solo con CSS.
+  - Dos tarjetas flotan con las entradas del cálculo.
+- **Barras de fondo:** suben en ola detrás del mensaje "Tu semana, bajo control" y siguen moviéndose suavemente.
+- **Sin JavaScript:** todo es SVG y CSS, así que se renderiza en el servidor con la CSP de nonce. En celulares se oculta la gráfica para no empujar el formulario hacia abajo.
+- **Pestañas:** pasaron al *layout* compartido. Como no se desmontan al cambiar de página, la píldora activa se desliza entre "Iniciar sesión" y "Registrarme" (`clip-path` sobre una copia, 320 ms).
+- **Botón principal:**
+  - Al pasar el mouse se eleva 2 px con un brillo de su color y la flecha avanza.
+  - Se aprieta al presionarlo.
+  - Mientras espera, el texto se difumina y aparece un indicador de carga.
+- **Formulario:**
+  - Los campos entran escalonados.
+  - Cada requisito de contraseña cumplido hace "pop".
+  - Un error del servidor llega con una sacudida corta.
+  - El borde del campo activo se vuelve violeta.
+- **Corrección:** en Tailwind v4, `scale-*` y `translate-*` usan sus propias propiedades CSS. La transición de los botones solo listaba `transform`, así que la presión y el crecimiento al pasar el mouse saltaban sin animarse. Ahora se listan `scale` y `translate`.
+- **Movimiento reducido:** con `prefers-reduced-motion` no hay bucles (franja, pulso, flotación, punto viajero ni barras): solo el estado final.
+
+## D-060 · Sin testimonio por ahora: demos de lo que hace la app
+
+**Fase 9 (ajuste de diseño).** La landing tenía un hueco de testimonio con texto de relleno. Inventar uno sería engañoso, y el proyecto aún no tiene usuarios a quienes citar. Se reemplazó por "Te acompaña toda la semana":
+
+- **Tres mini-demos que se reproducen al llegar a la pantalla**, con cifras ilustrativas y la etiqueta "Ejemplo":
+  - la alerta al 80 % (la barra se llena y aparece el aviso);
+  - una meta de ahorro (el anillo se llena y aparece el plan semanal);
+  - la tendencia (la línea se dibuja y aparece la frase que la explica).
+- **Una franja con todo lo que incluye la app**, en desplazamiento continuo.
+  - Como es contenido que se mueve más de 5 segundos junto a otro contenido, tiene un botón "Pausar animación" (WCAG 2.2.2). También se detiene bajo el puntero.
+  - Con `prefers-reduced-motion` es una lista estática y el botón desaparece.
+
+Los testimonios reales quedan para el futuro, cuando haya personas que den su consentimiento.
+
+**Lección técnica:** los estilos de `@layer components` pierden contra las utilidades de Tailwind (`flex`, `[mask-image:…]`). Para ocultar algo con movimiento reducido hay que usar las variantes `motion-reduce:`, no reglas en ese *layer*. Lo detectó la prueba E2E.

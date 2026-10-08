@@ -19,6 +19,7 @@ pytest                   # requiere TEST_DATABASE_URL (se borra en cada corrida)
 - **Cálculos puros** (`test_periods.py`, `test_projections.py`): periodos, meses cortos, bisiestos, saldo que se arrastra entre periodos, límite, predicción y el ejemplo 100 − 30 + 160 = 230.
 - **API** de cada recurso, con validación y casos borde.
 - **Seguridad:** tokens falsificados, sin firma o expirados; CSRF; rate limiting; bloqueo temporal; reutilización de refresh tokens; cabeceras y CORS.
+- **Fase 9** (`test_phase9_calculations.py`, `test_phase9_api.py`): plan de metas por periodo, alerta al 80 %, periodo anterior, gasto por categoría, regresión lineal (pendiente, R², mínimo de puntos, nunca negativa) y CSV con inyección de fórmulas neutralizada.
 - **Anti-IDOR** (`test_idor.py`): otro usuario no puede leer, editar, borrar ni listar recursos ajenos. Se verificó rompiendo el filtro a propósito y viendo fallar los tests.
 - **Migraciones:** los modelos coinciden con las migraciones, y estas se pueden revertir y volver a aplicar.
 
@@ -46,6 +47,9 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e
   - Añade un gasto y aparece "Te pasaste por $15.00".
   - El periodo elegido queda en la URL.
   - Pausar un ingreso actualiza el saldo.
+  - Crea una meta de ahorro, aporta y ve el progreso; retirar de más muestra el error de la API.
+  - En Reportes compara periodos y descarga un CSV cuyo contenido se verifica.
+  - La predicción cambia a "Tendencia" y explica el resultado.
   - Visita todas las pantallas y cierra sesión.
 - **Seguridad en el navegador real:**
   - JavaScript no puede leer las cookies de sesión.
@@ -53,6 +57,7 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e
   - Credenciales incorrectas muestran un error genérico.
 - **Accesibilidad:**
   - `expectAccessible()` corre axe con las reglas WCAG 2.0/2.1/2.2 A y AA en todas las pantallas, públicas y privadas, y falla ante cualquier violación.
+  - Antes de auditar se espera a que la red quede inactiva y terminen las transiciones finitas: así axe no mide un color a mitad de animación.
   - Además se prueba el enlace "Saltar al contenido" con teclado y que en un ancho de 375 px no haya scroll horizontal.
 - Las pruebas crean sus propios usuarios con correos únicos y usan un solo worker, porque la API limita los logins por IP.
 

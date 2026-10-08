@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { buttonClass } from "./button";
 
@@ -17,9 +17,21 @@ type DialogProps = {
  * Modal built on the native <dialog>: the browser traps focus, closes on Esc,
  * makes the page behind inert and returns focus to the trigger on close.
  */
+// Matches the closing transition in globals.css (.app-dialog)
+const CLOSE_MS = 150;
+
 export function Dialog({ open, onClose, title, description, children }: DialogProps) {
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
+  // Keep the content while the dialog animates out, then unmount it so forms start fresh
+  const [rendered, setRendered] = useState(open);
+  if (open && !rendered) setRendered(true);
+
+  useEffect(() => {
+    if (open || !rendered) return;
+    const timer = setTimeout(() => setRendered(false), CLOSE_MS);
+    return () => clearTimeout(timer);
+  }, [open, rendered]);
 
   useEffect(() => {
     const dialog = ref.current;
@@ -33,9 +45,9 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
       ref={ref}
       onClose={onClose}
       aria-labelledby={titleId}
-      className="backdrop:bg-ink/60 m-auto w-[min(560px,calc(100vw-24px))] rounded-[28px] p-0"
+      className="app-dialog m-auto w-[min(560px,calc(100vw-24px))] rounded-[28px] p-0 shadow-[0_24px_64px_-16px_rgb(21_25_61/0.45)]"
     >
-      {open ? (
+      {rendered ? (
         <div className="flex flex-col gap-5 p-6 sm:p-8">
           <div className="flex items-start justify-between gap-4">
             <div className="flex flex-col gap-1">
@@ -47,7 +59,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
             <button
               type="button"
               onClick={onClose}
-              className="hover:bg-canvas grid size-11 shrink-0 cursor-pointer place-items-center rounded-full"
+              className="hover:bg-canvas ease-out-strong grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,scale] duration-200 active:scale-[0.94]"
             >
               <X aria-hidden="true" className="size-5" />
               <span className="sr-only">Cerrar</span>
