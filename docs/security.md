@@ -120,6 +120,13 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Protección contra inyección de fórmulas:** cualquier texto del usuario (notas, nombres de categoría) que empiece con `= + - @`, tabulación o retorno se prefija con `'`. Así una nota como `=HYPERLINK(...)` no se ejecuta al abrir el archivo en Excel o Google Sheets.
   → `app/services/export.py` · `tests/test_phase9_api.py`
 
+### Reporte en CSV o PDF
+
+- Solo incluye datos y cuentas del usuario autenticado. Una cuenta ajena en `?account=` da `404`. Cubierto por `test_only_the_callers_data_and_accounts`.
+- **CSV:** todas las celdas de texto (cuenta, concepto, categoría, nota) pasan por `safe_cell`, contra la inyección de fórmulas.
+- **PDF:** se genera en el servidor dibujando texto plano con `fpdf2`. No se interpreta HTML ni nada que el usuario escriba, así que no hay inyección posible.
+- El rango (máximo 3 años) y las filas (máximo 10 000) están limitados, para que nadie pida un archivo enorme.
+
 ## 9. Dependencias
 
 - Versiones exactas: `==` en `pyproject.toml` y sin rangos en `package.json`, más `package-lock.json`.

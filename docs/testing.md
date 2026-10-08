@@ -21,6 +21,7 @@ pytest                   # requiere TEST_DATABASE_URL (se borra en cada corrida)
 - **Seguridad:** tokens falsificados, sin firma o expirados; CSRF; rate limiting; bloqueo temporal; reutilización de refresh tokens; cabeceras y CORS.
 - **Fase 9** (`test_phase9_calculations.py`, `test_phase9_api.py`): plan de metas por periodo, alerta al 80 %, periodo anterior, gasto por categoría, regresión lineal (pendiente, R², mínimo de puntos, nunca negativa) y CSV con inyección de fórmulas neutralizada.
 - **Cuentas** (`test_accounts.py`): saldos separados, nombres con números de cuenta rechazados, una sola principal, límite de 10, borrado seguro, transferencias que no cuentan como gasto, dashboard y predicción por cuenta, metas que mueven dinero y cuentas ajenas invisibles.
+- **Reporte** (`test_reports.py`): incluye los ingresos y gastos fijos en cada fecha, las transacciones y las transferencias; filtros de tipo, cuenta y rango; el PDF es un PDF válido aun con tildes, emojis o un rango vacío; fórmulas neutralizadas y solo los datos propios.
 - **Anti-IDOR** (`test_idor.py`): otro usuario no puede leer, editar, borrar ni listar recursos ajenos. Se verificó rompiendo el filtro a propósito y viendo fallar los tests.
 - **Migraciones:** los modelos coinciden con las migraciones, y estas se pueden revertir y volver a aplicar.
 
@@ -50,7 +51,7 @@ E2E_BASE_URL=http://localhost:3000 npm run e2e
   - Pausar un ingreso actualiza el saldo.
   - Crea una meta de ahorro, aporta y ve el progreso; retirar de más muestra el error de la API.
   - Crea una cuenta de ahorro, mueve $50 desde la de gastos y cambia el dashboard a esa cuenta.
-  - En Reportes compara periodos y descarga un CSV cuyo contenido se verifica.
+  - En Reportes compara periodos y descarga el reporte en CSV (se verifica que traiga los ingresos y gastos fijos) y en PDF.
   - La predicción cambia a "Tendencia" y explica el resultado.
   - Visita todas las pantallas y cierra sesión.
 - **Seguridad en el navegador real:**

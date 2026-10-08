@@ -344,3 +344,41 @@ Los testimonios reales quedan para el futuro, cuando haya personas que den su co
   - El paso 1 pregunta por las cuentas (nombre, tipo, saldo de hoy) y cuál es la de gastos del día.
   - El ingreso pregunta a qué cuenta llega.
   - Los gastos fijos salen de la principal, y se puede cambiar después.
+
+## D-062 · Reporte de movimientos en CSV o PDF
+
+**El problema.** El CSV de Reportes salía vacío. Había dos causas:
+
+- Solo exportaba **transacciones sueltas**, y la mayor parte del dinero de un usuario se mueve con ingresos y gastos fijos (beca, pasaje, datos…), que nunca aparecían.
+- Al elegir un rango corto, como 7 oct – 7 oct, no quedaba nada.
+
+**La solución.** `GET /reports/export` arma un reporte como el estado de cuenta de un banco:
+
+- Incluye las transacciones del rango, **cada ocurrencia** de los ingresos y gastos fijos activos (desde `balance_as_of`) y las transferencias de las cuentas elegidas.
+- Las mismas filas alimentan los dos formatos, así que nunca se contradicen.
+- Sin fechas, va desde que el usuario empezó a llevar sus cuentas hasta hoy.
+- Se puede filtrar por tipo (ingresos o gastos) y por cuenta, o pedir todas.
+
+**Dos formatos, a elección del usuario:**
+
+- **CSV** para Excel o Google Sheets, con columnas `fecha, cuenta, tipo, concepto, categoria, monto, nota`.
+  - El monto lleva signo.
+  - Cada texto del usuario pasa por la protección contra inyección de fórmulas.
+- **PDF** para leer, imprimir o compartir.
+  - Encabezado con la cuenta y el rango, resumen (ingresos, gastos, transferencias, neto) y una tabla que repite su encabezado en cada página, con número de página.
+  - Al pie aclara que lo generó el usuario y no es un documento bancario.
+
+**Por qué `fpdf2` y en el servidor:**
+
+- Es Python puro, sin navegador ni dependencias de sistema, y `pip-audit` no reporta vulnerabilidades.
+- Generarlo en el backend reutiliza el mismo cálculo que el CSV y no añade JavaScript pesado al frontend.
+- La licencia es LGPL‑3.0; la usamos como dependencia, sin modificarla.
+- Las fuentes integradas cubren Latin‑1 (tildes, ñ, ¿, ¡). Algunos símbolos se sustituyen (→ por », guiones largos por -) y un emoji se vuelve "?" en lugar de romper el archivo.
+
+**Límites:**
+
+- El rango es de hasta 3 años y el reporte trae como máximo 10 000 filas, con un aviso si se recortó.
+- "Desde" no puede ser posterior a "Hasta" (422).
+- Una transferencia entre dos cuentas incluidas en el reporte suma 0, y la nota dice cuánto se movió.
+
+La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filtrada.

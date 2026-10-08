@@ -38,7 +38,7 @@ Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo in
 - **Metas de ahorro** con progreso y cuánto apartar por periodo para llegar a la fecha.
 - **Alerta al 80 % del límite** y **comparación con el periodo anterior** en el dashboard.
 - **Gasto por categoría** y **reportes** que comparan periodos.
-- **Exportar a CSV**, protegido contra inyección de fórmulas.
+- **Reporte en CSV o PDF:** movimientos, cada ingreso y gasto fijo y las transferencias, por cuenta y rango de fechas. El CSV está protegido contra inyección de fórmulas.
 - **Predicción con tendencia:** regresión lineal sobre tu historial, explicada en la propia página.
 
 ## Stack
