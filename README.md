@@ -1,165 +1,69 @@
 # Cuenta Clara
 
-[![CI](https://github.com/itssmauu/cuenta-clara/actions/workflows/ci.yml/badge.svg)](https://github.com/itssmauu/cuenta-clara/actions/workflows/ci.yml)
+**Sabe cuánto te queda antes de gastarlo.**
 
-Aplicación web de finanzas personales: registra tu monto inicial, tus gastos fijos y tus ingresos, y descubre cuánto te queda **antes** de gastarlo.
+Cuenta Clara es una aplicación web de finanzas personales. Registras con cuánto dinero cuentas, tus gastos fijos y tus ingresos, y la app te muestra tu saldo, a dónde va tu dinero y cuánto te quedará en las próximas semanas, antes de que llegue el momento de gastarlo.
 
-Proyecto personal de portafolio: backend en FastAPI, frontend en Next.js, PostgreSQL, Docker y CI completo, con la seguridad como requisito central.
+Es un proyecto personal de portafolio, hecho con cuidado en el diseño, la accesibilidad y la seguridad.
 
-![Dashboard de Cuenta Clara: tarjetas de saldo, gráfica de gasto contra límite y gastos de la semana](docs/screenshots/dashboard.png)
+![Dashboard de Cuenta Clara: tus cuentas, saldo, gasto contra límite y gastos de la semana](docs/screenshots/dashboard.png)
 
-| Landing | Registro | Predicción |
-| --- | --- | --- |
-| ![Landing](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Predicción de saldo por semana](docs/screenshots/prediccion.png) |
+## De qué trata
 
-| Cuentas | Metas de ahorro | Reportes | Móvil |
-| --- | --- | --- | --- |
-| ![Cuentas: gastos del día y ahorro, con el dinero movido entre ellas](docs/screenshots/cuentas.png) | ![Metas de ahorro con progreso](docs/screenshots/metas.png) | ![Reportes: comparación y gasto por categoría](docs/screenshots/reportes.png) | ![Dashboard en móvil](docs/screenshots/dashboard-movil.png) |
+Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la semana o del mes. Cuenta Clara hace esas cuentas por ti:
 
-## ¿Qué hace?
-
-1. Te registras e indicas tu **monto inicial**.
-2. Añades tus **gastos fijos** (internet, datos móviles, pasaje…).
-3. Indicas cuánto **ingresas** y con qué frecuencia (diario, semanal, quincenal, mensual o personalizado).
+1. Indicas tus **cuentas** (la de gastos del día, la de ahorro, la de fondos…) y cuánto tiene cada una.
+2. Añades tus **gastos fijos**: internet, datos, pasaje…
+3. Indicas cuánto **ingresas** y cada cuánto: diario, semanal, quincenal, mensual o a tu medida.
 4. La app te muestra tu saldo, una **proyección por periodo** y si vas dentro o por encima de tu **límite de gasto**.
 
-Ejemplo: monto inicial $100, gasto semanal $30 → quedan $70. Si ese periodo ingresan $160 → saldo proyectado **$230**.
+> Si tienes $100 y gastas $30, te quedan $70. Si esa semana recibes $160, tu saldo proyectado es **$230**.
 
-### Funcionalidades
+## Qué tiene
 
-- **Onboarding de 4 pasos:** monto inicial → gastos fijos → ingreso y frecuencia → límite de gasto.
-- **Dashboard:** saldo, ingresos y gasto del periodo (diario, semanal, quincenal o mensual); gráfica de gasto contra límite que marca en coral los periodos en que te pasaste; próximos gastos fijos; gastos del periodo.
-- **Ingresos y gastos fijos recurrentes**, que se suman y restan solos en sus fechas. Se pueden pausar sin borrarlos.
-- **Movimientos** sueltos con filtros por fecha, tipo y categoría.
-- **Predicción** del saldo para los próximos 4, 8 o 12 periodos.
-- **Varias cuentas** (gastos del día, ahorro, fondos…) con su propio saldo. Solo un nombre: nunca números de cuenta.
-- **Mover dinero entre cuentas** sin que cuente como gasto. Dashboard, predicción y reportes por cuenta o de todas.
-- **Configuración:** moneda, periodo, límite y categorías propias.
-- **Metas de ahorro** con progreso y cuánto apartar por periodo para llegar a la fecha.
-- **Alerta al 80 % del límite** y **comparación con el periodo anterior** en el dashboard.
-- **Gasto por categoría** y **reportes** que comparan periodos.
-- **Reporte en CSV o PDF:** movimientos, cada ingreso y gasto fijo y las transferencias, por cuenta y rango de fechas. El CSV está protegido contra inyección de fórmulas.
-- **Predicción con tendencia:** regresión lineal sobre tu historial, explicada en la propia página.
+- **Página de inicio** que explica la app, con animaciones y demos interactivas.
+- **Registro e inicio de sesión** con una proyección animada y requisitos de contraseña en vivo.
+- **Onboarding** guiado: tus cuentas, gastos fijos, ingresos y límite.
+- **Dashboard:**
+  - tu saldo, lo que ingresaste y lo que gastaste en el periodo;
+  - la gráfica de gasto contra tu límite;
+  - el gasto por categoría y los próximos pagos.
+- **Varias cuentas:** gastos del día, ahorro, fondos… cada una con su saldo, y puedes **mover dinero** entre ellas sin que cuente como gasto.
+- **Ingresos y gastos fijos** que se registran solos en sus fechas, y que puedes pausar.
+- **Movimientos** sueltos, con filtros.
+- **Predicción** de tu saldo para las próximas semanas o meses, con promedio o tendencia.
+- **Metas de ahorro** que te dicen cuánto apartar por periodo para llegar a tiempo.
+- **Alertas** al acercarte a tu límite y **comparación** con el periodo anterior.
+- **Reportes** descargables en **CSV o PDF**.
+- Pensada para **celular y escritorio**, accesible con teclado y lector de pantalla.
 
-## Stack
+## Capturas
 
-| Capa | Tecnología |
-| --- | --- |
-| Frontend | Next.js (App Router), TypeScript, Tailwind CSS, React Hook Form + Zod, Recharts |
-| Backend | Python 3.12, FastAPI, SQLAlchemy 2.x, Alembic, Pydantic v2 |
-| Base de datos | PostgreSQL 16 |
-| Infra local | Docker Compose |
-| Calidad | pytest, Vitest + Testing Library, Playwright + axe-core, ruff, ESLint + Prettier, GitHub Actions |
-
-## Arquitectura
-
-```mermaid
-flowchart LR
-    B[Navegador] -- "HTTPS · cookies HttpOnly" --> W["Next.js 16<br/>páginas + proxy /api<br/>CSP con nonce"]
-    W -- "/api/* (rewrite)" --> A["FastAPI<br/>auth · CRUD · cálculos"]
-    A -- SQLAlchemy --> D[(PostgreSQL 16)]
-```
-
-El navegador solo habla con la app web; Next.js reenvía `/api/*` a FastAPI, así que las cookies de sesión son del mismo origen. Detalle por capas, flujo de autenticación y modelo de datos en [`docs/architecture.md`](docs/architecture.md).
-
-## Cómo correrlo
-
-Requisitos: [Docker Desktop](https://www.docker.com/products/docker-desktop/) y Git.
-
-```bash
-git clone https://github.com/itssmauu/cuenta-clara.git
-cd cuenta-clara
-cp .env.example .env   # edita los valores
-docker compose up -d --build
-```
-
-Esto levanta PostgreSQL 16, la API (que aplica las migraciones al arrancar) y el frontend:
-
-- App web: <http://localhost:3000>
-- API: <http://localhost:8000/api/v1/health>
-- Documentación interactiva (Swagger): <http://localhost:8000/docs>
-
-Para trabajar sin Docker, ver [`backend/README.md`](backend/README.md) y [`frontend/README.md`](frontend/README.md).
-
-> **¿Ya tienes PostgreSQL instalado en tu máquina?** Ocupa el puerto 5432. Cambia `POSTGRES_PORT=5433` en `.env` (y el puerto en `DATABASE_URL` / `TEST_DATABASE_URL`).
-
-## Variables de entorno
-
-Definidas en [`.env.example`](.env.example). Nunca se commitea `.env`.
-
-| Variable | Descripción |
-| --- | --- |
-| `POSTGRES_USER` | Usuario de la base de datos |
-| `POSTGRES_PASSWORD` | Contraseña de la base de datos |
-| `POSTGRES_DB` | Nombre de la base de datos |
-| `POSTGRES_PORT` | Puerto del host (solo `127.0.0.1`), por defecto `5432` |
-| `APP_ENV` | `development`, `test` o `production` (en producción se desactiva `/docs`) |
-| `LOG_LEVEL` | `DEBUG`, `INFO`, `WARNING` o `ERROR` |
-| `BACKEND_PORT` | Puerto del host para la API, por defecto `8000` |
-| `DATABASE_URL` | Conexión de la API cuando corre fuera de Docker |
-| `TEST_DATABASE_URL` | Base **desechable** para los tests (se borra en cada corrida) |
-| `JWT_SECRET_KEY` | Clave para firmar los tokens (≥ 32 caracteres aleatorios) |
-| `ACCESS_TOKEN_TTL_MINUTES` / `REFRESH_TOKEN_TTL_DAYS` | Duración de la sesión (15 min / 7 días) |
-| `COOKIE_SECURE` | Cookies solo por HTTPS; obligatorio `true` en producción |
-| `LOGIN_RATE_LIMIT` / `REGISTER_RATE_LIMIT` / `EMAIL_RATE_LIMIT` | Límites por IP y por correo |
-| `MAX_FAILED_LOGINS` / `LOCKOUT_MINUTES` | Bloqueo temporal tras intentos fallidos |
-| `FRONTEND_ORIGIN` | Único origen permitido por CORS |
-| `FORWARDED_ALLOW_IPS` | IPs de proxy en las que la API confía para `X-Forwarded-For` |
-| `FRONTEND_PORT` | Puerto del host para la app web, por defecto `3000` |
-| `API_INTERNAL_URL` | A dónde reenvía Next.js las peticiones `/api/*` |
-
-## Estructura
-
-```
-cuenta-clara/
-├─ backend/            # API FastAPI
-├─ frontend/           # App Next.js
-├─ infra/              # scripts de infraestructura (init de Postgres)
-├─ docs/               # arquitectura, decisiones, seguridad, cálculos, pruebas, capturas
-├─ .github/workflows/  # CI
-├─ docker-compose.yml
-└─ .env.example
-```
-
-## Roadmap
-
-- [x] **Fase 0:** base del repo, Docker Compose con Postgres, CI
-- [x] **Fase 1:** backend núcleo (config, BD, modelos, migraciones, salud)
-- [x] **Fase 2:** autenticación segura (Argon2id, JWT + refresh rotativo, rate limiting)
-- [x] **Fase 3:** datos financieros (ajustes, ingresos, gastos fijos, transacciones, categorías)
-- [x] **Fase 4:** dashboard y predicción
-- [x] **Fase 5:** frontend base (tokens de diseño, landing, login/registro)
-- [x] **Fase 6:** onboarding y dashboard
-- [x] **Fase 7:** resto de pantallas
-- [x] **Fase 8:** pulido, accesibilidad, E2E y documentación
-- [x] **Fase 9:** metas de ahorro, alertas al 80 % del límite, comparación con el periodo anterior, gasto por categoría, exportar a CSV y predicción con regresión lineal
-- [x] **Cuentas múltiples:** gastos, ahorro y fondos por separado, transferencias entre cuentas y metas que mueven dinero
-
-## Calidad y pruebas
-
-Cada push a `main` y cada PR pasan por CI: lint, tipos, pruebas, build, auditoría de dependencias y el stack completo en Docker con pruebas end-to-end.
-
-| Nivel | Herramienta | Qué cubre |
+| Inicio | Registro | Cuentas |
 | --- | --- | --- |
-| Backend | pytest | Cálculos (incluido 100 − 30 + 160 = 230), API, seguridad (tokens falsificados, CSRF, rate limiting, bloqueo) y anti-IDOR por recurso |
-| Frontend | Vitest + Testing Library | Validaciones, cliente de API, formularios, dashboard y cada pantalla |
-| End-to-end | Playwright | Registro → onboarding → dashboard → movimientos → cerrar sesión, contra el stack real |
-| Accesibilidad | axe-core | Auditoría WCAG 2.2 AA de **todas** las pantallas, sin violaciones |
+| ![Página de inicio](docs/screenshots/landing.png) | ![Registro con requisitos de contraseña en vivo](docs/screenshots/registro.png) | ![Cuentas: gastos del día y ahorro](docs/screenshots/cuentas.png) |
 
-Cómo correr cada nivel: [`docs/testing.md`](docs/testing.md).
+| Predicción | Metas de ahorro | Reportes |
+| --- | --- | --- |
+| ![Predicción de saldo por semana](docs/screenshots/prediccion.png) | ![Metas de ahorro con progreso](docs/screenshots/metas.png) | ![Reportes: comparación y gasto por categoría](docs/screenshots/reportes.png) |
 
-## Documentación
+<p align="center">
+  <img src="docs/screenshots/dashboard-movil.png" alt="Dashboard en el celular" width="300">
+</p>
 
-| Documento | Contenido |
-| --- | --- |
-| [`docs/architecture.md`](docs/architecture.md) | Capas, flujo de una petición, autenticación y modelo de datos |
-| [`docs/security.md`](docs/security.md) | Cada medida de seguridad, dónde está y qué test la cubre |
-| [`docs/calculations.md`](docs/calculations.md) | Cómo se calculan el saldo, el límite y la predicción |
-| [`docs/testing.md`](docs/testing.md) | Estrategia de pruebas y cómo ejecutarlas |
-| [`docs/decisions.md`](docs/decisions.md) | Registro de decisiones con su porqué |
+## Privacidad y seguridad
 
-## Seguridad
+Tus finanzas son solo tuyas:
 
-La app maneja información financiera, así que la seguridad es un requisito central: Argon2id, sesiones en cookies `HttpOnly` con refresh rotativo y detección de robo, CSRF, rate limiting, bloqueo temporal y errores que no revelan qué correos existen. Detalle completo, con dónde está implementada cada medida y qué test la cubre, en [`docs/security.md`](docs/security.md).
+- Las contraseñas se guardan cifradas.
+- Las sesiones son seguras.
+- Nadie más puede ver tus datos.
+- La app **nunca te pide números de cuenta, tarjetas ni claves bancarias**: tus cuentas se reconocen solo por un nombre que tú eliges.
 
-Cómo se calculan el saldo, el límite de gasto y la predicción: [`docs/calculations.md`](docs/calculations.md).
+## Hecho con
+
+Next.js · TypeScript · Tailwind CSS · Python · FastAPI · PostgreSQL · Docker
+
+---
+
+Proyecto personal de portafolio.
