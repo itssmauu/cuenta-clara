@@ -13,11 +13,17 @@ import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
-import { financeApi, type DashboardPeriod, type TransactionType } from "@/lib/finance-api";
+import {
+  financeApi,
+  type AccountScope,
+  type DashboardPeriod,
+  type TransactionType,
+} from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, subtractMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
+import { AccountPicker } from "./accounts-ui";
 import { td, th } from "./RowActions";
 
 function isPeriod(value: string): value is DashboardPeriod {
@@ -52,9 +58,11 @@ export function ReportsPage() {
     ? settings.income_period
     : "monthly";
   const [period, setPeriod] = useState<DashboardPeriod>(initial);
-  const [report, reload] = useResource(`report:${period}:${today}`, () =>
-    financeApi.getDashboard(period, today),
+  const [account, setAccount] = useState<AccountScope>(undefined);
+  const [report, reload] = useResource(`report:${period}:${account ?? "primary"}:${today}`, () =>
+    financeApi.getDashboard(period, today, account),
   );
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
   const [exportFilters, setExportFilters] = useState<{
     from: string;
     to: string;
@@ -73,19 +81,30 @@ export function ReportsPage() {
     <>
       <PageHeader
         title="Reportes"
-        subtitle="Compara periodos, mira en qué se va tu dinero y descarga tus datos"
+        subtitle={
+          data
+            ? `${data.account?.name ?? "Todas tus cuentas"}: compara periodos, mira en qué se va tu dinero y descarga tus datos`
+            : "Compara periodos, mira en qué se va tu dinero y descarga tus datos"
+        }
         actions={
-          <SegmentedControl
-            label="Periodo"
-            options={PERIOD_OPTIONS.map((option) => ({
-              value: option,
-              label: FREQUENCY_LABELS[option],
-            }))}
-            value={period}
-            onChange={setPeriod}
-            layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
-            optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
-          />
+          <>
+            <AccountPicker
+              accounts={accountList.data ?? []}
+              value={account}
+              onChange={setAccount}
+            />
+            <SegmentedControl
+              label="Periodo"
+              options={PERIOD_OPTIONS.map((option) => ({
+                value: option,
+                label: FREQUENCY_LABELS[option],
+              }))}
+              value={period}
+              onChange={setPeriod}
+              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
+            />
+          </>
         }
       />
 
@@ -215,6 +234,8 @@ export function ReportsPage() {
               from: exportFilters.from || undefined,
               to: exportFilters.to || undefined,
               type: exportFilters.type || undefined,
+              // The CSV follows the account chosen above (all of them for "Todas")
+              account_id: account === "all" ? undefined : (data?.account?.id ?? undefined),
             })}
             download
             className={buttonClass("primary", "md", "min-h-12")}

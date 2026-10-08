@@ -20,11 +20,18 @@ import { niceScale } from "@/components/dashboard/SpendingChart";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
-import { financeApi, type DashboardPeriod, type Estimator, type Forecast } from "@/lib/finance-api";
+import {
+  financeApi,
+  type AccountScope,
+  type DashboardPeriod,
+  type Estimator,
+  type Forecast,
+} from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
+import { AccountPicker } from "./accounts-ui";
 import { td, th } from "./RowActions";
 
 const HORIZONS = [4, 8, 12];
@@ -140,11 +147,14 @@ export function ForecastPage() {
   // undefined = the user's own income period (may be a custom length)
   const [period, setPeriod] = useState<DashboardPeriod | undefined>(undefined);
   const [estimator, setEstimator] = useState<Estimator>("average");
+  // undefined = the primary (day-to-day) account
+  const [account, setAccount] = useState<AccountScope>(undefined);
 
   const [forecast, reload] = useResource(
-    `forecast:${horizon}:${period ?? "user"}:${estimator}:${today}`,
-    () => financeApi.getForecast(horizon, period, today, estimator),
+    `forecast:${horizon}:${period ?? "user"}:${estimator}:${account ?? "primary"}:${today}`,
+    () => financeApi.getForecast(horizon, period, today, estimator, account),
   );
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
   const data = forecast.data;
   const money = (value: string) => formatMoney(value, data?.currency ?? settings.currency);
   const last = data?.periods.at(-1);
@@ -155,9 +165,18 @@ export function ForecastPage() {
     <>
       <PageHeader
         title="Predicción"
-        subtitle="Tu saldo proyectado para los próximos periodos"
+        subtitle={
+          data
+            ? `Saldo proyectado de ${data.account?.name ?? "todas tus cuentas"}`
+            : "Tu saldo proyectado para los próximos periodos"
+        }
         actions={
           <>
+            <AccountPicker
+              accounts={accountList.data ?? []}
+              value={account}
+              onChange={setAccount}
+            />
             <SegmentedControl
               label="Periodo"
               options={PERIOD_OPTIONS.map((option) => ({
