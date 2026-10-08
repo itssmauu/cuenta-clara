@@ -1,13 +1,13 @@
-"""Request/response models for settings, categories, incomes, fixed expenses and transactions."""
+"""Request/response models for settings, accounts, categories, money movements and goals."""
 
 import uuid
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Annotated, Self
 
-from pydantic import Field, StringConstraints, computed_field, model_validator
+from pydantic import AfterValidator, Field, StringConstraints, computed_field, model_validator
 
-from app.models import Frequency, TransactionType
+from app.models import AccountKind, Frequency, TransactionType
 from app.schemas.common import (
     CustomPeriodDays,
     FrequencyFields,
@@ -25,8 +25,7 @@ from app.schemas.common import (
 
 
 class SettingsIn(InputModel):
-    initial_balance: NonNegativeMoney
-    # The day initial_balance was true (the client sends its local date)
+    # The day the accounts' initial balances were true (the client sends its local date)
     balance_as_of: date
     currency: Annotated[str, StringConstraints(pattern=r"^[A-Z]{3}$")] = "USD"
     income_period: Frequency
@@ -42,13 +41,80 @@ class SettingsIn(InputModel):
 
 
 class SettingsOut(OutputModel):
-    initial_balance: Decimal
     balance_as_of: date
     currency: str
     income_period: Frequency
     custom_period_days: int | None
     spending_limit: Decimal | None
     onboarding_completed: bool
+
+
+# ── Accounts ────────────────────────────────────────────
+
+# More digits than this in a name looks like an account or card number
+MAX_DIGITS_IN_ACCOUNT_NAME = 5
+
+
+def _no_account_number(name: str) -> str:
+    """The app only needs a name to tell accounts apart; never store bank numbers."""
+    if sum(char.isdigit() for char in name) > MAX_DIGITS_IN_ACCOUNT_NAME:
+        raise ValueError(
+            "Por tu seguridad, no escribas números de cuenta o tarjeta: "
+            "usa un nombre como «Ahorro» o «Gastos del día»."
+        )
+    return name
+
+
+AccountName = Annotated[ShortText, AfterValidator(_no_account_number)]
+
+
+class AccountIn(InputModel):
+    name: AccountName
+    kind: AccountKind
+    # What the account held on balance_as_of
+    initial_balance: NonNegativeMoney = Decimal("0")
+    # Making an account primary takes the role away from the previous one
+    is_primary: bool = False
+
+
+class AccountOut(OutputModel):
+    id: uuid.UUID
+    name: str
+    kind: AccountKind
+    initial_balance: Decimal
+    is_primary: bool
+    # Balance at the end of the reference day
+    balance: Decimal
+    created_at: datetime
+    updated_at: datetime
+
+
+# ── Transfers ───────────────────────────────────────────
+
+
+class TransferIn(InputModel):
+    from_account_id: uuid.UUID
+    to_account_id: uuid.UUID
+    amount: PositiveMoney
+    occurred_on: date
+    note: Note | None = None
+
+    @model_validator(mode="after")
+    def _two_accounts(self) -> Self:
+        if self.from_account_id == self.to_account_id:
+            raise ValueError("Elige dos cuentas distintas.")
+        return self
+
+
+class TransferOut(OutputModel):
+    id: uuid.UUID
+    from_account_id: uuid.UUID
+    to_account_id: uuid.UUID
+    amount: Decimal
+    occurred_on: date
+    note: str | None
+    goal_id: uuid.UUID | None
+    created_at: datetime
 
 
 # ── Categories ──────────────────────────────────────────
@@ -79,6 +145,8 @@ class IncomeIn(FrequencyFields):
     amount: PositiveMoney
     start_date: date
     is_active: bool = True
+    # Where it arrives. Omitted: the primary account on create, unchanged on update
+    account_id: uuid.UUID | None = None
 
 
 class IncomeOut(OutputModel):
@@ -89,6 +157,7 @@ class IncomeOut(OutputModel):
     custom_period_days: int | None
     start_date: date
     is_active: bool
+    account_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 
@@ -103,6 +172,8 @@ class FixedExpenseIn(FrequencyFields):
     due_day: Annotated[int, Field(ge=1, le=31)] | None = None
     category_id: uuid.UUID | None = None
     is_active: bool = True
+    # Paid from. Omitted: the primary account on create, unchanged on update
+    account_id: uuid.UUID | None = None
 
 
 class FixedExpenseOut(OutputModel):
@@ -115,6 +186,7 @@ class FixedExpenseOut(OutputModel):
     due_day: int | None
     category_id: uuid.UUID | None
     is_active: bool
+    account_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 
@@ -128,6 +200,8 @@ class TransactionIn(InputModel):
     category_id: uuid.UUID | None = None
     occurred_on: date
     note: Note | None = None
+    # Omitted: the primary account on create, unchanged on update
+    account_id: uuid.UUID | None = None
 
 
 class TransactionOut(OutputModel):
@@ -137,6 +211,7 @@ class TransactionOut(OutputModel):
     category_id: uuid.UUID | None
     occurred_on: date
     note: str | None
+    account_id: uuid.UUID
     created_at: datetime
     updated_at: datetime
 
@@ -156,11 +231,16 @@ class SavingsGoalIn(InputModel):
     target_amount: PositiveMoney
     saved_amount: NonNegativeMoney = Decimal("0")
     due_date: date | None = None
+    # Where the goal's money is kept. Omitted: unlinked on create, unchanged on update
+    account_id: uuid.UUID | None = None
 
 
 class ContributionIn(InputModel):
     # Positive = put money in; negative = take it out
     amount: Annotated[Decimal, Field(max_digits=12, decimal_places=2)]
+    # The other side of the move: money leaves it (deposit) or returns to it (withdrawal).
+    # Omitted, or the goal's own account: the amount is only recorded, no money moves.
+    from_account_id: uuid.UUID | None = None
 
     @model_validator(mode="after")
     def _not_zero(self) -> Self:
@@ -175,6 +255,7 @@ class SavingsGoalOut(OutputModel):
     target_amount: Decimal
     saved_amount: Decimal
     due_date: date | None
+    account_id: uuid.UUID | None
     remaining: Decimal
     progress_percent: int
     completed: bool
