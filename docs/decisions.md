@@ -400,14 +400,15 @@ La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filt
 
 - El usuario pidió Gemini o un modelo de aprendizaje automático. Un modelo de lenguaje es lo que permite conversar y razonar sobre una compra concreta, algo que un modelo entrenado aquí no lograría con el historial de una sola persona.
 - Se usa `google-genai`, el SDK oficial (Apache‑2.0, `pip-audit` limpio), con la Interactions API. La documentación REST no confirmaba todos los campos, así que se verificaron en los tipos del propio SDK.
-- El modelo es configurable (`GEMINI_MODEL`, por defecto `gemini-3.8-flash`). `store=False`: Google no guarda la conversación entre mensajes.
+- El modelo es configurable. Por defecto es `gemini-3.5-flash-lite`: al probarlo con la clave real respondió en ~1 s, mientras `gemini-3.8-flash` devolvía 503 por alta demanda. `store=False`: Google no guarda la conversación entre mensajes.
+- Se hace un solo intento con timeout de 25 s. Los reintentos por defecto del SDK (4–5, con espera creciente) dejaban al usuario esperando más de un minuto cuando el modelo estaba ocupado.
 
 **Privacidad y límites:**
 
 - La clave vive **solo en el backend** y es **opcional**. Sin ella, Balbo aparece como "no disponible" y el resto de la app funciona igual.
 - La conversación existe solo en la pestaña del navegador: no se guarda en la base de datos. Se envían como máximo 12 turnos de hasta 1 000 caracteres.
 - Se envía a Google el resumen financiero y el primer nombre, nunca el correo. Las cuentas no tienen números (D-061). El panel lo avisa: "Balbo usa IA (Gemini de Google) con un resumen de tus finanzas. Es orientación, no asesoría financiera profesional."
-- Hay un máximo de 30 mensajes por usuario por hora (configurable) y un timeout de 30 s. Si el modelo falla, la respuesta es 503 con un mensaje claro.
+- Hay un máximo de 30 mensajes por usuario por hora (configurable). Si el modelo falla, la respuesta es 503 con un mensaje claro.
 
 **Interfaz:**
 

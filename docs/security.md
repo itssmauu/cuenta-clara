@@ -133,7 +133,7 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Solo los datos del usuario autenticado** se usan para el resumen que recibe el modelo. Cubierto por `test_only_the_callers_data_is_sent`.
 - **Qué sale hacia Google:** un resumen financiero (saldos, ingresos y gastos fijos con el nombre que el usuario les dio, predicción, metas) y el primer nombre. Nunca el correo, contraseñas ni números de cuenta. `store=False`, así que Google no conserva la conversación. La interfaz lo avisa.
 - **Inyección de instrucciones:** los datos y la conversación van delimitados como información, separados de las instrucciones del sistema. Las instrucciones tratan cualquier intento de cambiar las reglas como fuera de tema. Ante un fuera de tema, el servidor responde un texto fijo. Cubierto por `test_data_and_conversation_are_fenced_off_from_the_instructions` y `test_off_topic_questions_get_a_fixed_refusal`.
-- **Abuso y costo:** máximo 30 mensajes por usuario por hora (`429`), 12 turnos de hasta 1 000 caracteres, timeout de 30 s. Los roles distintos de `user`/`assistant` se rechazan (`422`).
+- **Abuso y costo:** máximo 30 mensajes por usuario por hora (`429`), 12 turnos de hasta 1 000 caracteres, timeout de 25 s y un solo intento. Los roles distintos de `user`/`assistant` se rechazan (`422`).
 - **Nada se guarda:** la conversación no se escribe en la base de datos y los logs no registran su contenido.
 - **Salida:** la respuesta se muestra como texto plano. Las viñetas se convierten en una lista con React, sin interpretar HTML.
 
