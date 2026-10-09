@@ -110,6 +110,8 @@ def test_balbo_answers_with_the_users_own_numbers(ana: TestClient) -> None:
     for fact in ["Cuenta principal", "Beca", "Pasaje $30.00", "PS5: $100.00 de $550.00", "$40.00"]:
         assert fact in prompt, fact
     assert "Usuario: ¿Es buena idea comprar una PS5?" in prompt
+    # Monthly totals come computed (160 and 30 a week × 30.44 / 7), not left to the model
+    assert "ingresos fijos $695.77, gastos fijos $130.46" in prompt
 
 
 def test_off_topic_questions_get_a_fixed_refusal(ana: TestClient) -> None:
