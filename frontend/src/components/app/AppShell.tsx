@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { Balbo } from "@/components/assistant/Balbo";
+import { TermsGate } from "@/components/legal/TermsGate";
 import { FormAlert } from "@/components/ui/FormAlert";
 
 import { SessionProvider, useSessionLoader } from "./session";
@@ -10,7 +11,7 @@ import { Sidebar } from "./Sidebar";
 
 /** Layout of every signed-in page: sidebar + content, rendered once the session is confirmed. */
 export function AppShell({ children }: { children: ReactNode }) {
-  const { state, setSettings, logout } = useSessionLoader("app");
+  const { state, setSettings, setUser, logout } = useSessionLoader("app");
 
   if (state.status === "error") {
     return (
@@ -28,8 +29,15 @@ export function AppShell({ children }: { children: ReactNode }) {
     );
   }
 
+  // The documents changed since this user accepted them: nothing else until they decide
+  if (!state.user.terms_accepted) {
+    return <TermsGate onAccepted={setUser} onLogout={logout} />;
+  }
+
   return (
-    <SessionProvider value={{ user: state.user, settings: state.settings, setSettings, logout }}>
+    <SessionProvider
+      value={{ user: state.user, settings: state.settings, setSettings, setUser, logout }}
+    >
       <div className="bg-canvas-dashboard min-h-dvh">
         <div className="mx-auto flex max-w-[1360px] flex-col gap-5 p-3 sm:p-5 lg:flex-row">
           <Sidebar />

@@ -10,6 +10,7 @@ export type Session = {
   user: User;
   settings: Settings;
   setSettings: (settings: Settings) => void;
+  setUser: (user: User) => void;
   logout: () => Promise<void>;
 };
 
@@ -52,6 +53,12 @@ export function useSessionLoader(area: "app" | "onboarding") {
     [],
   );
 
+  const setUser = useCallback(
+    (user: User) =>
+      setState((current) => (current.status === "ready" ? { ...current, user } : current)),
+    [],
+  );
+
   const logout = useCallback(async () => {
     try {
       await authApi.logout();
@@ -60,7 +67,7 @@ export function useSessionLoader(area: "app" | "onboarding") {
     }
   }, [router]);
 
-  return { state, setSettings, logout };
+  return { state, setSettings, setUser, logout };
 }
 
 const SessionContext = createContext<Session | null>(null);

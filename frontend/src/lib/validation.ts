@@ -53,6 +53,10 @@ export const registerSchema = z
         error: "La contraseña aún no cumple todos los requisitos.",
       }),
     confirmPassword: z.string().min(1, { error: "Repite tu contraseña." }),
+    // Consent must be an explicit, unticked-by-default choice (Ley 81 de 2019)
+    acceptTerms: z.boolean().refine((accepted) => accepted, {
+      error: "Debes aceptar los Términos y la Política de privacidad para crear tu cuenta.",
+    }),
   })
   .refine((data) => data.password === data.confirmPassword, {
     error: "Las contraseñas no coinciden.",
