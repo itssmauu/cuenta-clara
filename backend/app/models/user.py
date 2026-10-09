@@ -19,6 +19,10 @@ class User(IdMixin, TimestampMixin, Base):
     name: Mapped[str] = mapped_column(String(100))
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
 
+    # Proof of consent (Ley 81): which version of the Terms and Privacy Policy, and when
+    terms_version: Mapped[str | None] = mapped_column(String(20))
+    terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+
     # Temporary lockout after repeated failed logins (see services/auth.py)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, server_default="0")
     locked_until: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))

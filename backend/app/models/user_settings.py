@@ -1,8 +1,8 @@
 import uuid
-from datetime import date
+from datetime import date, datetime
 from decimal import Decimal
 
-from sqlalchemy import Boolean, CheckConstraint, Date, ForeignKey, String, false, func
+from sqlalchemy import Boolean, CheckConstraint, Date, DateTime, ForeignKey, String, false, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, IdMixin, TimestampMixin, str_enum
@@ -32,3 +32,6 @@ class UserSettings(IdMixin, TimestampMixin, Base):
     custom_period_days: Mapped[int | None]
     spending_limit: Mapped[Decimal | None]
     onboarding_completed: Mapped[bool] = mapped_column(Boolean, server_default=false())
+    # Explicit opt-in to send a summary of the user's finances to the AI provider (Balbo).
+    # None = not given (or withdrawn): the assistant stays off for this user
+    assistant_consent_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
