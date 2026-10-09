@@ -2,6 +2,7 @@ from fastapi import APIRouter
 
 from app.api import (
     accounts,
+    assistant,
     auth,
     categories,
     dashboard,
@@ -28,3 +29,4 @@ api_router.include_router(transactions.router)
 api_router.include_router(dashboard.router)
 api_router.include_router(savings_goals.router)
 api_router.include_router(reports.router)
+api_router.include_router(assistant.router)
