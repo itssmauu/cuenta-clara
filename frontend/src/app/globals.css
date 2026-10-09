@@ -534,3 +534,197 @@
     }
   }
 }
+
+/*
+ * Balbo's robot (BalboBot.tsx). Poses switch with data-state; arms and eyes crossfade so
+ * a change of state never snaps. Pivots are in the SVG's own units (transform-box).
+ */
+@layer components {
+  .bb * {
+    transform-box: view-box;
+  }
+
+  .bb-arm,
+  .bb-eyes-happy,
+  .bb-eyes-open {
+    opacity: 0;
+    transition: opacity 200ms var(--ease-out-strong);
+  }
+
+  .bb[data-state="greeting"] .bb-arm-wave,
+  .bb[data-state="attentive"] .bb-arm-rest,
+  .bb[data-state="typing"] .bb-arm-phone,
+  .bb[data-state="greeting"] .bb-eyes-happy,
+  .bb:not([data-state="greeting"]) .bb-eyes-open {
+    opacity: 1;
+  }
+
+  /* Typing: looks down at the phone, which grows into its hand */
+  .bb-head {
+    transform-origin: 60px 85px;
+    transition: rotate 400ms var(--ease-out-strong);
+  }
+
+  .bb-eyes {
+    transform-origin: 60px 50px;
+    transition: translate 300ms var(--ease-out-strong);
+  }
+
+  .bb[data-state="typing"] .bb-head {
+    rotate: -5deg;
+  }
+
+  .bb[data-state="typing"] .bb-eyes {
+    translate: -2px 4px;
+  }
+
+  .bb-phone {
+    transform-origin: 66px 112px;
+    scale: 0.6;
+    transition: scale 260ms var(--ease-out-strong);
+  }
+
+  .bb[data-state="typing"] .bb-phone {
+    scale: 1;
+  }
+
+  @media (prefers-reduced-motion: no-preference) {
+    /* Always: hovering on its jet, blinking */
+    .bb-float {
+      animation: bb-float 3s ease-in-out infinite;
+    }
+
+    .bb-shadow {
+      transform-origin: 60px 144px;
+      animation: bb-shadow 3s ease-in-out infinite;
+    }
+
+    .bb-flame {
+      transform-origin: 60px 123px;
+      animation: bb-flame 0.4s ease-in-out infinite alternate;
+    }
+
+    .bb-eyes {
+      animation: bb-blink 4.5s infinite;
+    }
+
+    /* Greeting: waves hello */
+    .bb[data-state="greeting"] .bb-arm-wave {
+      transform-origin: 82px 94px;
+      animation: bb-wave 1.6s ease-in-out infinite;
+    }
+
+    /* Attentive: head tilted, nodding along, antenna glowing */
+    .bb[data-state="attentive"] .bb-head {
+      animation: bb-attend 3.6s ease-in-out infinite;
+    }
+
+    .bb[data-state="attentive"] .bb-antenna {
+      transform-origin: 60px 9px;
+      animation: bb-glow 1.8s ease-in-out infinite;
+    }
+
+    /* Typing: the dots on the phone light up in turn, the thumb taps */
+    .bb[data-state="typing"] .bb-phone-dot {
+      animation: bb-dot 1s ease-in-out infinite;
+    }
+
+    .bb[data-state="typing"] .bb-phone-dot:nth-of-type(2) {
+      animation-delay: 160ms;
+    }
+
+    .bb[data-state="typing"] .bb-phone-dot:nth-of-type(3) {
+      animation-delay: 320ms;
+    }
+
+    .bb[data-state="typing"] .bb-thumb {
+      animation: bb-tap 0.45s ease-in-out infinite alternate;
+    }
+  }
+
+  @keyframes bb-float {
+    50% {
+      translate: 0 -4px;
+    }
+  }
+
+  @keyframes bb-shadow {
+    50% {
+      scale: 0.85;
+      opacity: 0.07;
+    }
+  }
+
+  @keyframes bb-flame {
+    to {
+      scale: 1 1.25;
+      opacity: 0.85;
+    }
+  }
+
+  @keyframes bb-blink {
+    0%,
+    92%,
+    100% {
+      scale: 1 1;
+    }
+    95% {
+      scale: 1 0.1;
+    }
+  }
+
+  @keyframes bb-wave {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+    25%,
+    75% {
+      rotate: -22deg;
+    }
+    50% {
+      rotate: 8deg;
+    }
+  }
+
+  @keyframes bb-attend {
+    0%,
+    100% {
+      rotate: 0deg;
+    }
+    20%,
+    45% {
+      rotate: 7deg;
+    }
+    55% {
+      rotate: 3deg;
+    }
+    65%,
+    85% {
+      rotate: 7deg;
+    }
+  }
+
+  @keyframes bb-glow {
+    50% {
+      scale: 1.25;
+      opacity: 0.75;
+    }
+  }
+
+  @keyframes bb-dot {
+    0%,
+    100% {
+      opacity: 0.25;
+    }
+    50% {
+      opacity: 1;
+    }
+  }
+
+  @keyframes bb-tap {
+    to {
+      translate: -1.5px -2px;
+    }
+  }
+}

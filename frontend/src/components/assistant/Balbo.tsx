@@ -1,11 +1,13 @@
 "use client";
 
-import { MessageCircle, Send, Sparkles, X } from "lucide-react";
+import { MessageCircle, Send, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
 
 import { useSession } from "@/components/app/session";
 import { ApiError } from "@/lib/api";
 import { assistantApi, MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/assistant-api";
+
+import { BalboBot, type BalboState } from "./BalboBot";
 
 const SUGGESTIONS = [
   "¿Me alcanza para comprar una PS5?",
@@ -66,11 +68,11 @@ export function Balbo() {
     return () => document.removeEventListener("keydown", onKey);
   }, [open]);
 
-  // Keep the newest message in view
+  // Keep the newest message in view; an empty chat starts at the top, where Balbo waves
   useEffect(() => {
     const log = logRef.current;
-    if (log) log.scrollTop = log.scrollHeight;
-  }, [messages, sending]);
+    if (log) log.scrollTop = messages.length === 0 && !sending ? 0 : log.scrollHeight;
+  }, [messages, sending, open]);
 
   function close() {
     setOpen(false);
@@ -128,6 +130,12 @@ export function Balbo() {
   }
 
   const firstName = user.name.split(" ")[0];
+  // What the robot does: waves on an empty chat, types while replying, listens otherwise
+  const botState: BalboState = sending
+    ? "typing"
+    : messages.length === 0
+      ? "greeting"
+      : "attentive";
   const offline = available === false;
 
   return (
@@ -141,12 +149,7 @@ export function Balbo() {
         className="balbo-panel fixed right-4 bottom-24 z-40 flex h-[min(580px,calc(100dvh-8rem))] w-[min(390px,calc(100vw-2rem))] origin-bottom-right flex-col overflow-hidden rounded-[28px] bg-white shadow-[0_24px_64px_-16px_rgb(21_25_61/0.45)] sm:right-6"
       >
         <header className="bg-ink flex items-center gap-3 px-5 py-4 text-white">
-          <span
-            aria-hidden="true"
-            className="bg-accent text-ink grid size-10 shrink-0 place-items-center rounded-full"
-          >
-            <Sparkles className="size-5" />
-          </span>
+          <BalboBot size={44} state={botState} />
           <div className="flex min-w-0 flex-1 flex-col">
             <h2 id={titleId} className="font-display text-lg leading-tight font-bold">
               Balbo
@@ -177,6 +180,15 @@ export function Balbo() {
           aria-label="Conversación con Balbo"
           className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
         >
+          {messages.length === 0 ? (
+            <div className="flex justify-center pt-1 pb-1">
+              <BalboBot
+                size={108}
+                state="greeting"
+                label="Balbo, el robot de Cuenta Clara, saludando"
+              />
+            </div>
+          ) : null}
           <Bubble role="assistant">
             {`¡Hola, ${firstName}! Soy Balbo 👋\nConozco tus cuentas, tus gastos fijos, tu predicción y tus metas. Pregúntame si te conviene una compra o cómo ahorrar para algo.`}
           </Bubble>
@@ -213,18 +225,19 @@ export function Balbo() {
           ))}
 
           {sending ? (
-            <div
-              role="status"
-              className="bg-canvas flex items-center gap-1.5 self-start rounded-2xl rounded-bl-md px-4 py-3"
-            >
+            <div role="status" className="animate-rise-in flex items-end gap-1 self-start">
               <span className="sr-only">Balbo está escribiendo…</span>
-              {DOT_DELAYS.map((delay) => (
-                <span
-                  key={delay}
-                  aria-hidden="true"
-                  className={`balbo-dot bg-muted size-2 rounded-full ${delay}`}
-                />
-              ))}
+              {/* Balbo pulls out its phone and types */}
+              <BalboBot size={46} state="typing" />
+              <div className="bg-canvas mb-2 flex items-center gap-1.5 rounded-2xl rounded-bl-md px-4 py-3">
+                {DOT_DELAYS.map((delay) => (
+                  <span
+                    key={delay}
+                    aria-hidden="true"
+                    className={`balbo-dot bg-muted size-2 rounded-full ${delay}`}
+                  />
+                ))}
+              </div>
             </div>
           ) : null}
         </div>
