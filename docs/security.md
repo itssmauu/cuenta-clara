@@ -136,6 +136,14 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Abuso y costo:** máximo 30 mensajes por usuario por hora (`429`), 12 turnos de hasta 1 000 caracteres, timeout de 25 s y un solo intento. Los roles distintos de `user`/`assistant` se rechazan (`422`).
 - **Nada se guarda:** la conversación no se escribe en la base de datos y los logs no registran su contenido.
 - **Salida:** la respuesta se muestra como texto plano. Las viñetas se convierten en una lista con React, sin interpretar HTML.
+- **Consentimiento previo:** Balbo está apagado hasta que el usuario lo activa. Sin consentimiento, `POST /assistant/chat` responde `403` sin llamar al modelo. Cubierto por `test_nothing_is_sent_without_explicit_consent`.
+
+### Datos personales (Ley 81 de 2019)
+
+- **Consentimiento registrado:** el registro exige `accept_terms: true` (la casilla nunca viene marcada) y se guarda la versión y la fecha. Si los documentos cambian (`TERMS_VERSION`), la app bloquea el acceso hasta que el usuario acepte de nuevo, sin impedirle descargar o borrar sus datos.
+- **Acceso y portabilidad:** `GET /me/export` devuelve todo en JSON, solo del usuario de la sesión, sin `password_hash`, `token_hash` ni ids internos de otros usuarios. Cubierto por `test_the_export_has_all_the_users_data_and_no_secrets` y `test_the_export_only_has_the_callers_data`.
+- **Cancelación:** `POST /me/delete` pide la contraseña, tiene el mismo límite de intentos que el login y borra en cascada todas las filas del usuario. Cubierto por `test_deleting_the_account_needs_the_password_and_removes_everything`.
+- **Cookies:** solo las tres técnicas de sesión y CSRF. No hay analítica ni terceros, así que el aviso es informativo y no pide elegir.
 
 ## 9. Dependencias
 

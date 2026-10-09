@@ -58,11 +58,14 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | Método | Ruta | Descripción |
 | --- | --- | --- |
 | `GET` | `/api/v1/health` | Estado de la API y de la base de datos (`503` si la BD no responde) |
-| `POST` | `/api/v1/auth/register` | Crea la cuenta. Siempre `202`, exista o no el correo |
+| `POST` | `/api/v1/auth/register` | Crea la cuenta. Requiere `accept_terms: true`. Siempre `202`, exista o no el correo |
 | `POST` | `/api/v1/auth/login` | Inicia sesión y deja las cookies de sesión |
 | `POST` | `/api/v1/auth/refresh` | Rota la sesión (requiere `X-CSRF-Token`) |
 | `POST` | `/api/v1/auth/logout` | Revoca la sesión y borra las cookies (requiere `X-CSRF-Token`) |
-| `GET` | `/api/v1/auth/me` | Usuario de la sesión actual |
+| `GET` | `/api/v1/auth/me` | Usuario de la sesión actual, con `terms_accepted` (si aceptó la versión vigente) |
+| `POST` | `/api/v1/me/consent` | Acepta la versión vigente de los Términos y la Política de privacidad. Cuerpo: `terms_version` |
+| `GET` | `/api/v1/me/export` | Todos los datos del usuario en JSON (derecho de acceso y portabilidad), sin hashes ni tokens |
+| `POST` | `/api/v1/me/delete` | Elimina la cuenta y todos sus datos. Cuerpo: `password`. Borra las cookies (`204`) |
 | `GET` / `PUT` | `/api/v1/settings` | Fecha desde la que se llevan las cuentas, moneda, periodo de ingreso, límite de gasto |
 | `GET` / `POST` | `/api/v1/accounts` | Cuentas (nombre, tipo, saldo inicial, principal) con su saldo a `?date=`; máximo 10 |
 | `PUT` / `DELETE` | `/api/v1/accounts/{id}` | Cambiar la principal pasa el rol; no se borra la principal ni una cuenta con datos |
@@ -82,7 +85,8 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `PUT` / `DELETE` | `/api/v1/savings-goals/{id}` | |
 | `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0. Con `from_account_id` el dinero se mueve entre esa cuenta y la de la meta |
 | `GET` | `/api/v1/transactions/export` | CSV de movimientos con los mismos filtros que la lista |
-| `GET` | `/api/v1/assistant` | Nombre de Balbo y si está disponible (hay `GEMINI_API_KEY`) |
+| `GET` | `/api/v1/assistant` | Nombre de Balbo, si está disponible (hay `GEMINI_API_KEY`) y si el usuario lo activó (`consented`) |
+| `POST` / `DELETE` | `/api/v1/assistant/consent` | Activa o desactiva Balbo. Sin consentimiento, `chat` responde `403` y no se envía nada a Gemini |
 | `POST` | `/api/v1/assistant/chat` | Pregunta a Balbo. Cuerpo: `messages` (hasta 12 turnos `user`/`assistant`, el último del usuario). Responde `reply` y `on_topic`. Máximo `ASSISTANT_MESSAGES_PER_HOUR` por usuario |
 | `GET` | `/api/v1/reports/export` | Reporte completo (movimientos, cada ingreso y gasto fijo, transferencias). `format` (`csv` o `pdf`), `from`, `to`, `type`, `account` (id o `all`). Sin fechas: desde `balance_as_of` hasta hoy |
 
