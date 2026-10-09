@@ -67,6 +67,7 @@ services:
       args:
         # The Next.js server proxies /api/* to the backend over the compose network
         API_INTERNAL_URL: http://backend:8000
+        NEXT_PUBLIC_PRIVACY_EMAIL: ${NEXT_PUBLIC_PRIVACY_EMAIL:-}
     restart: unless-stopped
     ports:
       - "127.0.0.1:${FRONTEND_PORT:-3000}:3000"

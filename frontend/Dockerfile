@@ -9,7 +9,10 @@ FROM node:24-alpine AS build
 WORKDIR /app
 # next.config.ts is read at build time: the API address is baked into the rewrites
 ARG API_INTERNAL_URL=http://backend:8000
+# Public contact for privacy requests, shown in the legal pages (optional)
+ARG NEXT_PUBLIC_PRIVACY_EMAIL=
 ENV API_INTERNAL_URL=$API_INTERNAL_URL \
+    NEXT_PUBLIC_PRIVACY_EMAIL=$NEXT_PUBLIC_PRIVACY_EMAIL \
     NEXT_TELEMETRY_DISABLED=1
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
