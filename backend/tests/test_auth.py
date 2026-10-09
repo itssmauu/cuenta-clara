@@ -105,6 +105,7 @@ def test_login_sets_secure_session_cookies(client: TestClient) -> None:
         "id": response.json()["id"],
         "email": "ana@example.com",
         "name": "Ana",
+        "terms_accepted": True,
     }
     access = set_cookie_header(response, "access_token").lower()
     refresh = set_cookie_header(response, "refresh_token").lower()
