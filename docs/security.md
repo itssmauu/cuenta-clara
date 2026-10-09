@@ -127,6 +127,16 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **PDF:** se genera en el servidor dibujando texto plano con `fpdf2`. No se interpreta HTML ni nada que el usuario escriba, así que no hay inyección posible.
 - El rango (máximo 3 años) y las filas (máximo 10 000) están limitados, para que nadie pida un archivo enorme.
 
+### Balbo, el asistente con IA
+
+- **La clave de Gemini solo existe en el backend** (`GEMINI_API_KEY`, nunca en el navegador ni en el repo). Es opcional: sin ella el asistente se desactiva.
+- **Solo los datos del usuario autenticado** se usan para el resumen que recibe el modelo. Cubierto por `test_only_the_callers_data_is_sent`.
+- **Qué sale hacia Google:** un resumen financiero (saldos, ingresos y gastos fijos con el nombre que el usuario les dio, predicción, metas) y el primer nombre. Nunca el correo, contraseñas ni números de cuenta. `store=False`, así que Google no conserva la conversación. La interfaz lo avisa.
+- **Inyección de instrucciones:** los datos y la conversación van delimitados como información, separados de las instrucciones del sistema. Las instrucciones tratan cualquier intento de cambiar las reglas como fuera de tema. Ante un fuera de tema, el servidor responde un texto fijo. Cubierto por `test_data_and_conversation_are_fenced_off_from_the_instructions` y `test_off_topic_questions_get_a_fixed_refusal`.
+- **Abuso y costo:** máximo 30 mensajes por usuario por hora (`429`), 12 turnos de hasta 1 000 caracteres, timeout de 30 s. Los roles distintos de `user`/`assistant` se rechazan (`422`).
+- **Nada se guarda:** la conversación no se escribe en la base de datos y los logs no registran su contenido.
+- **Salida:** la respuesta se muestra como texto plano. Las viñetas se convierten en una lista con React, sin interpretar HTML.
+
 ## 9. Dependencias
 
 - Versiones exactas: `==` en `pyproject.toml` y sin rangos en `package.json`, más `package-lock.json`.
