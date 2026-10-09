@@ -4,7 +4,7 @@
  */
 import { z } from "zod";
 
-import type { DashboardPeriod, Frequency } from "./finance-api";
+import type { AccountKind, DashboardPeriod, Frequency } from "./finance-api";
 
 export const FREQUENCY_LABELS: Record<Frequency, string> = {
   daily: "Diario",
@@ -70,9 +70,57 @@ function requireDaysWhenCustom<
 
 const isoDate = z.iso.date({ error: "Elige una fecha válida." });
 
-export const initialBalanceSchema = z.object({
+// ── Accounts ───────────────────────────────────────────
+
+export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
+  spending: "Gastos del día",
+  savings: "Ahorro",
+  investment: "Fondos o inversión",
+  other: "Otro",
+};
+export const ACCOUNT_KINDS = Object.keys(ACCOUNT_KIND_LABELS) as AccountKind[];
+
+/** Same rule as the API: more digits than this looks like an account or card number. */
+const MAX_DIGITS_IN_ACCOUNT_NAME = 5;
+
+export const accountNameField = z
+  .string()
+  .trim()
+  .min(1, { error: "Escribe un nombre para reconocerla." })
+  .max(50, { error: "Máximo 50 caracteres." })
+  .refine((name) => (name.match(/\d/g) ?? []).length <= MAX_DIGITS_IN_ACCOUNT_NAME, {
+    error:
+      "Por tu seguridad, no escribas números de cuenta o tarjeta: usa un nombre como «Ahorro».",
+  });
+
+export const accountSchema = z.object({
+  name: accountNameField,
+  kind: z.enum(ACCOUNT_KINDS as [AccountKind, ...AccountKind[]], { error: "Elige un tipo." }),
   initial_balance: money({ allowZero: true }),
+  is_primary: z.boolean(),
 });
+
+export const transferSchema = z
+  .object({
+    from_account_id: z.string().min(1, { error: "Elige de qué cuenta sale." }),
+    to_account_id: z.string().min(1, { error: "Elige a qué cuenta llega." }),
+    amount: money({ allowZero: false }),
+    occurred_on: isoDate,
+    note: z
+      .string()
+      .trim()
+      .max(255, { error: "Máximo 255 caracteres." })
+      .transform((value) => value || null),
+  })
+  .refine((data) => data.from_account_id !== data.to_account_id, {
+    error: "Elige dos cuentas distintas.",
+    path: ["to_account_id"],
+  });
+
+export type AccountForm = z.input<typeof accountSchema>;
+export type AccountValues = z.output<typeof accountSchema>;
+export type TransferForm = z.input<typeof transferSchema>;
+export type TransferValues = z.output<typeof transferSchema>;
 
 const fixedExpenseFields = z.object({
   name: z.string().trim().min(1, { error: "Escribe un nombre." }).max(100),
@@ -101,6 +149,7 @@ export const fixedExpenseFormSchema = fixedExpenseFields
   .extend({
     start_date: z.iso.date({ error: "Elige una fecha válida." }),
     category_id: z.string().transform((value) => value || null),
+    account_id: z.string().transform((value) => value || null),
   })
   .superRefine(requireDaysWhenCustom);
 
@@ -111,6 +160,10 @@ export const incomeSchema = z
     frequency,
     custom_period_days: optionalDays,
     start_date: isoDate,
+    account_id: z
+      .string()
+      .optional()
+      .transform((value) => value || null),
   })
   .superRefine(requireDaysWhenCustom);
 
@@ -137,11 +190,15 @@ export const transactionSchema = z.object({
     .trim()
     .max(255, { error: "Máximo 255 caracteres." })
     .transform((value) => value || null),
+  // Empty or missing = the primary account
+  account_id: z
+    .string()
+    .optional()
+    .transform((value) => value || null),
 });
 
 export const settingsSchema = z
   .object({
-    initial_balance: money({ allowZero: true }),
     balance_as_of: isoDate,
     currency: z.string().regex(/^[A-Z]{3}$/, { error: "Elige una moneda." }),
     income_period: frequency,
@@ -179,15 +236,22 @@ export const goalSchema = z.object({
   saved_amount: money({ allowZero: true }),
   // Empty = no deadline
   due_date: z.union([z.literal(""), isoDate]).transform((value) => value || null),
+  // Empty = not linked to an account
+  account_id: z.string().transform((value) => value || null),
 });
 
 export const contributionSchema = z
   .object({
     direction: z.enum(["deposit", "withdraw"]),
     amount: money({ allowZero: false }),
+    // Empty = only record the amount, without moving money between accounts
+    from_account_id: z.string(),
   })
   // The API takes a signed amount: negative means taking money out of the goal
-  .transform(({ direction, amount }) => (direction === "withdraw" ? `-${amount}` : amount));
+  .transform(({ direction, amount, from_account_id }) => ({
+    amount: direction === "withdraw" ? `-${amount}` : amount,
+    fromAccountId: from_account_id || null,
+  }));
 
 export type GoalForm = z.input<typeof goalSchema>;
 export type GoalValues = z.output<typeof goalSchema>;

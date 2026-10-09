@@ -18,17 +18,24 @@ import {
   type Transaction,
   type TransactionType,
 } from "@/lib/finance-api";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
+import { accountName } from "./accounts-ui";
 import { CategoryChip } from "./CategoryChip";
 import { TransactionDialog } from "./TransactionDialog";
 import { RowActions, td, th } from "./RowActions";
 
 export const PAGE_SIZE = 20;
 
-type Filters = { from: string; to: string; type: "" | TransactionType; categoryId: string };
-const NO_FILTERS: Filters = { from: "", to: "", type: "", categoryId: "" };
+type Filters = {
+  from: string;
+  to: string;
+  type: "" | TransactionType;
+  categoryId: string;
+  accountId: string;
+};
+const NO_FILTERS: Filters = { from: "", to: "", type: "", categoryId: "", accountId: "" };
 
 export function TransactionsPage() {
   const { settings } = useSession();
@@ -45,6 +52,7 @@ export function TransactionsPage() {
     to: filters.to || undefined,
     type: filters.type || undefined,
     category_id: filters.categoryId || undefined,
+    account_id: filters.accountId || undefined,
     limit: PAGE_SIZE,
     offset,
   };
@@ -52,6 +60,11 @@ export function TransactionsPage() {
     financeApi.listTransactions(params),
   );
   const [categoryList] = useResource("categories", financeApi.listCategories);
+  const [today] = useState(todayISO);
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
+  // Account filter and column only matter with more than one account
+  const accounts = accountList.data ?? [];
+  const multiAccount = accounts.length > 1;
   const categories = useMemo(
     () => new Map<string, Category>((categoryList.data ?? []).map((c) => [c.id, c])),
     [categoryList.data],
@@ -111,6 +124,7 @@ export function TransactionsPage() {
                 to: params.to,
                 type: params.type,
                 category_id: params.category_id,
+                account_id: params.account_id,
               })}
               download
               className={buttonClass("ghost")}
@@ -137,7 +151,11 @@ export function TransactionsPage() {
         <div
           role="group"
           aria-label="Filtros"
-          className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_1fr_1.3fr_auto] lg:items-end"
+          className={`grid gap-3 sm:grid-cols-2 lg:items-end ${
+            multiAccount
+              ? "lg:grid-cols-[1fr_1fr_1fr_1.2fr_1.2fr_auto]"
+              : "lg:grid-cols-[1fr_1fr_1fr_1.3fr_auto]"
+          }`}
         >
           <TextField
             id="filter-from"
@@ -174,6 +192,18 @@ export function TransactionsPage() {
               ...(categoryList.data ?? []).map((c) => ({ value: c.id, label: c.name })),
             ]}
           />
+          {multiAccount ? (
+            <SelectField
+              id="filter-account"
+              label="Cuenta"
+              value={filters.accountId}
+              onChange={(e) => updateFilter({ accountId: e.target.value })}
+              options={[
+                { value: "", label: "Todas" },
+                ...accounts.map((a) => ({ value: a.id, label: a.name })),
+              ]}
+            />
+          ) : null}
           <button
             type="button"
             onClick={() => updateFilter(NO_FILTERS)}
@@ -227,6 +257,11 @@ export function TransactionsPage() {
                     <th scope="col" className={th}>
                       CATEGORÍA
                     </th>
+                    {multiAccount ? (
+                      <th scope="col" className={th}>
+                        CUENTA
+                      </th>
+                    ) : null}
                     <th scope="col" className={th}>
                       TIPO
                     </th>
@@ -262,6 +297,11 @@ export function TransactionsPage() {
                             />
                           )}
                         </td>
+                        {multiAccount ? (
+                          <td className={`${td} text-body`}>
+                            {accountName(accounts, t.account_id)}
+                          </td>
+                        ) : null}
                         <td className={td}>{income ? "Ingreso" : "Gasto"}</td>
                         <td
                           className={`${td} text-right font-extrabold whitespace-nowrap tabular-nums ${
@@ -321,6 +361,8 @@ export function TransactionsPage() {
         open={editing !== null}
         transaction={editing?.item ?? null}
         categories={categoryList.data ?? []}
+        accounts={accounts}
+        defaultAccountId={filters.accountId || null}
         onClose={() => setEditing(null)}
         onSaved={(message) => {
           showNotice(message);

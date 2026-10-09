@@ -4,6 +4,7 @@ import {
   ArrowDownCircle,
   ArrowUpCircle,
   FileText,
+  Landmark,
   LayoutDashboard,
   LogOut,
   Menu,
@@ -26,6 +27,7 @@ type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const mainNav: NavItem[] = [
   { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
+  { href: "/cuentas", label: "Cuentas", icon: Landmark },
   { href: "/ingresos", label: "Ingresos", icon: ArrowUpCircle },
   { href: "/gastos", label: "Gastos", icon: ArrowDownCircle },
   { href: "/gastos-fijos", label: "Gastos fijos", icon: Repeat },

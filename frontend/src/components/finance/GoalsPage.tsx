@@ -11,9 +11,10 @@ import { buttonClass } from "@/components/ui/button";
 import { ConfirmDialog, Dialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import { ApiError } from "@/lib/api";
-import { financeApi, type Frequency, type SavingsGoal } from "@/lib/finance-api";
+import { financeApi, type Account, type Frequency, type SavingsGoal } from "@/lib/finance-api";
 import {
   contributionSchema,
   goalSchema,
@@ -24,6 +25,7 @@ import {
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
+import { accountName, accountOptions } from "./accounts-ui";
 import { RowActions } from "./RowActions";
 
 const PERIOD_NOUN: Record<Frequency, [string, string]> = {
@@ -42,6 +44,8 @@ export function GoalsPage() {
   const { settings } = useSession();
   const [today] = useState(todayISO);
   const [goals, reload] = useResource(`goals:${today}`, () => financeApi.listGoals(today));
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
+  const accounts = accountList.data ?? [];
   const [editing, setEditing] = useState<{ item: SavingsGoal | null } | null>(null);
   const [contributing, setContributing] = useState<SavingsGoal | null>(null);
   const [deleting, setDeleting] = useState<SavingsGoal | null>(null);
@@ -108,6 +112,7 @@ export function GoalsPage() {
                 goal={goal}
                 currency={settings.currency}
                 period={settings.income_period}
+                accountLabel={accounts.length > 1 ? accountName(accounts, goal.account_id) : ""}
                 onContribute={() => setContributing(goal)}
                 onEdit={() => setEditing({ item: goal })}
                 onDelete={() => setDeleting(goal)}
@@ -124,6 +129,7 @@ export function GoalsPage() {
       >
         <GoalFormBody
           item={editing?.item ?? null}
+          accounts={accounts}
           onCancel={() => setEditing(null)}
           onSaved={(message) => {
             showNotice(message);
@@ -141,6 +147,7 @@ export function GoalsPage() {
         {contributing ? (
           <ContributionFormBody
             goal={contributing}
+            accounts={accounts}
             currency={settings.currency}
             onCancel={() => setContributing(null)}
             onSaved={(message) => {
@@ -168,6 +175,7 @@ function GoalCard({
   goal,
   currency,
   period,
+  accountLabel,
   onContribute,
   onEdit,
   onDelete,
@@ -175,6 +183,8 @@ function GoalCard({
   goal: SavingsGoal;
   currency: string;
   period: Frequency;
+  /** Where the goal's money is kept; empty with a single account */
+  accountLabel: string;
   onContribute: () => void;
   onEdit: () => void;
   onDelete: () => void;
@@ -205,9 +215,14 @@ function GoalCard({
       className="flex h-full flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
     >
       <div className="flex items-start justify-between gap-3">
-        <h2 id={`goal-${goal.id}`} className="font-display text-xl font-bold">
-          {goal.name}
-        </h2>
+        <div className="flex flex-col gap-0.5">
+          <h2 id={`goal-${goal.id}`} className="font-display text-xl font-bold">
+            {goal.name}
+          </h2>
+          {accountLabel ? (
+            <span className="text-muted text-[13px] font-semibold">Guardada en {accountLabel}</span>
+          ) : null}
+        </div>
         <RowActions label={`la meta ${goal.name}`} onEdit={onEdit} onDelete={onDelete} />
       </div>
       <p className="text-body text-sm">
@@ -251,10 +266,12 @@ function GoalCard({
 
 function GoalFormBody({
   item,
+  accounts,
   onCancel,
   onSaved,
 }: {
   item: SavingsGoal | null;
+  accounts: Account[];
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
@@ -271,6 +288,11 @@ function GoalFormBody({
       target_amount: item?.target_amount ?? "",
       saved_amount: item?.saved_amount ?? "0",
       due_date: item?.due_date ?? "",
+      // New goals default to the first savings account, else the primary one
+      account_id:
+        item?.account_id ??
+        (accounts.find((a) => a.kind === "savings") ?? accounts.find((a) => a.is_primary))?.id ??
+        "",
     },
   });
 
@@ -324,6 +346,14 @@ function GoalFormBody({
           error={errors.due_date?.message}
           {...register("due_date")}
         />
+        {accounts.length > 1 ? (
+          <SelectField
+            id="goal-account"
+            label="¿Dónde guardas este dinero?"
+            options={accountOptions(accounts)}
+            {...register("account_id")}
+          />
+        ) : null}
       </div>
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
@@ -344,31 +374,46 @@ function GoalFormBody({
 
 function ContributionFormBody({
   goal,
+  accounts,
   currency,
   onCancel,
   onSaved,
 }: {
   goal: SavingsGoal;
+  accounts: Account[];
   currency: string;
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
   const [serverError, setServerError] = useState<string | null>(null);
+  // Money can move only when the goal lives in an account and there is another one
+  const sources = goal.account_id ? accounts.filter((a) => a.id !== goal.account_id) : [];
   const {
     register,
     handleSubmit,
     control,
     formState: { errors, isSubmitting },
-  } = useForm<ContributionForm, unknown, string>({
+  } = useForm<ContributionForm, unknown, { amount: string; fromAccountId: string | null }>({
     resolver: zodResolver(contributionSchema),
-    defaultValues: { direction: "deposit", amount: "" },
+    defaultValues: {
+      direction: "deposit",
+      amount: "",
+      // By default the money comes from (or returns to) the day-to-day account
+      from_account_id: sources.find((a) => a.is_primary)?.id ?? sources[0]?.id ?? "",
+    },
   });
   const direction = useWatch({ control, name: "direction" });
 
-  async function onSubmit(signedAmount: string) {
+  async function onSubmit({
+    amount,
+    fromAccountId,
+  }: {
+    amount: string;
+    fromAccountId: string | null;
+  }) {
     setServerError(null);
     try {
-      const updated = await financeApi.contribute(goal.id, signedAmount);
+      const updated = await financeApi.contribute(goal.id, amount, fromAccountId);
       onSaved(
         updated.completed
           ? `¡Cumpliste la meta «${goal.name}»!`
@@ -413,6 +458,17 @@ function ContributionFormBody({
         error={errors.amount?.message}
         {...register("amount")}
       />
+      {sources.length > 0 ? (
+        <SelectField
+          id="contribution-source"
+          label={direction === "withdraw" ? "¿A qué cuenta vuelve?" : "¿De qué cuenta sale?"}
+          options={[
+            ...accountOptions(sources),
+            { value: "", label: "Solo registrarlo, sin mover dinero" },
+          ]}
+          {...register("from_account_id")}
+        />
+      ) : null}
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
           Cancelar

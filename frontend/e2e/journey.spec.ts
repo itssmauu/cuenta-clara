@@ -35,7 +35,7 @@ test.describe("a new user's first week", () => {
   test("completes onboarding and sees 100 − 30 + 160 = 230", async () => {
     await completeOnboarding(page);
 
-    await expect(kpi(page, "Monto inicial")).toHaveText("$100.00");
+    await expect(kpi(page, "Saldo inicial")).toHaveText("$100.00");
     await expect(kpi(page, "Ingresos del periodo")).toHaveText("$160.00");
     await expect(kpi(page, "Gastado")).toHaveText("$30.00");
     await expect(kpi(page, "Saldo disponible")).toHaveText("$230.00");
@@ -132,19 +132,33 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
-  test("reports compare periods and export a CSV", async () => {
+  test("reports compare periods and download the report as CSV or PDF", async () => {
     await page.getByRole("link", { name: "Reportes" }).click();
     await expect(page.getByRole("heading", { name: /Este periodo frente a/ })).toBeVisible();
     await expectAccessible(page);
 
-    const downloadPromise = page.waitForEvent("download");
-    await page.getByRole("link", { name: "Descargar CSV" }).click();
-    const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/^cuenta-clara-movimientos-.*.csv$/);
-    const csv = await (await download.createReadStream()).toArray();
-    const text = Buffer.concat(csv).toString("utf8");
-    expect(text).toContain("fecha,tipo,monto,categoria,nota");
-    expect(text).toContain("gasto,-25.00,Comida,Almuerzo");
+    async function download(name: string): Promise<{ filename: string; body: Buffer }> {
+      const downloadPromise = page.waitForEvent("download");
+      await page.getByRole("link", { name }).click();
+      const file = await downloadPromise;
+      const chunks = await (await file.createReadStream()).toArray();
+      return { filename: file.suggestedFilename(), body: Buffer.concat(chunks) };
+    }
+
+    // CSV: one-off movements AND the recurring items (the old export only had the former)
+    const csv = await download("Descargar CSV");
+    expect(csv.filename).toMatch(/^cuenta-clara-reporte-.*\.csv$/);
+    const text = csv.body.toString("utf8");
+    expect(text).toContain("fecha,cuenta,tipo,concepto,categoria,monto,nota");
+    expect(text).toContain("Gastos del día,Gasto,Almuerzo,Comida,-25.00,Almuerzo");
+    expect(text).toContain("Gastos del día,Gasto fijo,Pasaje,,-30.00,");
+    expect(text).toContain("Gastos del día,Ingreso fijo,Beca,,160.00,");
+
+    // PDF: the user picks the format before downloading
+    await page.getByRole("button", { name: "PDF · para leer o imprimir" }).click();
+    const pdf = await download("Descargar PDF");
+    expect(pdf.filename).toMatch(/^cuenta-clara-reporte-.*\.pdf$/);
+    expect(pdf.body.subarray(0, 5).toString()).toBe("%PDF-");
   });
 
   test("the forecast can use a trend estimate", async () => {
@@ -170,6 +184,39 @@ test.describe("a new user's first week", () => {
       await expectAccessible(page);
     });
   }
+
+  test("keeps savings in their own account and moves money into it", async () => {
+    const nav = page.getByRole("navigation", { name: "Principal" });
+    await nav.getByRole("link", { name: "Cuentas" }).click();
+    await expect(page.getByRole("heading", { level: 1, name: "Tus cuentas" })).toBeVisible();
+
+    await page.getByRole("button", { name: "Nueva cuenta" }).click();
+    const create = page.getByRole("dialog", { name: "Nueva cuenta" });
+    await create.getByLabel("Nombre").fill("Ahorro");
+    await create.getByLabel("¿Para qué la usas?").selectOption("savings");
+    await create.getByLabel(/¿Cuánto tenía/).fill("400");
+    await create.getByRole("button", { name: "Guardar cuenta" }).click();
+    await expect(page.getByRole("article", { name: "Ahorro" })).toContainText("$400.00");
+
+    await page.getByRole("button", { name: "Mover dinero" }).first().click();
+    const move = page.getByRole("dialog", { name: "Mover dinero entre cuentas" });
+    await move.getByLabel("Monto").fill("50");
+    await move.getByRole("button", { name: "Mover dinero" }).click();
+    await expect(page.getByRole("article", { name: "Ahorro" })).toContainText("$450.00");
+    await expectAccessible(page);
+
+    // The dashboard opens on the day-to-day account and can switch to savings
+    await nav.getByRole("link", { name: "Dashboard" }).click();
+    const accounts = page.getByRole("group", { name: "Cuenta" });
+    await accounts.getByRole("button", { name: /Ahorro/ }).click();
+    await expect(page).toHaveURL(/account=/);
+    await expect(kpi(page, "Saldo disponible")).toHaveText("$450.00");
+    await expect(page.getByText("Incluye $50.00 que llegaron de otras cuentas")).toBeVisible();
+    await expect(
+      page.getByText("Tu límite de gasto se aplica a tu cuenta principal.", { exact: false }),
+    ).toBeVisible();
+    await expectAccessible(page);
+  });
 
   test("logging out ends the session", async () => {
     await page.getByRole("button", { name: "Cerrar sesión" }).click();

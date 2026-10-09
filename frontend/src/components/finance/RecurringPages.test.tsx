@@ -16,6 +16,7 @@ const beca: Income = {
   custom_period_days: null,
   start_date: "2026-10-05",
   is_active: true,
+  account_id: "a-main",
 };
 
 const internet: FixedExpense = {
@@ -28,6 +29,7 @@ const internet: FixedExpense = {
   due_day: 15,
   category_id: "c-transport",
   is_active: true,
+  account_id: "a-main",
 };
 
 beforeEach(() => {
@@ -90,6 +92,7 @@ describe("IncomesPage", () => {
       custom_period_days: null,
       start_date: "2026-10-05",
       is_active: false,
+      account_id: "a-main",
     });
   });
 
@@ -138,6 +141,7 @@ describe("FixedExpensesPage", () => {
       due_day: 15,
       category_id: "c-transport",
       is_active: false,
+      account_id: "a-main",
     });
   });
 

@@ -8,6 +8,7 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.services.export import safe_cell
+from tests.auth_helpers import set_primary_balance
 
 API = "/api/v1"
 WEDNESDAY = "2026-10-07"
@@ -19,13 +20,13 @@ def ana(login_as: Callable[[str], TestClient]) -> TestClient:
     client.put(
         f"{API}/settings",
         json={
-            "initial_balance": "100.00",
             "balance_as_of": "2026-10-05",
             "income_period": "weekly",
             "spending_limit": "40.00",
             "onboarding_completed": True,
         },
     ).raise_for_status()
+    set_primary_balance(client, "100.00")
     return client
 
 
@@ -135,9 +136,9 @@ def test_export_csv(ana: TestClient) -> None:
         'attachment; filename="cuenta-clara-movimientos-' in response.headers["content-disposition"]
     )
     assert parse_csv(response.text) == [
-        ["fecha", "tipo", "monto", "categoria", "nota"],
-        ["2026-10-06", "gasto", "-12.50", "Comida", "Almuerzo"],
-        ["2026-10-04", "ingreso", "50.00", "", ""],
+        ["fecha", "cuenta", "tipo", "monto", "categoria", "nota"],
+        ["2026-10-06", "Cuenta principal", "gasto", "-12.50", "Comida", "Almuerzo"],
+        ["2026-10-04", "Cuenta principal", "ingreso", "50.00", "", ""],
     ]
 
 
@@ -153,7 +154,7 @@ def test_export_respects_filters(ana: TestClient) -> None:
 
     rows = parse_csv(ana.get(f"{API}/transactions/export", params={"type": "income"}).text)
 
-    assert [r[1] for r in rows[1:]] == ["ingreso"]
+    assert [r[2] for r in rows[1:]] == ["ingreso"]
 
 
 def test_export_neutralizes_spreadsheet_formulas(ana: TestClient) -> None:
@@ -169,7 +170,7 @@ def test_export_neutralizes_spreadsheet_formulas(ana: TestClient) -> None:
 
     rows = parse_csv(ana.get(f"{API}/transactions/export").text)
 
-    assert rows[1][4] == '\'=HYPERLINK("http://evil","x")'
+    assert rows[1][5] == '\'=HYPERLINK("http://evil","x")'
 
 
 @pytest.mark.parametrize(
@@ -189,7 +190,7 @@ def test_export_only_includes_the_callers_data(login_as: Callable[[str], TestCli
 
     rows = parse_csv(beto.get(f"{API}/transactions/export").text)
 
-    assert rows == [["fecha", "tipo", "monto", "categoria", "nota"]]
+    assert rows == [["fecha", "cuenta", "tipo", "monto", "categoria", "nota"]]
 
 
 def test_export_requires_a_session(client: TestClient) -> None:

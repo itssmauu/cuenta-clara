@@ -24,3 +24,5 @@ class SavingsGoal(IdMixin, TimestampMixin, Base):
     target_amount: Mapped[Decimal]
     saved_amount: Mapped[Decimal] = mapped_column(server_default="0")
     due_date: Mapped[date | None]
+    # Where the money for this goal is kept (contributions move money into it)
+    account_id: Mapped[uuid.UUID | None] = mapped_column(ForeignKey("accounts.id"), index=True)

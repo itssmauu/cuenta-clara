@@ -1,9 +1,9 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Trash2 } from "lucide-react";
+import { Plus, ShieldCheck, Trash2 } from "lucide-react";
 import type { ReactNode } from "react";
-import { useForm, useWatch } from "react-hook-form";
+import { useFieldArray, useForm, useWatch } from "react-hook-form";
 import { z } from "zod";
 
 import { buttonClass } from "@/components/ui/button";
@@ -11,10 +11,12 @@ import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
 import {
+  ACCOUNT_KIND_LABELS,
+  ACCOUNT_KINDS,
+  accountSchema,
   FREQUENCIES,
   FREQUENCY_LABELS,
   fixedExpenseSchema,
-  initialBalanceSchema,
   normalizeMoney,
   spendingLimitSchema,
   type FixedExpenseForm,
@@ -42,40 +44,152 @@ function StepActions({ onBack, children }: { onBack?: () => void; children: Reac
 
 // ── Step 1 ──────────────────────────────────────────────
 
-export function BalanceStep({
+const MAX_ACCOUNTS = 10;
+
+const accountsStepSchema = z
+  .object({
+    accounts: z
+      .array(accountSchema.omit({ is_primary: true }))
+      .min(1, { error: "Agrega al menos una cuenta." })
+      .max(MAX_ACCOUNTS, { error: `Hasta ${MAX_ACCOUNTS} cuentas.` }),
+    // Index (as text, from a radio) of the day-to-day account
+    primary: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    const seen = new Set<string>();
+    data.accounts.forEach((account, index) => {
+      const key = account.name.trim().toLowerCase();
+      if (seen.has(key)) {
+        ctx.addIssue({
+          code: "custom",
+          path: ["accounts", index, "name"],
+          message: "Ya usaste ese nombre en otra cuenta.",
+        });
+      }
+      seen.add(key);
+    });
+  });
+
+export type AccountsStepForm = z.input<typeof accountsStepSchema>;
+export type AccountsStepValues = z.output<typeof accountsStepSchema>;
+
+export const FIRST_ACCOUNT: AccountsStepForm["accounts"][number] = {
+  name: "Gastos del día",
+  kind: "spending",
+  initial_balance: "",
+};
+
+const kindOptions = ACCOUNT_KINDS.map((kind) => ({
+  value: kind,
+  label: ACCOUNT_KIND_LABELS[kind],
+}));
+
+export function AccountsStep({
   initial,
   onNext,
 }: {
-  initial: string;
-  onNext: (value: string) => void;
+  initial: AccountsStepForm;
+  onNext: (values: AccountsStepValues) => void;
 }) {
   const {
     register,
     handleSubmit,
+    control,
     formState: { errors },
-  } = useForm<z.input<typeof initialBalanceSchema>, unknown, z.output<typeof initialBalanceSchema>>(
-    {
-      resolver: zodResolver(initialBalanceSchema),
-      defaultValues: { initial_balance: initial },
-    },
-  );
+  } = useForm<AccountsStepForm, unknown, AccountsStepValues>({
+    resolver: zodResolver(accountsStepSchema),
+    defaultValues: initial,
+  });
+  const { fields, append, remove } = useFieldArray({ control, name: "accounts" });
+  const primary = useWatch({ control, name: "primary" });
 
   return (
-    <form
-      noValidate
-      onSubmit={handleSubmit((v) => onNext(v.initial_balance))}
-      className="flex flex-col gap-5"
-    >
-      <TextField
-        id="initial-balance"
-        label="¿Con cuánto dinero cuentas hoy?"
-        inputMode="decimal"
-        placeholder="100.00"
-        autoComplete="off"
-        hint="Suma lo que tienes disponible: efectivo y cuentas. Puedes cambiarlo después."
-        error={errors.initial_balance?.message}
-        {...register("initial_balance")}
-      />
+    <form noValidate onSubmit={handleSubmit(onNext)} className="flex flex-col gap-5">
+      <p className="bg-mint-tint text-ink flex items-start gap-2.5 rounded-2xl p-4 text-sm font-semibold">
+        <ShieldCheck aria-hidden="true" className="text-mint-ink mt-0.5 size-5 shrink-0" />
+        Solo un nombre para reconocer cada cuenta. Nunca te pediremos números de cuenta, tarjetas ni
+        claves.
+      </p>
+
+      <ul className="flex flex-col gap-4">
+        {fields.map((field, index) => {
+          const rowErrors = errors.accounts?.[index];
+          const isPrimary = primary === String(index);
+          return (
+            <li key={field.id}>
+              <fieldset
+                className={`flex flex-col gap-4 rounded-3xl border-2 p-4 transition-colors duration-200 sm:p-5 ${
+                  isPrimary ? "border-primary bg-primary-tint/40" : "border-line"
+                }`}
+              >
+                <legend className="px-1 text-sm font-bold">Cuenta {index + 1}</legend>
+                <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
+                  <TextField
+                    id={`account-${index}-name`}
+                    label="Nombre"
+                    placeholder="Ej. Ahorro, Gastos del día"
+                    autoComplete="off"
+                    error={rowErrors?.name?.message}
+                    {...register(`accounts.${index}.name`)}
+                  />
+                  <SelectField
+                    id={`account-${index}-kind`}
+                    label="La uso para"
+                    options={kindOptions}
+                    {...register(`accounts.${index}.kind`)}
+                  />
+                  <TextField
+                    id={`account-${index}-balance`}
+                    label="¿Cuánto tiene hoy?"
+                    inputMode="decimal"
+                    placeholder="0.00"
+                    autoComplete="off"
+                    error={rowErrors?.initial_balance?.message}
+                    {...register(`accounts.${index}.initial_balance`)}
+                  />
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-3">
+                  <label className="flex min-h-11 cursor-pointer items-center gap-2.5 text-sm font-semibold">
+                    <input
+                      type="radio"
+                      value={String(index)}
+                      className="accent-primary size-5 cursor-pointer"
+                      {...register("primary")}
+                    />
+                    Aquí van mis gastos del día
+                  </label>
+                  {fields.length > 1 ? (
+                    <button
+                      type="button"
+                      onClick={() => remove(index)}
+                      disabled={isPrimary}
+                      className={buttonClass("ghost", "md", "text-danger")}
+                    >
+                      <Trash2 aria-hidden="true" className="size-4" />
+                      Quitar cuenta {index + 1}
+                    </button>
+                  ) : null}
+                </div>
+              </fieldset>
+            </li>
+          );
+        })}
+      </ul>
+
+      {fields.length < MAX_ACCOUNTS ? (
+        <button
+          type="button"
+          onClick={() => append({ name: "", kind: "savings", initial_balance: "" })}
+          className={buttonClass("ghost", "md", "border-line self-start border-2 border-dashed")}
+        >
+          <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
+          Agregar otra cuenta
+        </button>
+      ) : null}
+      <p className="text-muted text-sm">
+        Tu cuenta de gastos del día es la principal: el dashboard abre en ella y tu límite de gasto
+        se mide ahí. Puedes cambiar todo después en Cuentas.
+      </p>
       <StepActions>
         <button type="submit" className={buttonClass("primary", "lg")}>
           Continuar
@@ -244,6 +358,8 @@ const incomeStepSchema = z
         ]),
       ),
     start_date: z.iso.date({ error: "Elige una fecha válida." }),
+    // Index (as text) of the onboarding account the income arrives in
+    account_index: z.string(),
   })
   .superRefine((data, ctx) => {
     if (data.frequency !== "custom") return;
@@ -262,10 +378,13 @@ export type IncomeStepValues = z.output<typeof incomeStepSchema>;
 
 export function IncomeStep({
   initial,
+  accountNames,
   onBack,
   onNext,
 }: {
   initial: IncomeStepForm;
+  /** Names of the accounts from step 1, in order */
+  accountNames: string[];
   onBack: () => void;
   onNext: (values: IncomeStepValues) => void;
 }) {
@@ -324,6 +443,14 @@ export function IncomeStep({
           error={errors.start_date?.message}
           {...register("start_date")}
         />
+        {accountNames.length > 1 ? (
+          <SelectField
+            id="inc-account"
+            label="¿A qué cuenta te llega?"
+            options={accountNames.map((name, index) => ({ value: String(index), label: name }))}
+            {...register("account_index")}
+          />
+        ) : null}
       </div>
       <p className="text-muted text-sm">
         Esta frecuencia será tu periodo: el dashboard y tu límite de gasto se miden con ella.

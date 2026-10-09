@@ -10,7 +10,7 @@ from app.models import Category, Transaction, TransactionType
 # like "=HYPERLINK(...)" could run when the file is opened (CSV/formula injection)
 FORMULA_PREFIXES = ("=", "+", "-", "@", "\t", "\r")
 
-HEADER = ["fecha", "tipo", "monto", "categoria", "nota"]
+HEADER = ["fecha", "cuenta", "tipo", "monto", "categoria", "nota"]
 
 
 def safe_cell(value: str) -> str:
@@ -19,7 +19,9 @@ def safe_cell(value: str) -> str:
 
 
 def transactions_csv(
-    transactions: Iterable[Transaction], categories: dict[object, Category]
+    transactions: Iterable[Transaction],
+    categories: dict[object, Category],
+    accounts: dict[object, str],
 ) -> str:
     buffer = io.StringIO()
     writer = csv.writer(buffer, lineterminator="\r\n")
@@ -29,6 +31,8 @@ def transactions_csv(
         writer.writerow(
             [
                 t.occurred_on.isoformat(),
+                # The account name is user text too
+                safe_cell(accounts.get(t.account_id, "")),
                 "ingreso" if t.type == TransactionType.INCOME else "gasto",
                 # Signed plain number (not user text): expenses negative, incomes positive
                 f"{'-' if t.type == TransactionType.EXPENSE else ''}{t.amount}",

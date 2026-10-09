@@ -22,6 +22,7 @@ from app.core.security import (
     verify_password,
 )
 from app.models import RefreshToken, User, UserSettings
+from app.services.accounts import create_primary_account
 
 logger = logging.getLogger(__name__)
 
@@ -73,6 +74,7 @@ def register_user(db: Session, *, email: str, password: str, name: str) -> None:
     try:
         db.flush()
         db.add(UserSettings(user_id=user.id))
+        create_primary_account(db, user)
         db.commit()
     except IntegrityError:
         # Two simultaneous registrations for the same email: the other one won

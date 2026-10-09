@@ -17,6 +17,7 @@ const laptop: SavingsGoal = {
   target_amount: "600.00",
   saved_amount: "150.00",
   due_date: "2026-10-25",
+  account_id: "a-main",
   remaining: "450.00",
   progress_percent: 25,
   completed: false,
@@ -86,6 +87,7 @@ describe("GoalsPage", () => {
       target_amount: "1200",
       saved_amount: "0",
       due_date: null,
+      account_id: "a-main",
     });
     expect(await screen.findByText("Meta creada.")).toBeInTheDocument();
   });
@@ -103,7 +105,8 @@ describe("GoalsPage", () => {
     await user.type(within(dialog).getByLabelText("Monto"), "500");
     await user.click(within(dialog).getByRole("button", { name: "Retirar" }));
 
-    expect(contribute).toHaveBeenCalledWith("g1", "-500");
+    // A single account: nothing to move money from, so it is only recorded
+    expect(contribute).toHaveBeenCalledWith("g1", "-500", null);
     expect(await within(dialog).findByRole("alert")).toHaveTextContent("No puedes retirar más");
   });
 
@@ -116,6 +119,7 @@ describe("GoalsPage", () => {
 });
 
 const report: Dashboard = {
+  account: { id: "a-main", name: "Gastos del día", kind: "spending", is_primary: true },
   period: "weekly",
   period_start: "2026-10-05",
   period_end: "2026-10-11",
@@ -127,6 +131,7 @@ const report: Dashboard = {
   fixed_expenses: "30.00",
   variable_expenses: "25.00",
   spent: "55.00",
+  transfers: "0.00",
   available_balance: "205.00",
   spending_limit: "40.00",
   limit_remaining: "-15.00",
@@ -174,7 +179,7 @@ describe("ReportsPage", () => {
     ).toEqual(["CATEGORÍAGASTADO", "Transporte$30.00", "Comida$25.00"]);
   });
 
-  it("builds the CSV link from the chosen filters", async () => {
+  it("builds the report link from the chosen filters, as CSV or PDF", async () => {
     const user = userEvent.setup();
     renderWithSession(<ReportsPage />);
 
@@ -183,7 +188,13 @@ describe("ReportsPage", () => {
 
     expect(screen.getByRole("link", { name: "Descargar CSV" })).toHaveAttribute(
       "href",
-      "/api/v1/transactions/export?from=2026-10-01&type=expense",
+      "/api/v1/reports/export?format=csv&from=2026-10-01&type=expense",
+    );
+
+    await user.click(screen.getByRole("button", { name: "PDF · para leer o imprimir" }));
+    expect(screen.getByRole("link", { name: "Descargar PDF" })).toHaveAttribute(
+      "href",
+      "/api/v1/reports/export?format=pdf&from=2026-10-01&type=expense",
     );
   });
 });

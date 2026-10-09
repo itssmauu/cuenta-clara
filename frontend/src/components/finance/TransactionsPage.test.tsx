@@ -14,6 +14,7 @@ const lunch: Transaction = {
   category_id: "c-food",
   occurred_on: "2026-10-06",
   note: "Almuerzo",
+  account_id: "a-main",
 };
 const gift: Transaction = {
   id: "t2",
@@ -22,6 +23,7 @@ const gift: Transaction = {
   category_id: null,
   occurred_on: "2026-10-04",
   note: "Regalo",
+  account_id: "a-main",
 };
 
 beforeEach(() => {

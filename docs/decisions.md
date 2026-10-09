@@ -317,3 +317,68 @@ Recharts funciona con la CSP estricta (D-033): la gráfica se renderiza en el cl
 Los testimonios reales quedan para el futuro, cuando haya personas que den su consentimiento.
 
 **Lección técnica:** los estilos de `@layer components` pierden contra las utilidades de Tailwind (`flex`, `[mask-image:…]`). Para ocultar algo con movimiento reducido hay que usar las variantes `motion-reduce:`, no reglas en ese *layer*. Lo detectó la prueba E2E.
+
+## D-061 · Varias cuentas por usuario
+
+**Por qué.** Mucha gente separa su dinero como en el banco: una cuenta para los gastos del día y otra para el ahorro, a veces una de fondos. Con un solo saldo, los $400 ahorrados se veían como dinero para gastar y los gastos del día caían sobre el ahorro. Ahora cada usuario tiene de 1 a 10 cuentas.
+
+- **Solo un nombre y un tipo** (gastos del día, ahorro, fondos o inversión, otro). Nunca número de cuenta, banco, tarjeta ni clave: la app necesita distinguirlas, no acceder a ellas.
+  - Como protección extra, un nombre con más de 5 dígitos se rechaza tanto en el formulario como en la API ("no escribas números de cuenta").
+- **Una cuenta principal, siempre exactamente una** (índice único parcial en la BD).
+  - Es la de gastos del día: el dashboard abre en ella y el límite de gasto se mide ahí.
+  - El registro la crea ("Cuenta principal").
+  - Se cambia marcando otra como principal; no se puede quitar el rol sin dárselo a otra ni borrarla.
+- **El saldo inicial pasó de los ajustes a cada cuenta.**
+  - `balance_as_of` sigue siendo uno solo: el día desde el que se llevan las cuentas.
+  - La migración le da a cada usuario existente su "Cuenta principal" con el saldo que tenía y le asigna todos sus datos.
+- **Cada movimiento, ingreso y gasto fijo pertenece a una cuenta.**
+  - Si no se indica, va a la principal al crear y no cambia al editar.
+  - Una cuenta ajena da 404, igual que un id inexistente.
+- **Transferencias entre cuentas.** Cambian el saldo de ambas, pero no son ingreso ni gasto: no cuentan para el límite ni para las categorías. Vistas en "Todas", se anulan.
+- **Dashboard, predicción y reportes por cuenta** (`?account=<id>` o `?account=all`).
+  - El dashboard muestra arriba una tarjeta por cuenta con su saldo, y el filtro queda en la URL.
+  - En una cuenta de ahorro no se muestra el límite de gasto, que pertenece a la principal.
+- **Metas ligadas a una cuenta.** Aportar mueve el dinero de verdad: una transferencia desde la cuenta elegida (por defecto la principal) a la cuenta de la meta, en la misma transacción que actualiza lo ahorrado. Retirar lo devuelve. También se puede "solo registrar" sin mover dinero.
+- **Borrar una cuenta** solo se permite si no tiene movimientos, ingresos, gastos fijos, metas ni transferencias. Así nunca se pierde historial sin querer.
+- **Onboarding:**
+  - El paso 1 pregunta por las cuentas (nombre, tipo, saldo de hoy) y cuál es la de gastos del día.
+  - El ingreso pregunta a qué cuenta llega.
+  - Los gastos fijos salen de la principal, y se puede cambiar después.
+
+## D-062 · Reporte de movimientos en CSV o PDF
+
+**El problema.** El CSV de Reportes salía vacío. Había dos causas:
+
+- Solo exportaba **transacciones sueltas**, y la mayor parte del dinero de un usuario se mueve con ingresos y gastos fijos (beca, pasaje, datos…), que nunca aparecían.
+- Al elegir un rango corto, como 7 oct – 7 oct, no quedaba nada.
+
+**La solución.** `GET /reports/export` arma un reporte como el estado de cuenta de un banco:
+
+- Incluye las transacciones del rango, **cada ocurrencia** de los ingresos y gastos fijos activos (desde `balance_as_of`) y las transferencias de las cuentas elegidas.
+- Las mismas filas alimentan los dos formatos, así que nunca se contradicen.
+- Sin fechas, va desde que el usuario empezó a llevar sus cuentas hasta hoy.
+- Se puede filtrar por tipo (ingresos o gastos) y por cuenta, o pedir todas.
+
+**Dos formatos, a elección del usuario:**
+
+- **CSV** para Excel o Google Sheets, con columnas `fecha, cuenta, tipo, concepto, categoria, monto, nota`.
+  - El monto lleva signo.
+  - Cada texto del usuario pasa por la protección contra inyección de fórmulas.
+- **PDF** para leer, imprimir o compartir.
+  - Encabezado con la cuenta y el rango, resumen (ingresos, gastos, transferencias, neto) y una tabla que repite su encabezado en cada página, con número de página.
+  - Al pie aclara que lo generó el usuario y no es un documento bancario.
+
+**Por qué `fpdf2` y en el servidor:**
+
+- Es Python puro, sin navegador ni dependencias de sistema, y `pip-audit` no reporta vulnerabilidades.
+- Generarlo en el backend reutiliza el mismo cálculo que el CSV y no añade JavaScript pesado al frontend.
+- La licencia es LGPL‑3.0; la usamos como dependencia, sin modificarla.
+- Las fuentes integradas cubren Latin‑1 (tildes, ñ, ¿, ¡). Algunos símbolos se sustituyen (→ por », guiones largos por -) y un emoji se vuelve "?" en lugar de romper el archivo.
+
+**Límites:**
+
+- El rango es de hasta 3 años y el reporte trae como máximo 10 000 filas, con un aviso si se recortó.
+- "Desde" no puede ser posterior a "Hasta" (422).
+- Una transferencia entre dos cuentas incluidas en el reporte suma 0, y la nota dice cuánto se movió.
+
+La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filtrada.

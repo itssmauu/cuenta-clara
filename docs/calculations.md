@@ -28,6 +28,29 @@ Semana del lunes 5 de octubre: monto inicial **$100**, gasto de **$30**, ingreso
 
 Está cubierto por `test_spec_example_100_minus_30_plus_160_is_230`, en dos variantes: con el $30 como transacción y como gasto fijo. Además, `test_dashboard_spec_example` lo verifica de punta a punta por la API.
 
+## Cuentas y transferencias
+
+Todo se calcula sobre un **alcance**: una cuenta (por defecto la principal) o todas (`?account=all`).
+
+- El saldo inicial es la suma de los saldos iniciales de las cuentas del alcance, y solo cuentan sus movimientos, ingresos y gastos fijos.
+- Una **transferencia** que entra o sale del alcance cambia su saldo, pero **no es ingreso ni gasto**: no suma al "Gastado", no consume el límite y no aparece en categorías.
+- Si ambas cuentas están dentro del alcance (vista "Todas"), la transferencia se anula.
+- El límite de gasto se aplica cuando la cuenta principal está en el alcance: sola o dentro de "Todas".
+
+```
+saldo = saldo inicial + ingresos − gastos fijos − gasto variable + transferencias que entran − transferencias que salen
+```
+
+Ejemplo: "Gastos del día" con $100 y "Ahorro" con $400. Se pasan **$50** de Gastos a Ahorro:
+
+| Vista | Saldo | Gastado | Transferencias |
+| --- | --- | --- | --- |
+| Gastos del día | $50 | $0 | −$50 |
+| Ahorro | $450 | $0 | +$50 |
+| Todas | $500 | $0 | $0 (se anula) |
+
+Cubierto por `test_a_transfer_moves_money_without_counting_as_spending` y `test_dashboard_opens_on_the_primary_account_and_can_switch`.
+
 ## Periodos
 
 | Periodo | Ventana |

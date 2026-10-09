@@ -11,11 +11,17 @@ import { buttonClass } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Notice, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
-import { financeApi, type Category, type DashboardPeriod } from "@/lib/finance-api";
+import {
+  financeApi,
+  type AccountScope,
+  type Category,
+  type DashboardPeriod,
+} from "@/lib/finance-api";
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
+import { AccountSwitcher } from "./AccountSwitcher";
 import { KpiCards, LimitAlert, LimitChip, LimitMeter, UpcomingExpenses } from "./Cards";
 import { CategoryBreakdown } from "./CategoryBreakdown";
 import { CURRENT_PERIOD_NAME, periodRange } from "./period-labels";
@@ -41,9 +47,15 @@ export function Dashboard() {
     ? settings.income_period
     : "weekly";
   const period: DashboardPeriod = isPeriod(fromUrl) ? fromUrl : fallback;
+  // Which account: ?account=<id> or ?account=all; none = the primary (day-to-day) one
+  const account: AccountScope = searchParams.get("account") ?? undefined;
 
-  const [dashboard, reloadDashboard] = useResource(`dashboard:${period}:${today}`, () =>
-    financeApi.getDashboard(period, today),
+  const [dashboard, reloadDashboard] = useResource(
+    `dashboard:${period}:${account ?? "primary"}:${today}`,
+    () => financeApi.getDashboard(period, today, account),
+  );
+  const [accountList, reloadAccounts] = useResource(`accounts:${today}`, () =>
+    financeApi.listAccounts(today),
   );
   const [categoryList] = useResource("categories", financeApi.listCategories);
 
@@ -66,16 +78,24 @@ export function Dashboard() {
     [categoryList.data],
   );
 
-  function selectPeriod(next: DashboardPeriod) {
+  function updateUrl(changes: Record<string, string | undefined>) {
     const params = new URLSearchParams(searchParams);
-    params.set("period", next);
-    router.replace(`${pathname}?${params.toString()}`, { scroll: false });
+    for (const [key, value] of Object.entries(changes)) {
+      if (value === undefined) params.delete(key);
+      else params.set(key, value);
+    }
+    const search = params.toString();
+    router.replace(search ? `${pathname}?${search}` : pathname, { scroll: false });
   }
 
   function refreshAll() {
     reloadDashboard();
     reloadExpenses();
+    reloadAccounts();
   }
+
+  // A new movement goes to the account on screen (the primary one when viewing all)
+  const defaultAccountId = current?.account?.id ?? null;
 
   return (
     <>
@@ -84,7 +104,7 @@ export function Dashboard() {
         title={`Hola, ${user.name.split(" ")[0]}`}
         subtitle={
           current
-            ? `Tu resumen de ${CURRENT_PERIOD_NAME[period]} · ${periodRange(current.period_start, current.period_end)}`
+            ? `${current.account?.name ?? "Todas tus cuentas"} · ${CURRENT_PERIOD_NAME[period]}, ${periodRange(current.period_start, current.period_end)}`
             : "Resumen de tus finanzas"
         }
         actions={
@@ -96,7 +116,7 @@ export function Dashboard() {
                 label: FREQUENCY_LABELS[option],
               }))}
               value={period}
-              onChange={selectPeriod}
+              onChange={(next) => updateUrl({ period: next })}
               layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
               optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
             />
@@ -113,6 +133,15 @@ export function Dashboard() {
       />
 
       <Notice message={notice} />
+
+      {accountList.data ? (
+        <AccountSwitcher
+          accounts={accountList.data}
+          value={account}
+          onChange={(next) => updateUrl({ account: next })}
+          currency={settings.currency}
+        />
+      ) : null}
 
       {dashboard.status === "error" && !current ? (
         <div className="flex flex-col items-start gap-3">
@@ -184,6 +213,8 @@ export function Dashboard() {
           refreshAll();
         }}
         categories={categoryList.data ?? []}
+        accounts={accountList.data ?? []}
+        defaultAccountId={defaultAccountId}
       />
     </>
   );

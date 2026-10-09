@@ -1,4 +1,4 @@
-/** Typed calls for settings, categories, recurring items, transactions and the dashboard. */
+/** Typed calls for settings, accounts, categories, money movements, goals and the dashboard. */
 import { request } from "./api";
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "custom";
@@ -8,7 +8,6 @@ export type TransactionType = "income" | "expense";
 export type Money = string;
 
 export type Settings = {
-  initial_balance: Money;
   balance_as_of: string;
   currency: string;
   income_period: Frequency;
@@ -16,6 +15,38 @@ export type Settings = {
   spending_limit: Money | null;
   onboarding_completed: boolean;
 };
+
+/** What the user keeps in an account. Only a label: the app never asks for bank details. */
+export type AccountKind = "spending" | "savings" | "investment" | "other";
+
+export type AccountInput = {
+  name: string;
+  kind: AccountKind;
+  initial_balance: Money;
+  is_primary: boolean;
+};
+
+export type Account = AccountInput & {
+  id: string;
+  /** Balance at the end of the reference day */
+  balance: Money;
+};
+
+/** The account a dashboard or forecast is about (null = all accounts added up) */
+export type AccountRef = Pick<Account, "id" | "name" | "kind" | "is_primary">;
+
+/** An account id, or "all"; undefined = the primary account */
+export type AccountScope = string | "all" | undefined;
+
+export type TransferInput = {
+  from_account_id: string;
+  to_account_id: string;
+  amount: Money;
+  occurred_on: string;
+  note: string | null;
+};
+
+export type Transfer = TransferInput & { id: string; goal_id: string | null };
 
 export type Category = { id: string; name: string; color: string; is_default: boolean };
 
@@ -25,6 +56,8 @@ export type IncomeInput = {
   frequency: Frequency;
   custom_period_days?: number | null;
   start_date: string;
+  /** Omitted: the primary account */
+  account_id?: string | null;
 };
 
 export type FixedExpenseInput = {
@@ -35,6 +68,7 @@ export type FixedExpenseInput = {
   start_date: string;
   due_day?: number | null;
   category_id?: string | null;
+  account_id?: string | null;
 };
 
 export type Transaction = {
@@ -44,14 +78,18 @@ export type Transaction = {
   category_id: string | null;
   occurred_on: string;
   note: string | null;
+  account_id: string;
 };
 
-export type TransactionInput = Omit<Transaction, "id">;
+export type TransactionInput = Omit<Transaction, "id" | "account_id"> & {
+  account_id?: string | null;
+};
 
 export type Income = IncomeInput & {
   id: string;
   custom_period_days: number | null;
   is_active: boolean;
+  account_id: string;
 };
 
 export type FixedExpense = FixedExpenseInput & {
@@ -60,6 +98,7 @@ export type FixedExpense = FixedExpenseInput & {
   due_day: number | null;
   category_id: string | null;
   is_active: boolean;
+  account_id: string;
 };
 
 export type ForecastPeriod = {
@@ -69,11 +108,13 @@ export type ForecastPeriod = {
   income: Money;
   fixed_expenses: Money;
   variable_spending: Money;
+  transfers: Money;
   closing_balance: Money;
   is_current: boolean;
 };
 
 export type Forecast = {
+  account: AccountRef | null;
   period: Frequency;
   currency: string;
   average_variable_spending: Money;
@@ -86,11 +127,15 @@ export type Forecast = {
 
 export type Estimator = "average" | "trend";
 
+export type ReportFormat = "csv" | "pdf";
+
 export type SavingsGoalInput = {
   name: string;
   target_amount: Money;
   saved_amount: Money;
   due_date: string | null;
+  /** Where the goal's money is kept */
+  account_id: string | null;
 };
 
 export type SavingsGoal = SavingsGoalInput & {
@@ -136,6 +181,8 @@ export type CategorySpending = {
 };
 
 export type Dashboard = {
+  /** The account shown; null when it adds up all accounts */
+  account: AccountRef | null;
   period: Frequency;
   period_start: string;
   period_end: string;
@@ -147,6 +194,8 @@ export type Dashboard = {
   fixed_expenses: Money;
   variable_expenses: Money;
   spent: Money;
+  /** Net money moved into (+) or out of (−) the account in the period */
+  transfers: Money;
   available_balance: Money;
   spending_limit: Money | null;
   limit_remaining: Money | null;
@@ -171,11 +220,11 @@ export function incomePayload(
   item: Income,
   changes: Partial<IncomeInput & { is_active: boolean }> = {},
 ) {
-  const { label, amount, frequency, custom_period_days, start_date, is_active } = {
+  const { label, amount, frequency, custom_period_days, start_date, is_active, account_id } = {
     ...item,
     ...changes,
   };
-  return { label, amount, frequency, custom_period_days, start_date, is_active };
+  return { label, amount, frequency, custom_period_days, start_date, is_active, account_id };
 }
 
 export function fixedExpensePayload(
@@ -191,6 +240,7 @@ export function fixedExpensePayload(
     due_day,
     category_id,
     is_active,
+    account_id,
   } = {
     ...item,
     ...changes,
@@ -204,6 +254,7 @@ export function fixedExpensePayload(
     due_day,
     category_id,
     is_active,
+    account_id,
   };
 }
 
@@ -221,6 +272,19 @@ export const financeApi = {
   saveSettings: (
     data: Omit<Settings, "custom_period_days"> & { custom_period_days?: number | null },
   ) => request<Settings>("/settings", { method: "PUT", body: data }),
+
+  listAccounts: (date: string) => request<Account[]>(`/accounts${query({ date })}`),
+  createAccount: (data: AccountInput) =>
+    request<Account>("/accounts", { method: "POST", body: data }),
+  updateAccount: (id: string, data: AccountInput) =>
+    request<Account>(`/accounts/${id}`, { method: "PUT", body: data }),
+  deleteAccount: (id: string) => request<void>(`/accounts/${id}`, { method: "DELETE" }),
+
+  listTransfers: (accountId?: string) =>
+    request<Transfer[]>(`/transfers${query({ account_id: accountId })}`),
+  createTransfer: (data: TransferInput) =>
+    request<Transfer>("/transfers", { method: "POST", body: data }),
+  deleteTransfer: (id: string) => request<void>(`/transfers/${id}`, { method: "DELETE" }),
 
   listCategories: () => request<Category[]>("/categories"),
   createCategory: (data: { name: string; color: string }) =>
@@ -247,6 +311,7 @@ export const financeApi = {
     to?: string;
     type?: TransactionType;
     category_id?: string;
+    account_id?: string;
     limit?: number;
     offset?: number;
   }) => request<TransactionPage>(`/transactions${query(params)}`),
@@ -261,7 +326,8 @@ export const financeApi = {
     period: DashboardPeriod | undefined,
     date: string,
     estimator: Estimator = "average",
-  ) => request<Forecast>(`/forecast${query({ periods, period, date, estimator })}`),
+    account?: AccountScope,
+  ) => request<Forecast>(`/forecast${query({ periods, period, date, estimator, account })}`),
 
   listGoals: (date: string) => request<SavingsGoal[]>(`/savings-goals${query({ date })}`),
   createGoal: (data: SavingsGoalInput) =>
@@ -269,10 +335,11 @@ export const financeApi = {
   updateGoal: (id: string, data: SavingsGoalInput) =>
     request<SavingsGoal>(`/savings-goals/${id}`, { method: "PUT", body: data }),
   deleteGoal: (id: string) => request<void>(`/savings-goals/${id}`, { method: "DELETE" }),
-  contribute: (id: string, amount: Money) =>
+  /** With `fromAccountId` the money really moves between that account and the goal's */
+  contribute: (id: string, amount: Money, fromAccountId: string | null = null) =>
     request<SavingsGoal>(`/savings-goals/${id}/contributions`, {
       method: "POST",
-      body: { amount },
+      body: { amount, from_account_id: fromAccountId },
     }),
 
   /** URL of the CSV download (a plain GET: the browser sends the session cookie). */
@@ -281,8 +348,21 @@ export const financeApi = {
     to?: string;
     type?: TransactionType;
     category_id?: string;
+    account_id?: string;
   }) => `/api/v1/transactions/export${query(params)}`,
 
-  getDashboard: (period: DashboardPeriod, date: string) =>
-    request<Dashboard>(`/dashboard${query({ period, date })}`),
+  /**
+   * URL of the movements report: one-off movements, every occurrence of recurring
+   * incomes and fixed expenses, and transfers. Empty dates = since tracking began, until today.
+   */
+  reportUrl: (params: {
+    format: ReportFormat;
+    from?: string;
+    to?: string;
+    type?: TransactionType;
+    account?: AccountScope;
+  }) => `/api/v1/reports/export${query(params)}`,
+
+  getDashboard: (period: DashboardPeriod, date: string, account?: AccountScope) =>
+    request<Dashboard>(`/dashboard${query({ period, date, account })}`),
 };

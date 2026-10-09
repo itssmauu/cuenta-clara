@@ -1,6 +1,8 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import { Landmark } from "lucide-react";
+import Link from "next/link";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -89,7 +91,6 @@ function FinanceSettings({
     resolver: zodResolver(settingsSchema),
     mode: "onBlur",
     defaultValues: {
-      initial_balance: settings.initial_balance,
       balance_as_of: settings.balance_as_of,
       currency: settings.currency,
       income_period: settings.income_period,
@@ -126,20 +127,20 @@ function FinanceSettings({
       </h2>
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         {serverError ? <FormAlert title={serverError} /> : null}
+        {/* Each account has its own starting balance now */}
+        <p className="bg-canvas text-body flex flex-wrap items-center gap-2 rounded-2xl p-4 text-sm font-semibold">
+          <Landmark aria-hidden="true" className="text-primary size-5 shrink-0" />
+          El saldo inicial de cada cuenta se cambia en
+          <Link href="/cuentas" className="text-primary font-bold hover:underline">
+            Cuentas
+          </Link>
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
-            id="settings-balance"
-            label="Monto inicial"
-            inputMode="decimal"
-            autoComplete="off"
-            error={errors.initial_balance?.message}
-            {...register("initial_balance")}
-          />
-          <TextField
             id="settings-as-of"
-            label="¿A qué fecha corresponde?"
+            label="¿Desde qué fecha llevas tus cuentas?"
             type="date"
-            hint="Los movimientos anteriores a esta fecha no cuentan: ya están en el monto inicial."
+            hint="Los movimientos anteriores a esta fecha no cuentan: ya están en los saldos iniciales."
             error={errors.balance_as_of?.message}
             {...register("balance_as_of")}
           />

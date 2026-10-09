@@ -68,7 +68,7 @@ describe("transactionSchema", () => {
       occurred_on: "2026-10-07",
       note: "  ",
     });
-    expect(parsed).toMatchObject({ category_id: null, note: null });
+    expect(parsed).toMatchObject({ category_id: null, note: null, account_id: null });
   });
 });
 

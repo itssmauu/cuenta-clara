@@ -15,6 +15,7 @@ class TransactionFilters:
     date_to: date | None = None
     type: TransactionType | None = None
     category_id: uuid.UUID | None = None
+    account_id: uuid.UUID | None = None
 
 
 def list_transactions(
@@ -30,6 +31,8 @@ def list_transactions(
         conditions.append(Transaction.type == filters.type)
     if filters.category_id is not None:
         conditions.append(Transaction.category_id == filters.category_id)
+    if filters.account_id is not None:
+        conditions.append(Transaction.account_id == filters.account_id)
 
     total = db.scalar(select(func.count()).select_from(Transaction).where(*conditions)) or 0
     items = db.scalars(

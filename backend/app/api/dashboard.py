@@ -1,3 +1,4 @@
+import uuid
 from datetime import date
 from typing import Annotated, Literal
 
@@ -6,6 +7,7 @@ from fastapi import APIRouter, Query
 from app.api.deps import CurrentUser, DbSession
 from app.models import Frequency
 from app.schemas.dashboard import (
+    AccountRef,
     CategorySpendingOut,
     DashboardOut,
     ForecastOut,
@@ -27,6 +29,10 @@ PeriodParam = Annotated[
 ]
 # The client sends its local date, so "today" matches the user's timezone
 DateParam = Annotated[date | None, Query(alias="date", description="Reference day; default today")]
+AccountParam = Annotated[
+    uuid.UUID | Literal["all"] | None,
+    Query(description="An account id, or 'all'; defaults to the primary account"),
+]
 
 
 def _cadence(period: str | None, fallback: Cadence) -> Cadence:
@@ -35,13 +41,20 @@ def _cadence(period: str | None, fallback: Cadence) -> Cadence:
 
 @router.get("/dashboard", response_model=DashboardOut)
 def get_dashboard(
-    db: DbSession, user: CurrentUser, period: PeriodParam = None, reference_date: DateParam = None
+    db: DbSession,
+    user: CurrentUser,
+    period: PeriodParam = None,
+    reference_date: DateParam = None,
+    account: AccountParam = None,
 ) -> DashboardOut:
-    data, settings = dashboard_service.load_finance_data(db, user)
+    finance = dashboard_service.load_user_finance(db, user)
+    ids, single = finance.resolve(account)
+    data, settings = finance.data_for(ids), finance.settings
     cadence = _cadence(period, data.limit_cadence)
     result = projections.build_dashboard(data, cadence, reference_date or date.today())
 
     return DashboardOut(
+        account=AccountRef.model_validate(single) if single else None,
         period=cadence.frequency,
         period_start=result.period.start,
         period_end=result.period.end,
@@ -53,6 +66,7 @@ def get_dashboard(
         fixed_expenses=result.totals.fixed_expenses,
         variable_expenses=result.totals.variable_expenses,
         spent=result.totals.spent,
+        transfers=result.totals.transfers,
         available_balance=result.available_balance,
         spending_limit=result.limit,
         limit_remaining=result.limit_remaining,
@@ -87,7 +101,7 @@ def get_dashboard(
         ],
         recent_transactions=[
             TransactionOut.model_validate(t)
-            for t in dashboard_service.recent_transactions(db, user)
+            for t in dashboard_service.recent_transactions(db, user, ids)
         ],
     )
 
@@ -121,14 +135,16 @@ def get_forecast(
         Literal["average", "trend"],
         Query(description="average = recent mean; trend = linear regression on history"),
     ] = "average",
+    account: AccountParam = None,
 ) -> ForecastOut:
-    data, settings = dashboard_service.load_finance_data(db, user)
+    data, settings, single = dashboard_service.load_finance_data(db, user, account)
     cadence = _cadence(period, data.limit_cadence)
     forecast = projections.build_forecast(
         data, cadence, reference_date or date.today(), periods, estimator=estimator
     )
 
     return ForecastOut(
+        account=AccountRef.model_validate(single) if single else None,
         period=cadence.frequency,
         currency=settings.currency,
         average_variable_spending=forecast.average,
@@ -144,6 +160,7 @@ def get_forecast(
                 income=row.income,
                 fixed_expenses=row.fixed_expenses,
                 variable_spending=row.variable_spending,
+                transfers=row.transfers,
                 closing_balance=row.closing_balance,
                 is_current=row.is_current,
             )

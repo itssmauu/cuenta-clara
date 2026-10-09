@@ -3,16 +3,33 @@ import type { ReactNode } from "react";
 import { vi } from "vitest";
 
 import { SessionProvider, type Session } from "@/components/app/session";
-import type { Category, Settings } from "@/lib/finance-api";
+import type { Account, Category, Settings } from "@/lib/finance-api";
 
 export const testSettings: Settings = {
-  initial_balance: "100.00",
   balance_as_of: "2026-10-05",
   currency: "USD",
   income_period: "weekly",
   custom_period_days: null,
   spending_limit: "40.00",
   onboarding_completed: true,
+};
+
+export const testPrimaryAccount: Account = {
+  id: "a-main",
+  name: "Gastos del día",
+  kind: "spending",
+  initial_balance: "100.00",
+  is_primary: true,
+  balance: "230.00",
+};
+
+export const testSavingsAccount: Account = {
+  id: "a-savings",
+  name: "Ahorro",
+  kind: "savings",
+  initial_balance: "400.00",
+  is_primary: false,
+  balance: "400.00",
 };
 
 export const testCategories: Category[] = [

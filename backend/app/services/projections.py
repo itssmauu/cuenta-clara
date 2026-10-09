@@ -5,6 +5,12 @@ day on, recurring incomes and one-off income transactions add money, while fixed
 and one-off expense transactions take it away. Nothing dated earlier counts.
 
     balance at the end of a period = opening balance + income − fixed expenses − variable spending
+                                     + transfers in − transfers out
+
+The data is always scoped to some of the user's accounts (one account, or all of them):
+`initial_balance` is the sum of those accounts' balances and only their movements count.
+Money moved between two accounts in the scope cancels out; money moved in or out of the
+scope is a transfer, which changes the balance but is neither income nor spending.
 
 Example (weekly): starts with $100, spends $30, receives $160 → $100 − $30 + $160 = $230.
 """
@@ -68,6 +74,14 @@ class OneOff:
 
 
 @dataclass(frozen=True)
+class Move:
+    """A transfer seen from the scope: positive when money comes in, negative when it leaves."""
+
+    on: date
+    amount: Decimal
+
+
+@dataclass(frozen=True)
 class FinanceData:
     initial_balance: Decimal
     balance_as_of: date
@@ -77,6 +91,7 @@ class FinanceData:
     incomes: list[Recurring] = field(default_factory=list)
     fixed_expenses: list[Recurring] = field(default_factory=list)
     transactions: list[OneOff] = field(default_factory=list)
+    moves: list[Move] = field(default_factory=list)
 
 
 # ── Aggregates ──────────────────────────────────────────
@@ -87,6 +102,8 @@ class Totals:
     income: Decimal = ZERO
     fixed_expenses: Decimal = ZERO
     variable_expenses: Decimal = ZERO
+    # Net money moved in (+) or out (−) of the scope's accounts; not income, not spending
+    transfers: Decimal = ZERO
 
     @property
     def spent(self) -> Decimal:
@@ -94,7 +111,7 @@ class Totals:
 
     @property
     def net(self) -> Decimal:
-        return self.income - self.spent
+        return self.income - self.spent + self.transfers
 
 
 def totals(data: FinanceData, window: Period) -> Totals:
@@ -109,7 +126,8 @@ def totals(data: FinanceData, window: Period) -> Totals:
     )
     fixed = sum((f.total_in(tracked) for f in data.fixed_expenses), ZERO)
     variable = sum((t.amount for t in one_offs if not t.is_income), ZERO)
-    return Totals(money(income), money(fixed), money(variable))
+    transfers = sum((m.amount for m in data.moves if m.on in tracked), ZERO)
+    return Totals(money(income), money(fixed), money(variable), money(transfers))
 
 
 @dataclass(frozen=True)
@@ -269,11 +287,17 @@ class ForecastPeriod:
     # Real spending so far for the current period; the historical average for future ones
     variable_spending: Decimal
     is_current: bool
+    # Transfers already recorded for the period (future ones are never guessed)
+    transfers: Decimal = ZERO
 
     @property
     def closing_balance(self) -> Decimal:
         return money(
-            self.opening_balance + self.income - self.fixed_expenses - self.variable_spending
+            self.opening_balance
+            + self.income
+            - self.fixed_expenses
+            - self.variable_spending
+            + self.transfers
         )
 
 
@@ -350,6 +374,7 @@ def build_forecast(
             fixed_expenses=period_totals.fixed_expenses,
             variable_spending=period_totals.variable_expenses if is_current else estimate(index),
             is_current=is_current,
+            transfers=period_totals.transfers,
         )
         forecast.append(row)
         opening = row.closing_balance

@@ -11,6 +11,8 @@ from dataclasses import dataclass
 import pytest
 from fastapi.testclient import TestClient
 
+from tests.auth_helpers import set_primary_balance
+
 
 @dataclass(frozen=True)
 class Resource:
@@ -109,14 +111,12 @@ def test_settings_are_per_user(ana_and_beto: tuple[TestClient, TestClient]) -> N
     ana, beto = ana_and_beto
     ana.put(
         "/api/v1/settings",
-        json={
-            "initial_balance": "100.00",
-            "balance_as_of": "2026-10-05",
-            "income_period": "weekly",
-        },
+        json={"balance_as_of": "2026-10-05", "income_period": "weekly"},
     )
+    set_primary_balance(ana, "100.00")
 
-    assert beto.get("/api/v1/settings").json()["initial_balance"] == "0.00"
+    assert beto.get("/api/v1/settings").json()["income_period"] == "monthly"
+    assert beto.get("/api/v1/accounts").json()[0]["initial_balance"] == "0.00"
 
 
 def test_client_supplied_user_id_is_rejected(ana_and_beto: tuple[TestClient, TestClient]) -> None:

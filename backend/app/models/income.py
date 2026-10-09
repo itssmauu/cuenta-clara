@@ -31,3 +31,5 @@ class Income(IdMixin, TimestampMixin, Base):
     custom_period_days: Mapped[int | None]
     start_date: Mapped[date]
     is_active: Mapped[bool] = mapped_column(Boolean, server_default=true())
+    # The account the income arrives in
+    account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("accounts.id"), index=True)

@@ -105,7 +105,7 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
       <Kpi
         tone="ink"
         icon={Wallet}
-        label="Monto inicial"
+        label="Saldo inicial"
         value={money(d.initial_balance)}
         note={`Desde el ${since}`}
       />
@@ -129,11 +129,21 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
         icon={PiggyBank}
         label="Saldo disponible"
         value={money(d.available_balance)}
-        note="Saldo al iniciar + ingresos − gastos"
+        note={transfersNote(d) ?? "Saldo al iniciar + ingresos − gastos"}
         valueClass="text-primary-hover"
       />
     </section>
   );
+}
+
+/** Money moved between accounts changes the balance without being income or spending. */
+function transfersNote(d: Dashboard): string | null {
+  const amount = Number(d.transfers);
+  if (amount === 0) return null;
+  const moved = formatMoney(Math.abs(amount), d.currency);
+  return amount > 0
+    ? `Incluye ${moved} que llegaron de otras cuentas`
+    : `Incluye ${moved} que pasaste a otras cuentas`;
 }
 
 /** "Dentro del límite · te quedan $X" / "Te pasaste por $X": icon + words, never color alone. */
@@ -165,6 +175,21 @@ export function LimitChip({ dashboard: d }: { dashboard: Dashboard }) {
 
 export function LimitMeter({ dashboard: d }: { dashboard: Dashboard }) {
   const percent = d.limit_used_percent;
+  // The spending limit belongs to the day-to-day account, not to savings or funds
+  if (d.account && !d.account.is_primary) {
+    return (
+      <div className="bg-ink flex flex-col gap-3.5 rounded-[32px] p-7 text-white">
+        <span className="text-on-ink text-[13px] font-bold">Balance del periodo</span>
+        <p className="font-display text-[26px] leading-tight font-extrabold tracking-[-0.02em]">
+          {Number(d.spent) === 0 ? "Sin gastos en esta cuenta" : "Gastos de esta cuenta"}
+        </p>
+        <span className="text-on-ink text-[13px] font-semibold">
+          Tu límite de gasto se aplica a tu cuenta principal. Aquí ves cómo cambia el saldo de esta
+          cuenta.
+        </span>
+      </div>
+    );
+  }
   const headline =
     percent === null
       ? "Define un límite para medir tu ritmo"

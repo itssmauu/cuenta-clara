@@ -81,6 +81,8 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Todas las consultas de datos financieros pasan por `app/services/ownership.py`**, que siempre añade `WHERE user_id = <usuario autenticado>`. Si el recurso es de otro usuario, la respuesta es `404`, idéntica a la de un id inexistente, para no confirmar que existe.
 - **Ningún request acepta `user_id` ni `id`** (`extra="forbid"`): el dueño siempre sale de la sesión.
 - **Referencias cruzadas:** un gasto o transacción solo puede apuntar a una categoría predeterminada o propia. Usar la categoría de otro usuario da `422 La categoría no existe.`
+- **Cuentas:** cada `account_id` que llega (en movimientos, ingresos, gastos fijos, metas, transferencias o en `?account=` del dashboard) se comprueba contra las cuentas del usuario. Una cuenta ajena da `404`. Cubierto por `test_another_users_account_is_invisible`, que intenta ocho usos distintos de la cuenta de otra persona y verifica que su saldo no cambia.
+- **Sin datos bancarios:** las cuentas guardan solo un nombre y un tipo. Nunca número de cuenta, tarjeta ni clave. Un nombre con más de 5 dígitos se rechaza en el formulario y en la API, para que nadie guarde un número de cuenta por error.
 - **`tests/test_idor.py`** prueba, para cada recurso, que otro usuario no puede leerlo, editarlo, borrarlo ni verlo en listados, y que el original queda intacto. También cubre filtrar por la categoría de otro y enviar un `user_id` ajeno.
 - **Los tests se validaron rompiendo el filtro a propósito:** sin `user_id` en la consulta, los tests de IDOR fallan.
 
@@ -117,6 +119,13 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - Solo exporta los movimientos del usuario autenticado. Cubierto por `test_export_only_includes_the_callers_data`.
 - **Protección contra inyección de fórmulas:** cualquier texto del usuario (notas, nombres de categoría) que empiece con `= + - @`, tabulación o retorno se prefija con `'`. Así una nota como `=HYPERLINK(...)` no se ejecuta al abrir el archivo en Excel o Google Sheets.
   → `app/services/export.py` · `tests/test_phase9_api.py`
+
+### Reporte en CSV o PDF
+
+- Solo incluye datos y cuentas del usuario autenticado. Una cuenta ajena en `?account=` da `404`. Cubierto por `test_only_the_callers_data_and_accounts`.
+- **CSV:** todas las celdas de texto (cuenta, concepto, categoría, nota) pasan por `safe_cell`, contra la inyección de fórmulas.
+- **PDF:** se genera en el servidor dibujando texto plano con `fpdf2`. No se interpreta HTML ni nada que el usuario escriba, así que no hay inyección posible.
+- El rango (máximo 3 años) y las filas (máximo 10 000) están limitados, para que nadie pida un archivo enorme.
 
 ## 9. Dependencias
 

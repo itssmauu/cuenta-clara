@@ -1,7 +1,25 @@
 import "@testing-library/jest-dom/vitest";
 
 import { cleanup } from "@testing-library/react";
-import { afterEach } from "vitest";
+import { afterEach, beforeEach, vi } from "vitest";
+
+import { financeApi } from "@/lib/finance-api";
+
+// Pages load the user's accounts; by default there is one, so no account choices show up.
+// (Defined here, not imported from test-utils: that would load next/navigation before the
+// test files get to mock it.)
+beforeEach(() => {
+  vi.spyOn(financeApi, "listAccounts").mockResolvedValue([
+    {
+      id: "a-main",
+      name: "Gastos del día",
+      kind: "spending",
+      initial_balance: "100.00",
+      is_primary: true,
+      balance: "230.00",
+    },
+  ]);
+});
 
 afterEach(() => {
   cleanup();

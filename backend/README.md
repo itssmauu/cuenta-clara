@@ -63,21 +63,26 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `POST` | `/api/v1/auth/refresh` | Rota la sesión (requiere `X-CSRF-Token`) |
 | `POST` | `/api/v1/auth/logout` | Revoca la sesión y borra las cookies (requiere `X-CSRF-Token`) |
 | `GET` | `/api/v1/auth/me` | Usuario de la sesión actual |
-| `GET` / `PUT` | `/api/v1/settings` | Monto inicial, moneda, periodo de ingreso, límite de gasto |
+| `GET` / `PUT` | `/api/v1/settings` | Fecha desde la que se llevan las cuentas, moneda, periodo de ingreso, límite de gasto |
+| `GET` / `POST` | `/api/v1/accounts` | Cuentas (nombre, tipo, saldo inicial, principal) con su saldo a `?date=`; máximo 10 |
+| `PUT` / `DELETE` | `/api/v1/accounts/{id}` | Cambiar la principal pasa el rol; no se borra la principal ni una cuenta con datos |
+| `GET` / `POST` | `/api/v1/transfers` | Dinero movido entre dos cuentas propias (`?account_id=` para filtrar) |
+| `DELETE` | `/api/v1/transfers/{id}` | |
 | `GET` / `POST` | `/api/v1/categories` | Predeterminadas + propias / crear propia |
 | `PUT` / `DELETE` | `/api/v1/categories/{id}` | Solo categorías propias (las predeterminadas son de solo lectura) |
 | `GET` / `POST` | `/api/v1/incomes` | Ingresos recurrentes |
 | `GET` / `PUT` / `DELETE` | `/api/v1/incomes/{id}` | |
 | `GET` / `POST` | `/api/v1/fixed-expenses` | Gastos fijos |
 | `GET` / `PUT` / `DELETE` | `/api/v1/fixed-expenses/{id}` | |
-| `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`; paginación `limit` (≤ 100) y `offset` |
+| `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`, `account_id`; paginación `limit` (≤ 100) y `offset` |
 | `GET` / `PUT` / `DELETE` | `/api/v1/transactions/{id}` | |
 | `GET` | `/api/v1/dashboard` | Saldo, ingresos y gastos del periodo, límite, serie de 6 periodos, próximos gastos fijos y últimos movimientos. Parámetros: `period` (`daily`/`weekly`/`biweekly`/`monthly`) y `date` |
-| `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period`, `date` y `estimator` (`average` o `trend`) |
+| `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period`, `date`, `estimator` (`average` o `trend`) y `account` (id o `all`; por defecto la principal) |
 | `GET` / `POST` | `/api/v1/savings-goals` | Metas de ahorro con progreso y plan por periodo (`?date=` para el plan) |
 | `PUT` / `DELETE` | `/api/v1/savings-goals/{id}` | |
-| `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0 |
+| `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0. Con `from_account_id` el dinero se mueve entre esa cuenta y la de la meta |
 | `GET` | `/api/v1/transactions/export` | CSV de movimientos con los mismos filtros que la lista |
+| `GET` | `/api/v1/reports/export` | Reporte completo (movimientos, cada ingreso y gasto fijo, transferencias). `format` (`csv` o `pdf`), `from`, `to`, `type`, `account` (id o `all`). Sin fechas: desde `balance_as_of` hasta hoy |
 
 Todas las rutas de datos requieren sesión y solo ven los datos del usuario autenticado. Un recurso ajeno responde `404`.
 

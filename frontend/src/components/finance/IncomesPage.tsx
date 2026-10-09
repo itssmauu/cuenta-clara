@@ -12,10 +12,11 @@ import { FormAlert } from "@/components/ui/FormAlert";
 import { ApiError } from "@/lib/api";
 import { financeApi, incomePayload, type Income } from "@/lib/finance-api";
 import { FREQUENCY_LABELS } from "@/lib/finance-validation";
-import { formatDate, formatMoney } from "@/lib/format";
+import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 
 import { IncomeDialog } from "./RecurringDialogs";
+import { accountName } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
 
 function frequencyText(item: Pick<Income, "frequency" | "custom_period_days">) {
@@ -27,6 +28,11 @@ function frequencyText(item: Pick<Income, "frequency" | "custom_period_days">) {
 export function IncomesPage() {
   const { settings } = useSession();
   const [incomes, reload] = useResource("incomes", financeApi.listIncomes);
+  const [today] = useState(todayISO);
+  const [accountList] = useResource(`accounts:${today}`, () => financeApi.listAccounts(today));
+  // Which account each item uses only matters with more than one
+  const accounts = accountList.data ?? [];
+  const multiAccount = accounts.length > 1;
   const [editing, setEditing] = useState<{ item: Income | null } | null>(null);
   const [deleting, setDeleting] = useState<Income | null>(null);
   const [busy, setBusy] = useState(false);
@@ -132,6 +138,11 @@ export function IncomesPage() {
                   <tr key={item.id} className="border-line border-t">
                     <th scope="row" className={`${td} text-left font-bold`}>
                       {item.label}
+                      {multiAccount ? (
+                        <span className="text-muted block text-xs font-semibold">
+                          Llega a {accountName(accounts, item.account_id)}
+                        </span>
+                      ) : null}
                     </th>
                     <td className={`${td} text-mint-ink text-right font-extrabold tabular-nums`}>
                       {money(item.amount)}
@@ -170,6 +181,7 @@ export function IncomesPage() {
       <IncomeDialog
         open={editing !== null}
         item={editing?.item ?? null}
+        accounts={accounts}
         onClose={() => setEditing(null)}
         onSaved={(message) => {
           showNotice(message);
