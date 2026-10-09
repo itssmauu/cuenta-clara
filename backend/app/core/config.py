@@ -44,7 +44,8 @@ class Settings(BaseSettings):
     # Gemini API key. Without it the assistant reports itself as unavailable.
     # Server-side only: it never reaches the browser.
     gemini_api_key: SecretStr | None = None
-    gemini_model: str = "gemini-3.8-flash"
+    # Fast and widely available; a larger model can be set here (it may be slower or busier)
+    gemini_model: str = "gemini-3.5-flash-lite"
     # Per user, in a sliding hour: each message costs a model call
     assistant_messages_per_hour: int = Field(default=30, ge=1)
 

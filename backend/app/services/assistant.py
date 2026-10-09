@@ -30,6 +30,7 @@ from app.services.categories import list_categories
 from app.services.dashboard import load_user_finance
 from app.services.errors import DomainError
 from app.services.ownership import list_owned
+from app.services.periods import Cadence
 from app.services.savings import plan_goal
 
 logger = logging.getLogger(__name__)
@@ -65,6 +66,9 @@ CÓMO RESPONDER:
 - Ante una compra, da primero un veredicto claro: "Sí, puedes", "Mejor espera" o "No te
   conviene ahora", y luego 2 o 3 razones con números de sus datos (saldo, límite,
   próximos gastos fijos, saldo proyectado, metas). Si conviene esperar, di cuándo o cómo.
+- Si preguntan "cuánto" (cuánto ahorrar, cuánto debería tener, cuánto puedo gastar),
+  calcula una cifra concreta con sus datos y muestra la cuenta en una línea.
+- No saludes ni repitas su nombre en cada respuesta: el saludo ya está hecho.
 - Sé breve: máximo unas 150 palabras. Párrafos cortos y viñetas con "- ". Sin tablas, sin
   títulos, sin markdown de negritas.
 - Montos con su símbolo y dos decimales cuando sean exactos, por ejemplo $230.00.
@@ -100,10 +104,21 @@ class AssistantModel(Protocol):
 class GeminiModel:
     """The Gemini API through Google's official SDK (Interactions API)."""
 
-    def __init__(self, api_key: str, model: str) -> None:
-        from google import genai  # imported lazily: only needed when a key is configured
+    # One attempt, bounded: the SDK's default of several retries with backoff could keep
+    # the user waiting for minutes when the model is busy; an honest "try again" is better
+    TIMEOUT_MS = 25_000
 
-        self._client = genai.Client(api_key=api_key)
+    def __init__(self, api_key: str, model: str) -> None:
+        # Imported lazily: only needed when a key is configured
+        from google import genai
+        from google.genai import types
+
+        self._client = genai.Client(
+            api_key=api_key,
+            http_options=types.HttpOptions(
+                timeout=self.TIMEOUT_MS, retry_options=types.HttpRetryOptions(attempts=1)
+            ),
+        )
         self._model = model
 
     def generate(self, *, system: str, prompt: str) -> str:
@@ -115,7 +130,6 @@ class GeminiModel:
                 # Nothing is kept on Google's side between messages
                 store=False,
                 generation_config={"temperature": 0.4, "max_output_tokens": 2048},
-                timeout=30,
             )
         except Exception as error:  # network, quota, invalid key… all look the same to the user
             logger.warning("Assistant model call failed: %s", type(error).__name__)
@@ -220,6 +234,29 @@ def build_context(db: Session, user: User, today: date) -> str:
                 lines.append(
                     f"- {item.name}: {m(item.amount)} {cadence_label} ({names.get(account_id, '')})"
                 )
+    # Monthly equivalents computed here: models are unreliable at adding up recurrences
+    month = Decimal("30.44")
+    monthly = {
+        title: sum(
+            (
+                item.amount
+                * month
+                / (
+                    Decimal(item.custom_days)
+                    if item.custom_days
+                    else Decimal(str(Cadence(item.frequency).average_days))
+                )
+                for _, item in items
+            ),
+            Decimal(0),
+        )
+        for title, items in (("ingresos", finance.incomes), ("gastos", finance.fixed_expenses))
+    }
+    lines.append(
+        f"Equivalente mensual (ya calculado, úsalo tal cual): ingresos fijos "
+        f"{m(projections.money(monthly['ingresos']))}, gastos fijos "
+        f"{m(projections.money(monthly['gastos']))}."
+    )
     if dashboard.upcoming:
         lines.append("Próximos gastos fijos:")
         lines += [
