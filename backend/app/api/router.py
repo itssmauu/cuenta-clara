@@ -9,6 +9,7 @@ from app.api import (
     fixed_expenses,
     health,
     incomes,
+    me,
     reports,
     savings_goals,
     settings,
@@ -30,3 +31,4 @@ api_router.include_router(dashboard.router)
 api_router.include_router(savings_goals.router)
 api_router.include_router(reports.router)
 api_router.include_router(assistant.router)
+api_router.include_router(me.router)

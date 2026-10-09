@@ -92,6 +92,11 @@ class AssistantUnavailableError(DomainError):
     message = f"{NAME} no está disponible en este momento. Inténtalo de nuevo en un rato."
 
 
+class AssistantConsentError(DomainError):
+    status_code = 403
+    message = f"Activa a {NAME} primero: necesita tu permiso para usar un resumen de tus finanzas."
+
+
 class AssistantBusyError(DomainError):
     status_code = 429
     message = f"Le has preguntado mucho a {NAME} en la última hora. Vuelve en un rato."

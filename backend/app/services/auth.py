@@ -10,6 +10,7 @@ from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.legal import TERMS_VERSION
 from app.core.password_policy import password_problems
 from app.core.security import (
     burn_password_check,
@@ -55,6 +56,7 @@ def _now() -> datetime:
 
 
 def register_user(db: Session, *, email: str, password: str, name: str) -> None:
+    """Create the account; the caller has already checked that the Terms were accepted."""
     """Create the account unless the email is taken.
 
     It does NOT tell the caller whether the email already existed, so the endpoint can't
@@ -69,7 +71,14 @@ def register_user(db: Session, *, email: str, password: str, name: str) -> None:
     if db.scalar(select(User.id).where(User.email == email)) is not None:
         return
 
-    user = User(email=email, password_hash=password_hash, name=name)
+    # Consent is recorded with the version of the documents the user accepted (Ley 81)
+    user = User(
+        email=email,
+        password_hash=password_hash,
+        name=name,
+        terms_version=TERMS_VERSION,
+        terms_accepted_at=_now(),
+    )
     db.add(user)
     try:
         db.flush()
