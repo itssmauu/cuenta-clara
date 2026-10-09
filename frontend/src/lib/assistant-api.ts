@@ -8,8 +8,11 @@ export type ChatMessage = { role: ChatRole; content: string };
 export const MAX_HISTORY = 12;
 export const MAX_MESSAGE_LENGTH = 1000;
 
+export type AssistantStatus = { name: string; available: boolean; consented: boolean };
+
 export const assistantApi = {
-  status: () => request<{ name: string; available: boolean }>("/assistant"),
+  /** `consented`: the user turned Balbo on (nothing is sent to the model before that) */
+  status: () => request<AssistantStatus>("/assistant"),
   /** `messages` ends with the user's question; returns Balbo's reply */
   chat: (messages: ChatMessage[]) =>
     request<{ reply: string; on_topic: boolean }>("/assistant/chat", {
