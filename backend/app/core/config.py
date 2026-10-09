@@ -40,6 +40,14 @@ class Settings(BaseSettings):
     max_failed_logins: int = Field(default=5, ge=1)
     lockout_minutes: int = Field(default=15, ge=1)
 
+    # ── Assistant (Balbo) ───────────────────────────────
+    # Gemini API key. Without it the assistant reports itself as unavailable.
+    # Server-side only: it never reaches the browser.
+    gemini_api_key: SecretStr | None = None
+    gemini_model: str = "gemini-3.8-flash"
+    # Per user, in a sliding hour: each message costs a model call
+    assistant_messages_per_hour: int = Field(default=30, ge=1)
+
     # ── HTTP ────────────────────────────────────────────
     # The only origin allowed to call the API with credentials (the Next.js app)
     frontend_origin: str = "http://localhost:3000"
