@@ -485,3 +485,52 @@
     }
   }
 }
+
+/* Balbo, the assistant: the panel grows out of its button and leaves faster than it came */
+@layer components {
+  .balbo-panel {
+    opacity: 0;
+    scale: 0.95;
+    translate: 0 8px;
+    visibility: hidden;
+    pointer-events: none;
+    transition:
+      opacity 150ms var(--ease-out-strong),
+      scale 150ms var(--ease-out-strong),
+      translate 150ms var(--ease-out-strong),
+      visibility 0s linear 150ms;
+  }
+
+  .balbo-panel[data-open] {
+    opacity: 1;
+    scale: 1;
+    translate: 0 0;
+    visibility: visible;
+    pointer-events: auto;
+    transition:
+      opacity 220ms var(--ease-out-strong),
+      scale 220ms var(--ease-out-strong),
+      translate 220ms var(--ease-out-strong),
+      visibility 0s;
+  }
+
+  /* "Balbo está escribiendo": three dots in a wave (still with reduced motion) */
+  @media (prefers-reduced-motion: no-preference) {
+    .balbo-dot {
+      animation: balbo-dot 1s ease-in-out infinite;
+    }
+  }
+
+  @keyframes balbo-dot {
+    0%,
+    80%,
+    100% {
+      opacity: 0.35;
+      translate: 0 0;
+    }
+    40% {
+      opacity: 1;
+      translate: 0 -3px;
+    }
+  }
+}

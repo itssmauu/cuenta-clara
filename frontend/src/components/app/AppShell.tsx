@@ -2,6 +2,7 @@
 
 import type { ReactNode } from "react";
 
+import { Balbo } from "@/components/assistant/Balbo";
 import { FormAlert } from "@/components/ui/FormAlert";
 
 import { SessionProvider, useSessionLoader } from "./session";
@@ -40,6 +41,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             {children}
           </main>
         </div>
+        {/* Balbo, the finance copilot, on every signed-in page */}
+        <Balbo />
       </div>
     </SessionProvider>
   );
