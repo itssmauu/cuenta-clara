@@ -416,3 +416,11 @@ La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filt
 - Las respuestas suben con una animación corta y "escribiendo…" son tres puntos en ola, que no se mueven con movimiento reducido.
 - Tiene sugerencias para empezar y convierte las viñetas "- " en una lista real. El texto nunca se interpreta como HTML.
 - Escape cierra el panel desde cualquier lugar y devuelve el foco al botón.
+
+**El robot (mascota).** Balbo es un pequeño robot astronauta dibujado en SVG (`BalboBot.tsx`): casco blanco con visor oscuro, ojos y sonrisa que brillan, antena, auriculares con micrófono y un mini propulsor. Al ser SVG se ve nítido a cualquier tamaño y no necesita archivos de imagen. Siempre flota, parpadea y mantiene el propulsor encendido, y su pose depende del chat:
+
+- **Saluda** (chat vacío): ojos sonrientes y la mano saludando junto al casco. Aparece grande arriba de la bienvenida.
+- **Escribe** (esperando respuesta): saca un teléfono, mira hacia abajo y en la pantalla se encienden tres puntos mientras el pulgar teclea.
+- **Presta atención** (ya hay conversación): ojos abiertos, cabeza inclinada, asiente y la antena brilla.
+
+Las poses cambian con transiciones suaves. Con movimiento reducido el robot queda quieto en la pose que corresponde.
