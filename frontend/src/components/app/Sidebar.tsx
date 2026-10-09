@@ -19,6 +19,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useLayoutEffect, useRef, useState } from "react";
 
+import { LegalLinks } from "@/components/legal/LegalFooter";
 import { Logo } from "@/components/ui/Logo";
 
 import { useSession } from "./session";
@@ -170,6 +171,11 @@ export function Sidebar() {
               <span className="sr-only">Cerrar sesión</span>
             </button>
           </div>
+          <LegalLinks
+            compact
+            className="text-on-ink-muted px-3 text-xs font-semibold"
+            linkClassName="hover:text-white"
+          />
         </div>
       </div>
     </aside>
