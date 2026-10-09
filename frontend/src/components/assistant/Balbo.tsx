@@ -228,7 +228,9 @@ export function Balbo() {
           role="log"
           aria-live="polite"
           aria-label="Conversación con Balbo"
-          className="flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4"
+          // Focusable so keyboard users can scroll it even when it holds no buttons
+          tabIndex={0}
+          className="focus-visible:outline-primary flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 focus-visible:outline-2 focus-visible:-outline-offset-2"
         >
           {messages.length === 0 ? (
             <div className="flex justify-center pt-1 pb-1">
