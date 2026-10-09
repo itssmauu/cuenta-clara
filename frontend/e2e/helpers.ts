@@ -1,5 +1,5 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, type Page } from "@playwright/test";
+import { expect, type BrowserContext, type Page } from "@playwright/test";
 
 export const PASSWORD = "Lluvia-Verde-2026!";
 
@@ -51,7 +51,13 @@ export async function register(page: Page, name: string, email: string) {
   await page.getByLabel("Correo electrónico").fill(email);
   await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
   await page.getByLabel("Confirmar contraseña").fill(PASSWORD);
+  await page.getByRole("checkbox", { name: /acepto los/ }).check();
   await page.getByRole("button", { name: "Crear cuenta" }).click();
+}
+
+/** As if the user already closed the cookie notice (it is tested on its own in public.spec). */
+export async function skipCookieNotice(context: BrowserContext) {
+  await context.addInitScript(() => window.localStorage.setItem("cc-cookie-notice", "seen"));
 }
 
 /** The spec example: $100, weekly bus fare $30, weekly grant $160, $40 limit. */

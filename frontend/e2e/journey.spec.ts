@@ -5,7 +5,9 @@ import {
   expectAccessible,
   expectNoHorizontalScroll,
   kpi,
+  PASSWORD,
   register,
+  skipCookieNotice,
   uniqueEmail,
 } from "./helpers";
 
@@ -19,6 +21,7 @@ test.describe("a new user's first week", () => {
 
   test.beforeAll(async ({ browser }) => {
     context = await browser.newContext();
+    await skipCookieNotice(context);
     page = await context.newPage();
   });
 
@@ -230,11 +233,34 @@ test.describe("a new user's first week", () => {
     const panel = page.getByRole("dialog", { name: "Balbo" });
     await expect(panel).toBeVisible();
     await expect(panel.getByRole("log")).toContainText("Soy Balbo");
+    // Nothing is sent to the AI until the user says so
+    await expect(panel.getByLabel("Escribe tu pregunta para Balbo")).toBeDisabled();
     await expectAccessible(page);
 
     await page.keyboard.press("Escape");
     await expect(panel).toBeHidden();
     await expect(launcher).toBeFocused();
+  });
+
+  test("the user can download everything stored about them", async () => {
+    await page.getByRole("link", { name: "Configuración" }).click();
+    const section = page.getByRole("region", { name: "Privacidad y datos" });
+    await expect(section).toBeVisible();
+    await expectAccessible(page);
+
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      section.getByRole("button", { name: "Descargar mis datos" }).click(),
+    ]);
+    expect(download.suggestedFilename()).toMatch(
+      /^cuenta-clara-mis-datos-\d{4}-\d{2}-\d{2}\.json$/,
+    );
+    const stream = await download.createReadStream();
+    const chunks: Buffer[] = [];
+    for await (const chunk of stream) chunks.push(chunk as Buffer);
+    const data = JSON.parse(Buffer.concat(chunks).toString("utf-8"));
+    expect(data.usuario.correo).toBe(email);
+    expect(JSON.stringify(data)).not.toContain("password");
   });
 
   test("logging out ends the session", async () => {
@@ -243,5 +269,27 @@ test.describe("a new user's first week", () => {
 
     await page.goto("/dashboard");
     await expect(page).toHaveURL(/\/login$/);
+  });
+
+  test("deleting the account erases it for good", async () => {
+    await page.getByLabel("Correo electrónico").fill(email);
+    await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(page).toHaveURL(/\/dashboard/);
+
+    await page.getByRole("link", { name: "Configuración" }).click();
+    await page.getByRole("button", { name: "Eliminar mi cuenta" }).click();
+    const dialog = page.getByRole("dialog", { name: "Eliminar tu cuenta" });
+    await dialog.getByLabel("Tu contraseña, para confirmar").fill(PASSWORD);
+    await dialog.getByRole("button", { name: "Eliminar para siempre" }).click();
+    await expect(page).toHaveURL(/\/$/);
+
+    await page.goto("/login");
+    await page.getByLabel("Correo electrónico").fill(email);
+    await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+    await page.getByRole("button", { name: "Entrar" }).click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: "Correo o contraseña incorrectos" }),
+    ).toBeVisible();
   });
 });

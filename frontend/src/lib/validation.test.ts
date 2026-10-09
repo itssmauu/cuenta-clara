@@ -47,6 +47,7 @@ describe("registerSchema", () => {
     email: "ana@example.com",
     password: STRONG,
     confirmPassword: STRONG,
+    acceptTerms: true,
   };
 
   it("accepts valid data", () => {
@@ -61,6 +62,11 @@ describe("registerSchema", () => {
         message: "Las contraseñas no coinciden.",
       }),
     ]);
+  });
+
+  it("requires accepting the terms", () => {
+    const result = registerSchema.safeParse({ ...valid, acceptTerms: false });
+    expect(result.error?.issues[0]?.path).toEqual(["acceptTerms"]);
   });
 
   it("rejects a weak password", () => {

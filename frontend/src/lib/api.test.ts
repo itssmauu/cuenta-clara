@@ -40,7 +40,9 @@ describe("request", () => {
 
   it("does not send the CSRF header on GET", async () => {
     document.cookie = "csrf_token=abc123; path=/";
-    const fetchMock = mockFetch(json(200, { id: "1", email: "a@b.co", name: "Ana" }));
+    const fetchMock = mockFetch(
+      json(200, { id: "1", email: "a@b.co", name: "Ana", terms_accepted: true }),
+    );
 
     await authApi.me();
 
@@ -48,7 +50,7 @@ describe("request", () => {
   });
 
   it("refreshes the session once on 401 and retries", async () => {
-    const user = { id: "1", email: "a@b.co", name: "Ana" };
+    const user = { id: "1", email: "a@b.co", name: "Ana", terms_accepted: true };
     const fetchMock = mockFetch(json(401, { detail: "x" }), json(200, user), json(200, user));
 
     await expect(authApi.me()).resolves.toEqual(user);

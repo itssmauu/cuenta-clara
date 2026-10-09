@@ -37,7 +37,7 @@ describe("LoginForm", () => {
     const user = userEvent.setup();
     const login = vi
       .spyOn(authApi, "login")
-      .mockResolvedValue({ id: "1", email: "ana@example.com", name: "Ana" });
+      .mockResolvedValue({ id: "1", email: "ana@example.com", name: "Ana", terms_accepted: true });
     render(<LoginForm />);
 
     await user.type(screen.getByLabelText("Correo electrónico"), "ana@example.com");
@@ -84,12 +84,13 @@ describe("LoginForm", () => {
 });
 
 describe("RegisterForm", () => {
-  async function fillForm(password = STRONG, confirmation = password) {
+  async function fillForm(password = STRONG, confirmation = password, acceptTerms = true) {
     const user = userEvent.setup();
     await user.type(screen.getByLabelText("Nombre"), "Ana");
     await user.type(screen.getByLabelText("Correo electrónico"), "ana@example.com");
     await user.type(screen.getByLabelText("Contraseña"), password);
     await user.type(screen.getByLabelText("Confirmar contraseña"), confirmation);
+    if (acceptTerms) await user.click(screen.getByRole("checkbox", { name: /acepto los/ }));
     await user.click(screen.getByRole("button", { name: "Crear cuenta" }));
   }
 
@@ -108,7 +109,7 @@ describe("RegisterForm", () => {
     const register = vi.spyOn(authApi, "register").mockResolvedValue({ message: "ok" });
     const login = vi
       .spyOn(authApi, "login")
-      .mockResolvedValue({ id: "1", email: "ana@example.com", name: "Ana" });
+      .mockResolvedValue({ id: "1", email: "ana@example.com", name: "Ana", terms_accepted: true });
     render(<RegisterForm />);
 
     await fillForm();
@@ -117,9 +118,32 @@ describe("RegisterForm", () => {
       name: "Ana",
       email: "ana@example.com",
       password: STRONG,
+      accept_terms: true,
     });
     expect(login).toHaveBeenCalledWith({ email: "ana@example.com", password: STRONG });
     expect(push).toHaveBeenCalledWith("/dashboard");
+  });
+
+  it("asks for consent before creating the account, with links to both documents", async () => {
+    const register = vi.spyOn(authApi, "register");
+    render(<RegisterForm />);
+
+    const checkbox = screen.getByRole("checkbox", { name: /acepto los/ });
+    expect(checkbox).not.toBeChecked(); // consent is never pre-ticked
+    expect(screen.getByRole("link", { name: "Términos y condiciones" })).toHaveAttribute(
+      "href",
+      "/legal/terminos",
+    );
+    expect(screen.getByRole("link", { name: "Política de privacidad" })).toHaveAttribute(
+      "href",
+      "/legal/privacidad",
+    );
+
+    await fillForm(STRONG, STRONG, false);
+
+    expect(await screen.findByText(/Debes aceptar los Términos/)).toBeInTheDocument();
+    expect(checkbox).toHaveAttribute("aria-invalid", "true");
+    expect(register).not.toHaveBeenCalled();
   });
 
   it("does not submit when the passwords differ", async () => {
