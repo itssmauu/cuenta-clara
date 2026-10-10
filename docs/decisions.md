@@ -382,3 +382,45 @@ Los testimonios reales quedan para el futuro, cuando haya personas que den su co
 - Una transferencia entre dos cuentas incluidas en el reporte suma 0, y la nota dice cuánto se movió.
 
 La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filtrada.
+
+## D-063 · Balbo, el copiloto financiero (Gemini)
+
+**Qué es.** Un asistente en todas las páginas después de iniciar sesión: un botón redondo con forma de mensaje abajo a la derecha que abre un chat. Responde preguntas sobre las finanzas del usuario ("¿me alcanza para una PS5?", "dame un plan para ahorrar") con sus propios números.
+
+**El nombre.** *Balbo*, por el balboa, la moneda de Panamá: corto, fácil de recordar, propio, y combina con "Cuenta Clara". Lema: "tu copiloto financiero".
+
+**Cómo responde:**
+
+1. El servidor arma un resumen de las finanzas del usuario autenticado: cuentas y saldos, periodo actual, límite, ingresos y gastos fijos, próximos pagos, predicción y metas. Usa las mismas funciones que el dashboard, así Balbo nunca contradice las pantallas.
+2. Ese resumen y la conversación van al modelo **delimitados como datos** (`<<< >>>`), separados de las instrucciones del sistema.
+3. **Regla de negocio:** las instrucciones limitan a Balbo a las finanzas personales. Si la pregunta es de otro tema, el modelo responde un marcador fijo (`FUERA_DE_TEMA`) y el servidor contesta con un rechazo amable escrito en el código, sin depender de cómo lo redacte el modelo.
+4. Ante una compra, da un veredicto claro ("Sí, puedes", "Mejor espera" o "No te conviene ahora") con 2 o 3 razones basadas en sus datos. No inventa cifras y no recomienda productos financieros concretos.
+
+**Por qué Gemini con el SDK oficial:**
+
+- El usuario pidió Gemini o un modelo de aprendizaje automático. Un modelo de lenguaje es lo que permite conversar y razonar sobre una compra concreta, algo que un modelo entrenado aquí no lograría con el historial de una sola persona.
+- Se usa `google-genai`, el SDK oficial (Apache‑2.0, `pip-audit` limpio), con la Interactions API. La documentación REST no confirmaba todos los campos, así que se verificaron en los tipos del propio SDK.
+- El modelo es configurable. Por defecto es `gemini-3.5-flash-lite`: al probarlo con la clave real respondió en ~1 s, mientras `gemini-3.8-flash` devolvía 503 por alta demanda. `store=False`: Google no guarda la conversación entre mensajes.
+- Se hace un solo intento con timeout de 25 s. Los reintentos por defecto del SDK (4–5, con espera creciente) dejaban al usuario esperando más de un minuto cuando el modelo estaba ocupado.
+
+**Privacidad y límites:**
+
+- La clave vive **solo en el backend** y es **opcional**. Sin ella, Balbo aparece como "no disponible" y el resto de la app funciona igual.
+- La conversación existe solo en la pestaña del navegador: no se guarda en la base de datos. Se envían como máximo 12 turnos de hasta 1 000 caracteres.
+- Se envía a Google el resumen financiero y el primer nombre, nunca el correo. Las cuentas no tienen números (D-061). El panel lo avisa: "Balbo usa IA (Gemini de Google) con un resumen de tus finanzas. Es orientación, no asesoría financiera profesional."
+- Hay un máximo de 30 mensajes por usuario por hora (configurable). Si el modelo falla, la respuesta es 503 con un mensaje claro.
+
+**Interfaz:**
+
+- El panel crece desde el botón, con origen abajo a la derecha. Entra en 220 ms y sale en 150 ms.
+- Las respuestas suben con una animación corta y "escribiendo…" son tres puntos en ola, que no se mueven con movimiento reducido.
+- Tiene sugerencias para empezar y convierte las viñetas "- " en una lista real. El texto nunca se interpreta como HTML.
+- Escape cierra el panel desde cualquier lugar y devuelve el foco al botón.
+
+**El robot (mascota).** Balbo es un pequeño robot astronauta dibujado en SVG (`BalboBot.tsx`): casco blanco con visor oscuro, ojos y sonrisa que brillan, antena, auriculares con micrófono y un mini propulsor. Al ser SVG se ve nítido a cualquier tamaño y no necesita archivos de imagen. Siempre flota, parpadea y mantiene el propulsor encendido, y su pose depende del chat:
+
+- **Saluda** (chat vacío): ojos sonrientes y la mano saludando junto al casco. Aparece grande arriba de la bienvenida.
+- **Escribe** (esperando respuesta): saca un teléfono, mira hacia abajo y en la pantalla se encienden tres puntos mientras el pulgar teclea.
+- **Presta atención** (ya hay conversación): ojos abiertos, cabeza inclinada, asiente y la antena brilla.
+
+Las poses cambian con transiciones suaves. Con movimiento reducido el robot queda quieto en la pose que corresponde.

@@ -218,6 +218,25 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
+  test("Balbo opens from the round button on any page and is accessible", async () => {
+    await page
+      .getByRole("navigation", { name: "Principal" })
+      .getByRole("link", { name: "Metas de ahorro" })
+      .click();
+    const launcher = page.getByRole("button", { name: /Abrir el chat con Balbo/ });
+    await expect(launcher).toBeVisible();
+
+    await launcher.click();
+    const panel = page.getByRole("dialog", { name: "Balbo" });
+    await expect(panel).toBeVisible();
+    await expect(panel.getByRole("log")).toContainText("Soy Balbo");
+    await expectAccessible(page);
+
+    await page.keyboard.press("Escape");
+    await expect(panel).toBeHidden();
+    await expect(launcher).toBeFocused();
+  });
+
   test("logging out ends the session", async () => {
     await page.getByRole("button", { name: "Cerrar sesión" }).click();
     await expect(page).toHaveURL(/\/login$/);

@@ -82,6 +82,8 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `PUT` / `DELETE` | `/api/v1/savings-goals/{id}` | |
 | `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0. Con `from_account_id` el dinero se mueve entre esa cuenta y la de la meta |
 | `GET` | `/api/v1/transactions/export` | CSV de movimientos con los mismos filtros que la lista |
+| `GET` | `/api/v1/assistant` | Nombre de Balbo y si está disponible (hay `GEMINI_API_KEY`) |
+| `POST` | `/api/v1/assistant/chat` | Pregunta a Balbo. Cuerpo: `messages` (hasta 12 turnos `user`/`assistant`, el último del usuario). Responde `reply` y `on_topic`. Máximo `ASSISTANT_MESSAGES_PER_HOUR` por usuario |
 | `GET` | `/api/v1/reports/export` | Reporte completo (movimientos, cada ingreso y gasto fijo, transferencias). `format` (`csv` o `pdf`), `from`, `to`, `type`, `account` (id o `all`). Sin fechas: desde `balance_as_of` hasta hoy |
 
 Todas las rutas de datos requieren sesión y solo ven los datos del usuario autenticado. Un recurso ajeno responde `404`.
