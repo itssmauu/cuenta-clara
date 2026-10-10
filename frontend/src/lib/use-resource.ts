@@ -11,6 +11,16 @@ export type Resource<T> =
 
 type Settled<T> = { requestId: string; data?: T; error?: ApiError };
 
+const DATA_CHANGED = "cuenta-clara:data-changed";
+
+/**
+ * Tells every mounted resource that the user's money changed somewhere else on the page
+ * (e.g. they confirmed a payment in a dialog), so they all fetch fresh numbers.
+ */
+export function notifyDataChanged() {
+  window.dispatchEvent(new Event(DATA_CHANGED));
+}
+
 /**
  * Loads data on the client (session cookies are scoped to /api, so pages can't
  * fetch it on the server). Refetches when `key` changes or `reload()` is called,
@@ -43,6 +53,11 @@ export function useResource<T>(key: string, load: () => Promise<T>) {
   }, [requestId]);
 
   const reload = useCallback(() => setVersion((v) => v + 1), []);
+
+  useEffect(() => {
+    window.addEventListener(DATA_CHANGED, reload);
+    return () => window.removeEventListener(DATA_CHANGED, reload);
+  }, [reload]);
 
   let state: Resource<T>;
   if (settled?.requestId !== requestId) {
