@@ -11,10 +11,13 @@ type FormAlertProps = { title: string; items?: string[] };
  */
 export function FormAlert({ title, items = [] }: FormAlertProps) {
   const ref = useRef<HTMLDivElement>(null);
+  // Compare by content: a new array with the same items (e.g. the `[]` default on every
+  // render) must not pull focus away from a field the user is typing in
+  const itemsKey = items.join("\n");
 
   useEffect(() => {
     ref.current?.focus();
-  }, [title, items]);
+  }, [title, itemsKey]);
 
   return (
     <div

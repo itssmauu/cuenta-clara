@@ -1,6 +1,8 @@
 import Link from "next/link";
 
+import { LegalLinks } from "@/components/legal/LegalFooter";
 import { buttonClass } from "@/components/ui/button";
+import { LEGAL } from "@/lib/legal";
 
 export function FinalCta() {
   return (
@@ -31,11 +33,16 @@ export function FinalCta() {
 
 export function SiteFooter() {
   return (
-    <footer className="text-muted flex flex-wrap justify-between gap-4 pb-10 text-sm font-semibold">
-      <p>© {new Date().getFullYear()} Cuenta Clara · Proyecto de portafolio</p>
-      <a href="#top" className="hover:text-ink inline-flex min-h-11 items-center">
-        Volver arriba
-      </a>
+    <footer className="text-muted flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-10 text-sm font-semibold">
+      <p>
+        © {new Date().getFullYear()} {LEGAL.service} · Responsable: {LEGAL.owner}
+      </p>
+      <div className="flex flex-wrap items-center gap-x-5">
+        <LegalLinks />
+        <a href="#top" className="hover:text-ink inline-flex min-h-11 items-center">
+          Volver arriba
+        </a>
+      </div>
     </footer>
   );
 }

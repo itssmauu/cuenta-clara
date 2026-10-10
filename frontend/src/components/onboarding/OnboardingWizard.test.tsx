@@ -21,7 +21,12 @@ const pending: Settings = {
 
 beforeEach(() => {
   replace.mockReset();
-  vi.spyOn(authApi, "me").mockResolvedValue({ id: "u1", email: "ana@example.com", name: "Ana" });
+  vi.spyOn(authApi, "me").mockResolvedValue({
+    id: "u1",
+    email: "ana@example.com",
+    name: "Ana",
+    terms_accepted: true,
+  });
   vi.spyOn(financeApi, "getSettings").mockResolvedValue(pending);
   vi.spyOn(financeApi, "createFixedExpense").mockResolvedValue({
     id: "f1",

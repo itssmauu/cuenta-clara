@@ -1,15 +1,20 @@
-import { screen, within } from "@testing-library/react";
+import { screen, waitFor, within } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api";
 import { assistantApi } from "@/lib/assistant-api";
+import { privacyApi } from "@/lib/privacy-api";
 import { renderWithSession } from "@/test-utils";
 
 import { Balbo } from "./Balbo";
 
 beforeEach(() => {
-  vi.spyOn(assistantApi, "status").mockResolvedValue({ name: "Balbo", available: true });
+  vi.spyOn(assistantApi, "status").mockResolvedValue({
+    name: "Balbo",
+    available: true,
+    consented: true,
+  });
 });
 
 async function openChat(user: ReturnType<typeof userEvent.setup>) {
@@ -28,7 +33,40 @@ describe("Balbo", () => {
 
     expect(launcher).toHaveAttribute("aria-expanded", "true");
     expect(within(panel).getByRole("log")).toHaveTextContent("¡Hola, Ana! Soy Balbo");
-    expect(within(panel).getByLabelText("Escribe tu pregunta para Balbo")).toHaveFocus();
+    await waitFor(() =>
+      expect(within(panel).getByLabelText("Escribe tu pregunta para Balbo")).toHaveFocus(),
+    );
+  });
+
+  it("asks for consent before sending anything, and only then lets you ask", async () => {
+    const user = userEvent.setup();
+    vi.mocked(assistantApi.status).mockResolvedValue({
+      name: "Balbo",
+      available: true,
+      consented: false,
+    });
+    const grant = vi.spyOn(privacyApi, "grantAssistant").mockResolvedValue(undefined);
+    const chat = vi.spyOn(assistantApi, "chat");
+    renderWithSession(<Balbo />);
+    const panel = await openChat(user);
+
+    const activate = await within(panel).findByRole("button", { name: "Acepto, activar Balbo" });
+    expect(within(panel).getByText(/Gemini, de Google/)).toBeInTheDocument();
+    expect(within(panel).getByRole("link", { name: "Más detalles" })).toHaveAttribute(
+      "href",
+      "/legal/privacidad#balbo",
+    );
+    const box = within(panel).getByLabelText("Escribe tu pregunta para Balbo");
+    expect(box).toBeDisabled();
+    expect(within(panel).queryByRole("list", { name: "Preguntas sugeridas" })).toBeNull();
+    await waitFor(() => expect(activate).toHaveFocus());
+
+    await user.click(activate);
+
+    expect(grant).toHaveBeenCalledOnce();
+    await waitFor(() => expect(box).toBeEnabled());
+    expect(within(panel).queryByRole("button", { name: /activar Balbo/ })).toBeNull();
+    expect(chat).not.toHaveBeenCalled(); // accepting sends nothing by itself
   });
 
   it("answers a question with the reply from the API", async () => {
@@ -144,7 +182,11 @@ describe("Balbo", () => {
 
   it("says when it is not available and disables the box", async () => {
     const user = userEvent.setup();
-    vi.mocked(assistantApi.status).mockResolvedValue({ name: "Balbo", available: false });
+    vi.mocked(assistantApi.status).mockResolvedValue({
+      name: "Balbo",
+      available: false,
+      consented: true,
+    });
     renderWithSession(<Balbo />);
     const panel = await openChat(user);
 
@@ -153,7 +195,9 @@ describe("Balbo", () => {
     ).toBeInTheDocument();
     expect(within(panel).getByLabelText("Escribe tu pregunta para Balbo")).toBeDisabled();
     // Keyboard users still land inside the panel, and Escape still closes it
-    expect(within(panel).getByRole("button", { name: "Cerrar el chat con Balbo" })).toHaveFocus();
+    await waitFor(() =>
+      expect(within(panel).getByRole("button", { name: "Cerrar el chat con Balbo" })).toHaveFocus(),
+    );
     await user.keyboard("{Escape}");
     expect(screen.getByRole("button", { name: /Abrir el chat con Balbo/ })).toHaveFocus();
   });

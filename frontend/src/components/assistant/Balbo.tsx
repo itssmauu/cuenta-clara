@@ -1,11 +1,26 @@
 "use client";
 
-import { MessageCircle, Send, X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type FormEvent, type KeyboardEvent } from "react";
+import { MessageCircle, Send, ShieldCheck, X } from "lucide-react";
+import Link from "next/link";
+import {
+  useEffect,
+  useId,
+  useRef,
+  useState,
+  type FormEvent,
+  type KeyboardEvent,
+  type Ref,
+} from "react";
 
 import { useSession } from "@/components/app/session";
 import { ApiError } from "@/lib/api";
-import { assistantApi, MAX_MESSAGE_LENGTH, type ChatMessage } from "@/lib/assistant-api";
+import {
+  assistantApi,
+  MAX_MESSAGE_LENGTH,
+  type AssistantStatus,
+  type ChatMessage,
+} from "@/lib/assistant-api";
+import { privacyApi } from "@/lib/privacy-api";
 
 import { BalboBot, type BalboState } from "./BalboBot";
 
@@ -29,7 +44,8 @@ type Shown = ChatMessage & { id: number; offTopic?: boolean; error?: boolean };
 export function Balbo() {
   const { user } = useSession();
   const [open, setOpen] = useState(false);
-  const [available, setAvailable] = useState<boolean | null>(null);
+  const [status, setStatus] = useState<AssistantStatus | null>(null);
+  const [activating, setActivating] = useState(false);
   const [messages, setMessages] = useState<Shown[]>([]);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
@@ -39,22 +55,32 @@ export function Balbo() {
   const launcherRef = useRef<HTMLButtonElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
+  const activateRef = useRef<HTMLButtonElement>(null);
   const logRef = useRef<HTMLDivElement>(null);
 
-  // Ask once, on first open, whether the assistant is configured
-  useEffect(() => {
-    if (!open || available !== null) return;
-    assistantApi
-      .status()
-      .then((status) => setAvailable(status.available))
-      .catch(() => setAvailable(false));
-  }, [open, available]);
+  const available = status ? status.available : null;
+  const consented = status?.consented ?? false;
+  const offline = available === false;
+  const needsConsent = available === true && !consented;
 
-  // Land inside the panel: on the question box, or on "close" while Balbo is unavailable
+  // Ask on every open: the user may have turned Balbo on or off in Configuración meanwhile
   useEffect(() => {
     if (!open) return;
-    (available === false ? closeRef.current : inputRef.current)?.focus();
-  }, [open, available]);
+    let cancelled = false;
+    assistantApi
+      .status()
+      .then((current) => !cancelled && setStatus(current))
+      .catch(() => !cancelled && setStatus({ name: "Balbo", available: false, consented: false }));
+    return () => {
+      cancelled = true;
+    };
+  }, [open]);
+
+  // Land inside the panel: on the question box, on "Activar" or on "close" while unavailable
+  useEffect(() => {
+    if (!open || status === null) return;
+    (offline ? closeRef.current : needsConsent ? activateRef.current : inputRef.current)?.focus();
+  }, [open, status, offline, needsConsent]);
 
   // Escape closes the panel wherever the focus is (it is not a modal)
   useEffect(() => {
@@ -79,9 +105,29 @@ export function Balbo() {
     launcherRef.current?.focus();
   }
 
+  async function activate() {
+    setActivating(true);
+    try {
+      await privacyApi.grantAssistant();
+      setStatus((current) => current && { ...current, consented: true });
+    } catch {
+      setMessages((current) => [
+        ...current,
+        {
+          id: nextId.current++,
+          role: "assistant",
+          error: true,
+          content: "No pude activarme ahora mismo. Inténtalo de nuevo.",
+        },
+      ]);
+    } finally {
+      setActivating(false);
+    }
+  }
+
   async function send(text: string) {
     const question = text.trim();
-    if (!question || sending) return;
+    if (!question || sending || !consented) return;
     const asked: Shown = { id: nextId.current++, role: "user", content: question };
     // Errors are shown to the user but never sent back to the model as history
     const history = [...messages.filter((m) => !m.error), asked].map(({ role, content }) => ({
@@ -98,6 +144,10 @@ export function Balbo() {
         { id: nextId.current++, role: "assistant", content: reply, offTopic: !on_topic },
       ]);
     } catch (error) {
+      // Turned off from another tab: show the consent screen again
+      if (error instanceof ApiError && error.status === 403) {
+        setStatus((current) => current && { ...current, consented: false });
+      }
       setMessages((current) => [
         ...current,
         {
@@ -136,7 +186,7 @@ export function Balbo() {
     : messages.length === 0
       ? "greeting"
       : "attentive";
-  const offline = available === false;
+  const locked = offline || !consented;
 
   return (
     <>
@@ -200,7 +250,11 @@ export function Balbo() {
             </Bubble>
           ) : null}
 
-          {messages.length === 0 && !offline ? (
+          {needsConsent ? (
+            <ConsentCard ref={activateRef} busy={activating} onActivate={() => void activate()} />
+          ) : null}
+
+          {messages.length === 0 && consented && !offline ? (
             <ul aria-label="Preguntas sugeridas" className="flex flex-wrap gap-2 pt-1">
               {SUGGESTIONS.map((suggestion) => (
                 <li key={suggestion}>
@@ -258,15 +312,21 @@ export function Balbo() {
               rows={1}
               value={draft}
               maxLength={MAX_MESSAGE_LENGTH}
-              disabled={offline}
+              disabled={locked}
               onChange={(event) => setDraft(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder={offline ? "No disponible ahora" : "Pregúntale a Balbo…"}
+              placeholder={
+                offline
+                  ? "No disponible ahora"
+                  : !consented
+                    ? "Activa a Balbo para preguntar"
+                    : "Pregúntale a Balbo…"
+              }
               className="rounded-field border-field hover:border-primary-soft focus:border-primary text-ink placeholder:text-muted/80 max-h-32 min-h-11 flex-1 resize-none border-2 bg-white px-3.5 py-2.5 text-[15px] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="submit"
-              disabled={offline || sending || !draft.trim()}
+              disabled={locked || sending || !draft.trim()}
               aria-label="Enviar pregunta"
               className="bg-primary hover:bg-primary-hover grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-white transition-[background-color,scale,opacity] duration-200 active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-50"
             >
@@ -275,7 +335,7 @@ export function Balbo() {
           </div>
           <p className="text-muted text-[11px] leading-snug">
             Balbo usa IA (Gemini de Google) con un resumen de tus finanzas. Es orientación, no
-            asesoría financiera profesional.
+            asesoría financiera profesional. Puedes desactivarlo en Configuración.
           </p>
         </form>
       </section>
@@ -301,6 +361,47 @@ export function Balbo() {
         </span>
       </button>
     </>
+  );
+}
+
+/** What turning Balbo on means, in plain words, before anything leaves Cuenta Clara. */
+function ConsentCard({
+  ref,
+  busy,
+  onActivate,
+}: {
+  ref: Ref<HTMLButtonElement>;
+  busy: boolean;
+  onActivate: () => void;
+}) {
+  return (
+    <div className="bg-primary-tint text-on-tint animate-rise-in flex flex-col gap-3 rounded-2xl p-4 text-[13px] leading-relaxed">
+      <p className="text-ink flex items-center gap-2 text-sm font-bold">
+        <ShieldCheck aria-hidden="true" className="text-primary size-5" />
+        Antes de empezar
+      </p>
+      <p>
+        Para responderte, Balbo envía a <strong className="text-ink">Gemini, de Google</strong>, tu
+        pregunta y un resumen de tus finanzas: tu primer nombre, tus cuentas y saldos, tus ingresos,
+        gastos y metas. Nunca tu correo ni tu contraseña.
+      </p>
+      <p>
+        Google puede procesarlo fuera de Panamá. Puedes desactivar a Balbo cuando quieras en
+        Configuración.{" "}
+        <Link href="/legal/privacidad#balbo" className="text-primary font-bold hover:underline">
+          Más detalles
+        </Link>
+      </p>
+      <button
+        ref={ref}
+        type="button"
+        onClick={onActivate}
+        disabled={busy}
+        className="bg-primary hover:bg-primary-hover min-h-11 cursor-pointer self-start rounded-full px-5 text-sm font-bold text-white transition-[background-color,scale,opacity] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
+      >
+        {busy ? "Activando…" : "Acepto, activar Balbo"}
+      </button>
+    </div>
   );
 }
 

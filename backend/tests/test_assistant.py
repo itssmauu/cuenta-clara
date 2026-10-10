@@ -82,15 +82,20 @@ def ana(login_as: Callable[[str], TestClient]) -> TestClient:
         f"{API}/savings-goals",
         json={"name": "PS5", "target_amount": "550.00", "saved_amount": "100.00"},
     ).raise_for_status()
+    client.post(f"{API}/assistant/consent").raise_for_status()  # Ana turned Balbo on
     return client
 
 
 def test_status_says_whether_balbo_is_available(ana: TestClient) -> None:
     use_model(None)
-    assert ana.get(f"{API}/assistant").json() == {"name": "Balbo", "available": False}
+    assert ana.get(f"{API}/assistant").json() == {
+        "name": "Balbo",
+        "available": False,
+        "consented": True,
+    }
 
     use_model(FakeModel())
-    assert ana.get(f"{API}/assistant").json() == {"name": "Balbo", "available": True}
+    assert ana.get(f"{API}/assistant").json()["available"] is True
 
 
 def test_balbo_answers_with_the_users_own_numbers(ana: TestClient) -> None:
@@ -140,6 +145,7 @@ def test_only_the_callers_data_is_sent(
     model = FakeModel()
     use_model(model)
     beto = login_as("beto@example.com")
+    beto.post(f"{API}/assistant/consent").raise_for_status()
 
     ask(beto, "¿Cuánto tengo?")
 
@@ -207,3 +213,16 @@ def test_requires_a_session(client: TestClient) -> None:
     use_model(FakeModel())
 
     assert ask(client, "¿Cuánto tengo?").status_code in (401, 403)
+
+
+def test_nothing_is_sent_without_explicit_consent(ana: TestClient) -> None:
+    model = FakeModel()
+    use_model(model)
+    ana.delete(f"{API}/assistant/consent").raise_for_status()  # Ana turns Balbo off
+
+    response = ask(ana, "¿Cuánto tengo?")
+
+    assert response.status_code == 403
+    assert "Activa a Balbo primero" in response.text
+    assert model.calls == []  # not a single byte reached the model
+    assert ana.get(f"{API}/assistant").json()["consented"] is False

@@ -78,9 +78,10 @@ function renderDashboard() {
   return render(
     <SessionProvider
       value={{
-        user: { id: "u1", email: "ana@example.com", name: "Ana" },
+        user: { id: "u1", email: "ana@example.com", name: "Ana", terms_accepted: true },
         settings,
         setSettings: vi.fn(),
+        setUser: vi.fn(),
         logout: vi.fn(),
       }}
     >

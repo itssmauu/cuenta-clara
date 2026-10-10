@@ -12,8 +12,12 @@ def register(
     email: str = "ana@example.com",
     password: str = STRONG_PASSWORD,
     name: str = "Ana",
+    accept_terms: bool = True,
 ) -> Response:
-    return client.post(f"{API}/register", json={"email": email, "password": password, "name": name})
+    return client.post(
+        f"{API}/register",
+        json={"email": email, "password": password, "name": name, "accept_terms": accept_terms},
+    )
 
 
 def login(

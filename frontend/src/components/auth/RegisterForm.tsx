@@ -1,6 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
@@ -32,14 +33,20 @@ export function RegisterForm() {
     resolver: zodResolver(registerSchema),
     mode: "onBlur",
     reValidateMode: "onChange",
-    defaultValues: { name: "", email: "", password: "", confirmPassword: "" },
+    defaultValues: {
+      name: "",
+      email: "",
+      password: "",
+      confirmPassword: "",
+      acceptTerms: false,
+    },
   });
   const password = useWatch({ control, name: "password" });
 
-  async function onSubmit({ name, email, password }: RegisterValues) {
+  async function onSubmit({ name, email, password, acceptTerms }: RegisterValues) {
     setServerError(null);
     try {
-      await authApi.register({ name, email, password });
+      await authApi.register({ name, email, password, accept_terms: acceptTerms });
     } catch (error) {
       if (error instanceof ApiError) {
         setServerError({ title: error.message, items: error.problems });
@@ -102,6 +109,44 @@ export function RegisterForm() {
         error={errors.confirmPassword?.message}
         {...register("confirmPassword")}
       />
+
+      <div className="flex flex-col gap-2">
+        <div className="flex items-start gap-3">
+          <input
+            id="acceptTerms"
+            type="checkbox"
+            aria-invalid={errors.acceptTerms ? true : undefined}
+            aria-describedby={errors.acceptTerms ? "acceptTerms-error" : undefined}
+            className="accent-primary mt-0.5 size-5 shrink-0 cursor-pointer"
+            {...register("acceptTerms")}
+          />
+          <label htmlFor="acceptTerms" className="text-body text-sm leading-relaxed">
+            He leído y acepto los{" "}
+            <Link
+              href="/legal/terminos"
+              target="_blank"
+              className="text-primary font-bold hover:underline"
+            >
+              Términos y condiciones
+            </Link>{" "}
+            y la{" "}
+            <Link
+              href="/legal/privacidad"
+              target="_blank"
+              className="text-primary font-bold hover:underline"
+            >
+              Política de privacidad
+            </Link>
+            , y consiento que Cuenta Clara trate mis datos para prestarme el servicio. Soy mayor de
+            18 años.
+          </label>
+        </div>
+        {errors.acceptTerms ? (
+          <p id="acceptTerms-error" className="text-danger text-[13px] font-semibold">
+            {errors.acceptTerms.message}
+          </p>
+        ) : null}
+      </div>
 
       <SubmitButton busy={isSubmitting} label="Crear cuenta" busyLabel="Creando tu cuenta…" />
     </form>

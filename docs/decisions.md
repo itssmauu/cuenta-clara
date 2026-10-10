@@ -424,3 +424,23 @@ La pantalla Movimientos conserva su propio CSV, que es exactamente la tabla filt
 - **Presta atención** (ya hay conversación): ojos abiertos, cabeza inclinada, asiente y la antena brilla.
 
 Las poses cambian con transiciones suaves. Con movimiento reducido el robot queda quieto en la pose que corresponde.
+
+## D-064 · Cumplimiento legal: privacidad, términos, cookies y derechos
+
+**Contexto.** Cuenta Clara trata datos financieros personales y se ofrecerá como servicio público real en Panamá. La Ley 81 de 2019 y su reglamento (Decreto Ejecutivo 285 de 2021) exigen informar quién es el responsable, qué se trata y para qué, obtener consentimiento y permitir ejercer los derechos ARCO y de portabilidad. La ANTAI puede multar si no se cumple.
+
+**Decisión.**
+
+- **Responsable:** Mauro González, persona natural, en la República de Panamá. El correo de contacto es configurable (`NEXT_PUBLIC_PRIVACY_EMAIL`, se lee al compilar). Si no se configura, los documentos remiten a las herramientas de la app, que cubren todos los derechos sin escribir a nadie.
+- **Tres documentos públicos** en `/legal/privacidad`, `/legal/terminos` y `/legal/cookies`, con un resumen en lenguaje claro, índice, versión y fecha. Están enlazados desde el inicio, el login, el registro y la barra lateral de la app.
+- **Consentimiento al registrarse:** casilla obligatoria, nunca marcada por defecto. Se guarda la versión aceptada (`terms_version`) y la fecha. La versión vive en `backend/app/core/legal.py` y `frontend/src/lib/legal.ts`, y deben coincidir. Si cambia, el usuario ve una pantalla para aceptar de nuevo antes de seguir. Esa pantalla también le deja descargar sus datos o eliminar su cuenta sin aceptar.
+- **Balbo con consentimiento aparte:** está apagado hasta que el usuario lo activa desde el chat o desde Configuración, después de ver qué se envía a Google y que puede procesarse fuera de Panamá. Se puede desactivar en cualquier momento.
+- **Derechos desde la app** (Configuración › Privacidad y datos): descargar todos los datos en JSON (acceso y portabilidad), activar o desactivar Balbo (oposición) y eliminar la cuenta con la contraseña (cancelación). La rectificación es la edición normal de cada dato.
+- **Cookies:** solo las tres técnicas (`access_token`, `refresh_token`, `csrf_token`). El aviso es informativo, porque las cookies imprescindibles no necesitan consentimiento. Se recuerda que se cerró con `localStorage`.
+
+**Alternativas descartadas.**
+
+- Un banner de cookies con "Aceptar/Rechazar": no hay nada opcional que rechazar, y simularlo confundiría.
+- Pedir los derechos solo por correo: más lento para el usuario y deja sin cubrir el caso en que no haya correo configurado.
+
+**Límites.** Los textos se redactaron a partir de la ley y del funcionamiento real de la app, pero no sustituyen la revisión de un abogado. Los plazos exactos para notificar brechas no se verificaron, así que la política remite a "los plazos que marca la normativa".

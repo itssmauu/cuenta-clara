@@ -119,7 +119,7 @@ jobs:
       - name: Smoke test the API (health, register, login)
         run: |
           api=http://localhost:8000/api/v1
-          body='{"email":"smoke@example.com","password":"Lluvia-Verde-2026!","name":"Smoke"}'
+          body='{"email":"smoke@example.com","password":"Lluvia-Verde-2026!","name":"Smoke","accept_terms":true}'
           curl --fail --silent --show-error "$api/health"
           curl --fail --silent --show-error -H 'Content-Type: application/json' -d "$body" "$api/auth/register"
           curl --fail --silent --show-error -H 'Content-Type: application/json' \

@@ -13,7 +13,7 @@ const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 // These start or renew a session themselves: never retry them through a refresh
 const NO_REFRESH_PATHS = new Set(["/auth/login", "/auth/register", "/auth/refresh"]);
 
-export type User = { id: string; email: string; name: string };
+export type User = { id: string; email: string; name: string; terms_accepted: boolean };
 
 export class ApiError extends Error {
   constructor(
@@ -103,7 +103,7 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 }
 
 export const authApi = {
-  register: (data: { name: string; email: string; password: string }) =>
+  register: (data: { name: string; email: string; password: string; accept_terms: boolean }) =>
     request<{ message: string }>("/auth/register", { method: "POST", body: data }),
   login: (data: { email: string; password: string }) =>
     request<User>("/auth/login", { method: "POST", body: data }),

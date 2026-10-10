@@ -57,12 +57,68 @@ test.describe("public pages", () => {
     await expect(page.getByRole("button", { name: "Pausar animación" })).toBeHidden();
   });
 
-  for (const path of ["/", "/login", "/register", "/recuperar-contrasena", "/no-existe"]) {
+  for (const path of [
+    "/",
+    "/login",
+    "/register",
+    "/recuperar-contrasena",
+    "/no-existe",
+    "/legal/privacidad",
+    "/legal/terminos",
+    "/legal/cookies",
+  ]) {
     test(`${path} has no detectable accessibility violations`, async ({ page }) => {
       await page.goto(path);
       await expectAccessible(page);
     });
   }
+
+  test("the legal documents are linked from every public page", async ({ page }) => {
+    for (const path of ["/", "/login", "/register"]) {
+      await page.goto(path);
+      const legal = page.getByRole("navigation", { name: "Información legal" });
+      await expect(legal.getByRole("link", { name: /privacidad/i })).toHaveAttribute(
+        "href",
+        "/legal/privacidad",
+      );
+      await expect(legal.getByRole("link", { name: /términos/i })).toBeVisible();
+      await expect(legal.getByRole("link", { name: /cookies/i })).toBeVisible();
+    }
+  });
+
+  test("the privacy policy names who is responsible and the user's rights", async ({ page }) => {
+    await page.goto("/legal/privacidad");
+
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Política de privacidad");
+    await expect(page.locator("#responsable")).toContainText("Mauro González");
+    await expect(page.locator("#normativa")).toContainText("Ley 81");
+    await expect(page.locator("#derechos")).toContainText("Portabilidad");
+    await expect(page.locator("#balbo")).toContainText("Google");
+  });
+
+  test("the cookie notice informs once and can be dismissed", async ({ page }) => {
+    await page.goto("/");
+    const notice = page.getByRole("region", { name: "Aviso de cookies" });
+    await expect(notice).toContainText("Solo usamos cookies técnicas");
+
+    await notice.getByRole("button", { name: "Entendido" }).click();
+    await expect(notice).toBeHidden();
+    await page.reload();
+    await expect(page.getByRole("heading", { level: 1 })).toBeVisible();
+    await expect(notice).toBeHidden();
+  });
+
+  test("signing up requires accepting the terms", async ({ page }) => {
+    await page.goto("/register");
+    await page.getByLabel("Nombre").fill("Sin Consentimiento");
+    await page.getByLabel("Correo electrónico").fill(uniqueEmail("sin-consent"));
+    await page.getByLabel("Contraseña", { exact: true }).fill(PASSWORD);
+    await page.getByLabel("Confirmar contraseña").fill(PASSWORD);
+    await page.getByRole("button", { name: "Crear cuenta" }).click();
+
+    await expect(page.getByText(/Debes aceptar los Términos/)).toBeVisible();
+    await expect(page).toHaveURL(/\/register$/);
+  });
 
   test("unknown pages show a friendly 404", async ({ page }) => {
     const response = await page.goto("/no-existe");
@@ -103,7 +159,7 @@ test.describe("public pages", () => {
 
   test("pages fit a phone screen", async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 812 });
-    for (const path of ["/", "/login", "/register"]) {
+    for (const path of ["/", "/login", "/register", "/legal/privacidad", "/legal/cookies"]) {
       await page.goto(path);
       await expectNoHorizontalScroll(page);
     }

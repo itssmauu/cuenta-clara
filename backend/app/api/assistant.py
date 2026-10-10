@@ -2,13 +2,15 @@ from datetime import date
 from functools import lru_cache
 from typing import Annotated, Literal, Self
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
 from app.schemas.common import InputModel
 from app.services import assistant as assistant_service
+from app.services import privacy
+from app.services.settings import get_settings_for
 
 router = APIRouter(prefix="/assistant", tags=["assistant"])
 
@@ -45,6 +47,8 @@ class ChatOut(BaseModel):
 class StatusOut(BaseModel):
     name: str
     available: bool
+    # The user agreed to send a summary of their finances to the AI provider
+    consented: bool
 
 
 def get_assistant_model() -> assistant_service.AssistantModel | None:
@@ -65,15 +69,37 @@ Model = Annotated[assistant_service.AssistantModel | None, Depends(get_assistant
 Limiter = Annotated[assistant_service.RateLimiter, Depends(get_rate_limiter)]
 
 
+def _consented(db: DbSession, user: CurrentUser) -> bool:
+    return get_settings_for(db, user).assistant_consent_at is not None
+
+
 @router.get("", response_model=StatusOut)
-def assistant_status(user: CurrentUser, model: Model) -> StatusOut:
-    return StatusOut(name=assistant_service.NAME, available=model is not None)
+def assistant_status(db: DbSession, user: CurrentUser, model: Model) -> StatusOut:
+    return StatusOut(
+        name=assistant_service.NAME,
+        available=model is not None,
+        consented=_consented(db, user),
+    )
+
+
+@router.post("/consent", status_code=status.HTTP_204_NO_CONTENT)
+def grant_consent(db: DbSession, user: CurrentUser) -> None:
+    """The user turns Balbo on, accepting that a summary of their finances goes to Gemini."""
+    privacy.set_assistant_consent(db, user, granted=True)
+
+
+@router.delete("/consent", status_code=status.HTTP_204_NO_CONTENT)
+def withdraw_consent(db: DbSession, user: CurrentUser) -> None:
+    """Objection: turns Balbo off; nothing more is sent from now on."""
+    privacy.set_assistant_consent(db, user, granted=False)
 
 
 @router.post("/chat", response_model=ChatOut)
 def chat(body: ChatIn, db: DbSession, user: CurrentUser, model: Model, limiter: Limiter) -> ChatOut:
     if model is None:
         raise assistant_service.AssistantUnavailableError
+    if not _consented(db, user):
+        raise assistant_service.AssistantConsentError
     limiter.check(user.id)
     context = assistant_service.build_context(db, user, date.today())
     reply, on_topic = assistant_service.answer(

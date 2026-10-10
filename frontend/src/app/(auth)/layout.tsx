@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 
 import { AuthShowcase, LiveBars } from "@/components/auth/AuthShowcase";
 import { AuthTabs } from "@/components/auth/AuthTabs";
+import { LegalLinks } from "@/components/legal/LegalFooter";
 import { Logo } from "@/components/ui/Logo";
 
 export default function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
@@ -41,6 +42,10 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
         <div className="animate-rise-in flex w-full max-w-[460px] flex-col gap-6 rounded-[32px] bg-white p-6 shadow-[0_24px_60px_-28px_rgb(21_25_61/0.25)] sm:p-10">
           <AuthTabs />
           {children}
+          <LegalLinks
+            compact
+            className="text-muted -mb-3 flex justify-center text-[13px] font-semibold"
+          />
         </div>
       </main>
     </div>

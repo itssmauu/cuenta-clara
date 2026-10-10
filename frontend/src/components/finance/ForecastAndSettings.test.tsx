@@ -3,11 +3,15 @@ import userEvent from "@testing-library/user-event";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
 import { ApiError } from "@/lib/api";
+import { assistantApi } from "@/lib/assistant-api";
 import { financeApi, type Forecast } from "@/lib/finance-api";
 import { renderWithSession, testCategories, testSettings } from "@/test-utils";
 
 import { ForecastPage } from "./ForecastPage";
 import { SettingsPage } from "./SettingsPage";
+
+// Deleting the account (in "Privacidad y datos") navigates away
+vi.mock("next/navigation", () => ({ useRouter: () => ({ replace: vi.fn(), push: vi.fn() }) }));
 
 // 100 − 30 + 160 = 230, then +130 per week
 const forecast: Forecast = {
@@ -138,6 +142,22 @@ describe("ForecastPage", () => {
 describe("SettingsPage", () => {
   beforeEach(() => {
     vi.spyOn(financeApi, "listCategories").mockResolvedValue(testCategories);
+    vi.spyOn(assistantApi, "status").mockResolvedValue({
+      name: "Balbo",
+      available: true,
+      consented: true,
+    });
+  });
+
+  it("gathers the user's privacy rights in one section", async () => {
+    renderWithSession(<SettingsPage />);
+
+    const section = screen.getByRole("region", { name: "Privacidad y datos" });
+    expect(within(section).getByRole("button", { name: "Descargar mis datos" })).toBeEnabled();
+    expect(
+      await within(section).findByRole("button", { name: "Desactivar Balbo" }),
+    ).toBeInTheDocument();
+    expect(within(section).getByRole("button", { name: "Eliminar mi cuenta" })).toBeEnabled();
   });
 
   it("saves changes and updates the session", async () => {

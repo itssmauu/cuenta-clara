@@ -24,6 +24,7 @@ import {
 } from "@/lib/finance-validation";
 
 import { CategoriesSection } from "./CategoriesSection";
+import { PrivacySection } from "./PrivacySection";
 
 const CURRENCIES = [
   { value: "USD", label: "Dólar estadounidense (USD)" },
@@ -71,6 +72,7 @@ export function SettingsPage() {
           </div>
         </dl>
       </section>
+      <PrivacySection onNotice={showNotice} />
     </>
   );
 }

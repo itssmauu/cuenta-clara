@@ -36,6 +36,7 @@ Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la s
 - **Alertas** al acercarte a tu límite y **comparación** con el periodo anterior.
 - **Reportes** descargables en **CSV o PDF**.
 - **Balbo, tu copiloto financiero:** un asistente con IA que conoce tus números y te dice si te conviene una compra o cómo ahorrar para una meta. Solo habla de tus finanzas.
+- **Tus datos, bajo tu control:** política de privacidad, términos y política de cookies; descarga todos tus datos o elimina tu cuenta cuando quieras.
 - Pensada para **celular y escritorio**, accesible con teclado y lector de pantalla.
 
 ## Capturas
@@ -60,6 +61,9 @@ Tus finanzas son solo tuyas:
 - Las sesiones son seguras.
 - Nadie más puede ver tus datos.
 - La app **nunca te pide números de cuenta, tarjetas ni claves bancarias**: tus cuentas se reconocen solo por un nombre que tú eliges.
+- Solo usa cookies técnicas: nada de publicidad ni seguimiento.
+- Balbo solo envía tus datos a la IA si tú lo activas.
+- Pensada para cumplir la Ley 81 de 2019 de Protección de Datos Personales de Panamá.
 
 ## Hecho con
 

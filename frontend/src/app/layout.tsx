@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import { Manrope, Sora } from "next/font/google";
 import { connection } from "next/server";
+import { CookieNotice } from "@/components/legal/CookieNotice";
+
 import "./globals.css";
 
 // Self-hosted at build time by next/font: no request to Google, no layout shift
@@ -41,6 +43,7 @@ export default async function RootLayout({ children }: LayoutProps<"/">) {
           Saltar al contenido
         </a>
         {children}
+        <CookieNotice />
       </body>
     </html>
   );

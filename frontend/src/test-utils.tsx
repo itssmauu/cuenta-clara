@@ -41,9 +41,10 @@ export const testCategories: Category[] = [
 /** Renders a signed-in page with a fake session. */
 export function renderWithSession(ui: ReactNode, overrides: Partial<Session> = {}) {
   const session: Session = {
-    user: { id: "u1", email: "ana@example.com", name: "Ana" },
+    user: { id: "u1", email: "ana@example.com", name: "Ana", terms_accepted: true },
     settings: testSettings,
     setSettings: vi.fn(),
+    setUser: vi.fn(),
     logout: vi.fn(),
     ...overrides,
   };
