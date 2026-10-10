@@ -47,7 +47,7 @@ def get_dashboard(
     reference_date: DateParam = None,
     account: AccountParam = None,
 ) -> DashboardOut:
-    finance = dashboard_service.load_user_finance(db, user)
+    finance = dashboard_service.load_user_finance(db, user, reference_date)
     ids, single = finance.resolve(account)
     data, settings = finance.data_for(ids), finance.settings
     cadence = _cadence(period, data.limit_cadence)
@@ -137,7 +137,7 @@ def get_forecast(
     ] = "average",
     account: AccountParam = None,
 ) -> ForecastOut:
-    data, settings, single = dashboard_service.load_finance_data(db, user, account)
+    data, settings, single = dashboard_service.load_finance_data(db, user, account, reference_date)
     cadence = _cadence(period, data.limit_cadence)
     forecast = projections.build_forecast(
         data, cadence, reference_date or date.today(), periods, estimator=estimator

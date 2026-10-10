@@ -20,6 +20,7 @@ from app.models import (
     Account,
     Category,
     FixedExpense,
+    FixedExpenseCheckIn,
     Income,
     RefreshToken,
     SavingsGoal,
@@ -75,6 +76,8 @@ def export_user_data(db: Session, user: User) -> dict[str, Any]:
         "categorias_propias": _rows(db, Category, user),
         "ingresos_fijos": _rows(db, Income, user),
         "gastos_fijos": _rows(db, FixedExpense, user),
+        # "Did you pay it?" answers, one per occurrence of a fixed expense
+        "gastos_fijos_confirmados": _rows(db, FixedExpenseCheckIn, user),
         "movimientos": _rows(db, Transaction, user),
         "transferencias": _rows(db, Transfer, user),
         "metas_de_ahorro": _rows(db, SavingsGoal, user),

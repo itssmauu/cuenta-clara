@@ -170,7 +170,7 @@ def _money(amount: Decimal, currency: str) -> str:
 
 
 def build_context(db: Session, user: User, today: date) -> str:
-    finance = load_user_finance(db, user)
+    finance = load_user_finance(db, user, today)
     settings = finance.settings
     currency = settings.currency
     m = lambda amount: _money(amount, currency)  # noqa: E731 - short local formatter
