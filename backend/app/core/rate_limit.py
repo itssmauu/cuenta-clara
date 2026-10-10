@@ -2,6 +2,11 @@
 
 Counters live in process memory: fine for a single API instance. With several
 replicas, point both limiters at a shared store such as Redis.
+
+Which IP? Next.js forwards X-Forwarded-For untouched and never adds the visitor's
+address, so the header holds whatever the client wrote plus one entry per proxy in
+front (each appends the address it saw). Only the entries those proxies appended are
+trustworthy: the client IP is the TRUSTED_PROXY_HOPS-th entry from the right.
 """
 
 import math
@@ -14,12 +19,30 @@ from limits.storage import MemoryStorage
 from limits.strategies import MovingWindowRateLimiter
 from slowapi import Limiter
 from slowapi.errors import RateLimitExceeded
-from slowapi.util import get_remote_address
+
+from app.core.config import get_settings
 
 TOO_MANY_REQUESTS = "Demasiados intentos. Espera un momento antes de volver a intentarlo."
 
-# Per IP. Behind a reverse proxy, run uvicorn with --proxy-headers so this sees the real IP.
-limiter = Limiter(key_func=get_remote_address)
+
+def client_ip(request: Request) -> str:
+    """The visitor's address, as seen by our own proxies (never as claimed by the client)."""
+    peer = request.client.host if request.client else "unknown"
+    hops = get_settings().trusted_proxy_hops
+    if hops == 0:
+        return peer
+    forwarded = [
+        entry.strip()
+        for header in request.headers.getlist("x-forwarded-for")
+        for entry in header.split(",")
+        if entry.strip()
+    ]
+    # Each trusted proxy appended one entry; anything further left came from the client
+    return forwarded[-hops] if len(forwarded) >= hops else peer
+
+
+# Per IP
+limiter = Limiter(key_func=client_ip)
 
 _email_storage = MemoryStorage()
 _email_limiter = MovingWindowRateLimiter(_email_storage)

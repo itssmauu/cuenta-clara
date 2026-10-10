@@ -20,5 +20,7 @@ COPY alembic ./alembic
 USER app
 EXPOSE 8000
 
-# Apply pending migrations, then serve
-CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000"]
+# Apply pending migrations, then serve. uvicorn must not rewrite the client address from
+# X-Forwarded-For (the app picks the trusted entry itself: TRUSTED_PROXY_HOPS), and it
+# does not need to announce itself in a Server header.
+CMD ["sh", "-c", "alembic upgrade head && exec uvicorn app.main:app --host 0.0.0.0 --port 8000 --no-proxy-headers --no-server-header"]

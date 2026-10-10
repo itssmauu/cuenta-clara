@@ -58,7 +58,14 @@ Cuenta Clara guarda información financiera personal. Este documento explica cad
   - **Tiempo constante:** si el correo no existe, igual se verifica la contraseña contra un hash ficticio. En el registro se hashea antes de comprobar si el correo existe. Así el tiempo de respuesta tampoco delata qué correos tienen cuenta.
   → `app/core/rate_limit.py`, `app/services/auth.py` · `tests/test_auth.py` (sección Login)
 
-> Los contadores viven en memoria del proceso. Con varias réplicas de la API habría que moverlos a Redis. Detrás de un proxy, `uvicorn --proxy-headers` es necesario para ver la IP real.
+> Los contadores viven en memoria del proceso. Con varias réplicas de la API habría que moverlos a Redis.
+
+**¿Qué IP se cuenta?** Next.js reenvía `X-Forwarded-For` tal cual y nunca añade la IP del visitante. Por eso la API no deja que uvicorn lo interprete (`--no-proxy-headers`) y elige ella misma la entrada fiable (`client_ip` en `app/core/rate_limit.py`):
+
+- Con `TRUSTED_PROXY_HOPS=N` usa la N-ésima entrada desde la derecha, la que añadió el proxy HTTPS propio. Lo que el cliente escribió a la izquierda se ignora.
+- Con `0` (sin proxy) usa la dirección de la conexión.
+
+Cubierto por `test_an_invented_forwarded_for_does_not_escape_the_ip_limit`, `test_behind_a_proxy_only_the_address_it_appended_counts` y `test_client_ip_reads_only_the_trusted_entries`. Ver D-066 y `docs/deploy.md`.
 
 ## 4. CSRF
 
@@ -104,7 +111,7 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
 - **Cabeceras** (`frontend/next.config.ts`): `nosniff`, `X-Frame-Options: DENY`, `Referrer-Policy` y `Permissions-Policy`. Sin `X-Powered-By`.
 - **Mismo origen:** el navegador solo habla con la app web, y Next.js reenvía `/api/*` a FastAPI.
   - Las cookies de sesión son de primera parte y JavaScript solo puede leer `csrf_token`. Verificado en el navegador: `document.cookie` no muestra `access_token` ni `refresh_token`.
-  - El proxy reenvía `X-Forwarded-For`. La API solo lo acepta desde `FORWARDED_ALLOW_IPS`, para que el rate limiting vea la IP real sin permitir que un cliente la falsifique.
+  - El proxy reenvía `X-Forwarded-For` sin tocarlo. La API solo confía en las entradas que añadieron los proxies propios (`TRUSTED_PROXY_HOPS`, sección 3).
 - **Fuentes self-hosted** con `next/font`: ninguna petición a terceros al cargar la página.
 
 ## 8. Secretos y logs

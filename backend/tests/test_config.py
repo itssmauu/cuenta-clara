@@ -30,8 +30,24 @@ def test_settings_reject_unknown_environment(monkeypatch: pytest.MonkeyPatch) ->
         Settings(_env_file=None)
 
 
+PRODUCTION = {"app_env": "production", "frontend_origin": "https://cuentaclara.example"}
+
+
+@pytest.mark.parametrize(
+    "unsafe",
+    [{"cookie_secure": False}, {"frontend_origin": "http://cuentaclara.example"}],
+)
+def test_production_refuses_to_start_without_https(
+    monkeypatch: pytest.MonkeyPatch, unsafe: dict[str, object]
+) -> None:
+    monkeypatch.setenv("DATABASE_URL", VALID_URL)
+
+    with pytest.raises(ValidationError):
+        Settings(_env_file=None, **(PRODUCTION | unsafe))  # type: ignore[arg-type]
+
+
 def test_api_docs_are_disabled_in_production(monkeypatch: pytest.MonkeyPatch) -> None:
-    production = Settings(_env_file=None, database_url=VALID_URL, app_env="production")
+    production = Settings(_env_file=None, database_url=VALID_URL, **PRODUCTION)  # type: ignore[arg-type]
     monkeypatch.setattr("app.main.get_settings", lambda: production)
 
     prod_app = create_app()
