@@ -4,6 +4,7 @@ import { test } from "@playwright/test";
 
 import {
   completeOnboarding,
+  confirmDuePayments,
   register,
   skipCookieNotice,
   uniqueEmail,
@@ -28,6 +29,7 @@ test("@screenshots capture the main screens", async ({ page, context }) => {
 
   await register(page, "Ana", uniqueEmail("screens"));
   await completeOnboarding(page);
+  await confirmDuePayments(page);
 
   // A savings account next to the day-to-day one, with money moved into it
   await page.goto("/cuentas");
