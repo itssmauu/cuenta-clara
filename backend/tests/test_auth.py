@@ -5,11 +5,13 @@ from datetime import UTC, datetime, timedelta
 
 import jwt
 import pytest
+from fastapi import Request
 from fastapi.testclient import TestClient
 from sqlalchemy import select, update
 
 from app.core.config import get_settings
 from app.core.database import get_sessionmaker
+from app.core.rate_limit import client_ip
 from app.core.security import JWT_ALGORITHM, JWT_ISSUER, create_access_token, hash_token
 from app.main import app
 from app.models import RefreshToken, User, UserSettings
@@ -177,6 +179,61 @@ def test_login_is_rate_limited_per_ip(client: TestClient) -> None:
 
     assert response.status_code == 429
     assert int(response.headers["Retry-After"]) > 0
+
+
+def _login_from(client: TestClient, forwarded_for: str, email: str) -> int:
+    response = client.post(
+        f"{API}/login",
+        json={"email": email, "password": STRONG_PASSWORD},
+        headers={"X-Forwarded-For": forwarded_for},
+    )
+    return response.status_code
+
+
+def test_an_invented_forwarded_for_does_not_escape_the_ip_limit(client: TestClient) -> None:
+    """Without a proxy in front (the default), the header is ignored altogether."""
+    limit = int(get_settings().login_rate_limit.split("/")[0])
+    for i in range(limit):
+        assert _login_from(client, f"203.0.113.{i}", f"user{i}@example.com") == 401
+
+    assert _login_from(client, "203.0.113.200", "otro@example.com") == 429
+
+
+def test_behind_a_proxy_only_the_address_it_appended_counts(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    monkeypatch.setattr(get_settings(), "trusted_proxy_hops", 1)
+    limit = int(get_settings().login_rate_limit.split("/")[0])
+    # The attacker writes a new address every time; our proxy appends the real one
+    for i in range(limit):
+        assert _login_from(client, f"203.0.113.{i}, 198.51.100.7", f"user{i}@example.com") == 401
+
+    assert _login_from(client, "203.0.113.99, 198.51.100.7", "otro@example.com") == 429
+    # Someone else behind the same proxy is not affected
+    assert _login_from(client, "198.51.100.8", "otro@example.com") == 401
+
+
+@pytest.mark.parametrize(
+    ("hops", "header", "expected"),
+    [
+        (0, "1.1.1.1", "testclient"),
+        (1, "1.1.1.1, 2.2.2.2", "2.2.2.2"),
+        (2, "1.1.1.1, 2.2.2.2, 3.3.3.3", "2.2.2.2"),
+        (2, "3.3.3.3", "testclient"),  # fewer entries than proxies: not trustworthy
+        (1, "", "testclient"),
+    ],
+)
+def test_client_ip_reads_only_the_trusted_entries(
+    monkeypatch: pytest.MonkeyPatch, hops: int, header: str, expected: str
+) -> None:
+    monkeypatch.setattr(get_settings(), "trusted_proxy_hops", hops)
+    scope = {
+        "type": "http",
+        "client": ("testclient", 50000),
+        "headers": [(b"x-forwarded-for", header.encode())] if header else [],
+    }
+
+    assert client_ip(Request(scope)) == expected
 
 
 @pytest.mark.usefixtures("relaxed_ip_limit")
