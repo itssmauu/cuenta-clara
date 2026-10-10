@@ -65,6 +65,8 @@ Cuenta Clara guarda información financiera personal. Este documento explica cad
 - Con `TRUSTED_PROXY_HOPS=N` usa la N-ésima entrada desde la derecha, la que añadió el proxy HTTPS propio. Lo que el cliente escribió a la izquierda se ignora.
 - Con `0` (sin proxy) usa la dirección de la conexión.
 
+**En Vercel** (D-067): la app web manda la IP en `X-Client-IP`, tomada de Vercel, y firma cada petición con `PROXY_SECRET`. Sin el secreto, la API responde `404` a todo. Cubierto por `tests/test_deploy.py` y `frontend/src/proxy.test.ts`.
+
 Cubierto por `test_an_invented_forwarded_for_does_not_escape_the_ip_limit`, `test_behind_a_proxy_only_the_address_it_appended_counts` y `test_client_ip_reads_only_the_trusted_entries`. Ver D-066 y `docs/deploy.md`.
 
 ## 4. CSRF
