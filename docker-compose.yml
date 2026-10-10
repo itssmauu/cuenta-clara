@@ -42,9 +42,9 @@ services:
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}
       ASSISTANT_MESSAGES_PER_HOUR: ${ASSISTANT_MESSAGES_PER_HOUR:-30}
-      # Requests arrive through the frontend's /api proxy: trust its X-Forwarded-For so
-      # rate limiting sees the real client IP. In production, set this to the proxy's IP.
-      FORWARDED_ALLOW_IPS: ${FORWARDED_ALLOW_IPS:-*}
+      # Proxies in front of the web app that append the visitor's IP to X-Forwarded-For
+      # (0 locally; 1 behind one HTTPS proxy such as Caddy). See docs/deploy.md.
+      TRUSTED_PROXY_HOPS: ${TRUSTED_PROXY_HOPS:-0}
     ports:
       - "127.0.0.1:${BACKEND_PORT:-8000}:8000"
     depends_on:

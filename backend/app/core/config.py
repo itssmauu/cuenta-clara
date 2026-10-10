@@ -37,6 +37,11 @@ class Settings(BaseSettings):
     register_rate_limit: str = "3/minute"
     # Per email address, across all IPs (slows down distributed guessing on one account)
     email_rate_limit: str = "10/hour"
+    # How many proxies in front of the API append the visitor's address to
+    # X-Forwarded-For: 1 = one HTTPS proxy (Caddy, nginx or the hosting platform) in front
+    # of the web app. 0 = no proxy: use the connection's own address. Whatever the client
+    # wrote in the header itself is never trusted. See docs/deploy.md.
+    trusted_proxy_hops: int = Field(default=0, ge=0, le=5)
     max_failed_logins: int = Field(default=5, ge=1)
     lockout_minutes: int = Field(default=15, ge=1)
 
@@ -61,6 +66,9 @@ class Settings(BaseSettings):
     def _production_must_be_secure(self) -> Self:
         if self.is_production and not self.cookie_secure:
             raise ValueError("COOKIE_SECURE must be true in production")
+        # Secure cookies and HSTS only make sense over HTTPS
+        if self.is_production and not self.frontend_origin.startswith("https://"):
+            raise ValueError("FRONTEND_ORIGIN must be an https:// address in production")
         return self
 
 
