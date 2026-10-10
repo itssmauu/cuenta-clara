@@ -2,7 +2,8 @@
 
 The model, in one sentence: the user had `initial_balance` on `balance_as_of`; from that
 day on, recurring incomes and one-off income transactions add money, while fixed expenses
-and one-off expense transactions take it away. Nothing dated earlier counts.
+and one-off expense transactions take it away. Nothing dated earlier counts. A fixed
+expense due today or earlier only counts once the user confirms it (see check_ins.py).
 
     balance at the end of a period = opening balance + income − fixed expenses − variable spending
                                      + transfers in − transfers out
@@ -49,15 +50,18 @@ class Recurring:
     id: uuid.UUID | None = None
     name: str = ""
     category_id: uuid.UUID | None = None
+    # Occurrences that do not count: the user said they did not pay, or has not said yet
+    excluded: frozenset[date] = frozenset()
 
     def dates_in(self, window: Period) -> list[date]:
-        return recurring_dates(
+        dates = recurring_dates(
             self.frequency,
             self.start,
             window,
             custom_days=self.custom_days,
             day_of_month=self.day_of_month,
         )
+        return [day for day in dates if day not in self.excluded]
 
     def total_in(self, window: Period) -> Decimal:
         return self.amount * len(self.dates_in(window))

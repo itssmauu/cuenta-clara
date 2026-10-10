@@ -83,6 +83,17 @@ export async function completeOnboarding(page: Page) {
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
+/** Answers "¿Ya pagaste estos gastos?" with "Lo pagué" for everything that is due. */
+export async function confirmDuePayments(page: Page) {
+  const dialog = page.getByRole("dialog", { name: "¿Ya pagaste estos gastos?" });
+  await expect(dialog).toBeVisible();
+  for (const paid of await dialog.getByRole("button", { name: "Lo pagué" }).all()) {
+    await paid.click();
+  }
+  await dialog.getByRole("button", { name: /^Guardar \d+ respuestas?$/ }).click();
+  await expect(dialog).toBeHidden();
+}
+
 export function kpi(page: Page, label: string) {
   return page
     .getByRole("region", { name: "Resumen del periodo" })

@@ -3,6 +3,7 @@
 import type { ReactNode } from "react";
 
 import { Balbo } from "@/components/assistant/Balbo";
+import { CheckInPrompt } from "@/components/finance/CheckInPrompt";
 import { TermsGate } from "@/components/legal/TermsGate";
 import { FormAlert } from "@/components/ui/FormAlert";
 
@@ -46,6 +47,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="flex min-w-0 flex-1 flex-col gap-5 outline-none"
           >
+            {/* "Did you pay it?" for fixed expenses due today or earlier */}
+            <CheckInPrompt />
             {children}
           </main>
         </div>

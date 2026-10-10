@@ -76,6 +76,8 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `GET` / `POST` | `/api/v1/incomes` | Ingresos recurrentes |
 | `GET` / `PUT` / `DELETE` | `/api/v1/incomes/{id}` | |
 | `GET` / `POST` | `/api/v1/fixed-expenses` | Gastos fijos |
+| `GET` | `/api/v1/fixed-expenses/pending` | Pagos de gastos fijos que vencieron hasta `?date=` (hoy del usuario) y aún no se confirman. No cuentan en el saldo hasta responder |
+| `POST` | `/api/v1/fixed-expenses/check-ins` | Responde "¿lo pagaste?": `answers` (1–400) con `fixed_expense_id`, `occurs_on` y `paid`. Se puede volver a responder para cambiarlo |
 | `GET` / `PUT` / `DELETE` | `/api/v1/fixed-expenses/{id}` | |
 | `GET` / `POST` | `/api/v1/transactions` | Movimientos. Filtros: `from`, `to`, `type`, `category_id`, `account_id`; paginación `limit` (≤ 100) y `offset` |
 | `GET` / `PUT` / `DELETE` | `/api/v1/transactions/{id}` | |

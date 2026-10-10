@@ -1,5 +1,6 @@
 import os
 from collections.abc import Callable, Iterator
+from datetime import date
 from pathlib import Path
 
 import pytest
@@ -36,12 +37,30 @@ from fastapi.testclient import TestClient  # noqa: E402
 from sqlalchemy import delete  # noqa: E402
 from sqlalchemy.orm import Session  # noqa: E402
 
+from app.core import clock  # noqa: E402
 from app.core.database import get_engine, get_sessionmaker  # noqa: E402
 from app.core.rate_limit import reset_rate_limits  # noqa: E402
 from app.main import app  # noqa: E402
 from app.models import User  # noqa: E402
 
 ALEMBIC_INI = BACKEND_DIR / "alembic.ini"
+
+# Far enough ahead that, unless a test pins the clock, every fixed expense counts on its
+# own (confirm_from lies in the future) and no client date is clamped. Check-in tests pin
+# their own "today" with the `utc_today` fixture.
+UNPINNED_TODAY = date(2100, 1, 1)
+
+
+@pytest.fixture(autouse=True)
+def utc_today(monkeypatch: pytest.MonkeyPatch) -> Callable[[date], None]:
+    """Pins the server's today: call it with a date (default: far in the future)."""
+    current = {"day": UNPINNED_TODAY}
+    monkeypatch.setattr(clock, "utc_today", lambda: current["day"])
+
+    def _pin(day: date) -> None:
+        current["day"] = day
+
+    return _pin
 
 
 @pytest.fixture(scope="session")

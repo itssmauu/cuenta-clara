@@ -444,3 +444,35 @@ Las poses cambian con transiciones suaves. Con movimiento reducido el robot qued
 - Pedir los derechos solo por correo: más lento para el usuario y deja sin cubrir el caso en que no haya correo configurado.
 
 **Límites.** Los textos se redactaron a partir de la ley y del funcionamiento real de la app, pero no sustituyen la revisión de un abogado. Los plazos exactos para notificar brechas no se verificaron, así que la política remite a "los plazos que marca la normativa".
+
+## D-065 · Confirmar los gastos fijos antes de descontarlos
+
+**Contexto.** Antes, un gasto fijo se descontaba solo en cada fecha. Para un gasto diario (almuerzo, pasaje) eso no refleja la realidad: hay días en que no se gasta, y el saldo bajaba igual.
+
+**Decisión.**
+
+- **Cada pago se confirma.** El día que vence un gasto fijo (todos los días si es diario; el día que toca si es semanal, quincenal o mensual), la app pregunta "¿Ya pagaste estos gastos?" al entrar y otra vez cuando cambia el día con la app abierta.
+- **Tres estados por pago:**
+  - "Lo pagué": cuenta en su fecha.
+  - "No": no cuenta nunca.
+  - Sin responder: no cuenta todavía.
+
+  Los pagos futuros no se preguntan y la predicción los sigue esperando.
+- **Sin cambiar el pasado.** Cada gasto fijo tiene `confirm_from`. Los pagos anteriores a esa fecha cuentan solos, como antes. Para los gastos que ya existían, es el día de la migración; para los nuevos, el día en que se crean.
+- **Una sola regla para todo.** Las fechas que no cuentan se quitan en `Recurring.dates_in`, así que el saldo de las cuentas, el dashboard, la predicción, los reportes y Balbo dan las mismas cifras.
+- **"Más tarde"** cierra la pregunta y deja un aviso arriba de cada página con un botón "Revisar". Al día siguiente vuelve a preguntar.
+- **Seguridad.**
+  - Solo se puede responder sobre gastos propios y activos (si no, `404`), y solo en días en que el gasto realmente vence, entre `confirm_from` y hoy (si no, `422`).
+  - El "hoy" que manda el cliente nunca se acepta más de un día por delante de la fecha UTC del servidor.
+  - Máximo 400 respuestas por petición.
+  - Las respuestas forman parte de la exportación de datos y se borran con el gasto.
+
+**Alternativas descartadas.**
+
+- Descontar solo y dejar marcar "no lo pagué" después: el saldo bajaría igual hasta que el usuario lo corrija, que es justo lo que se quería evitar.
+- Convertir cada confirmación en un movimiento: duplicaría datos y mezclaría gastos fijos con variables en los reportes.
+
+**Límites.**
+
+- Solo aplica a gastos fijos. Los ingresos fijos siguen sumándose solos.
+- No se puede confirmar un monto distinto; para eso se registra un movimiento.

@@ -25,6 +25,7 @@ from app.models import (
     User,
 )
 from app.models import UserSettings as UserSettingsModel
+from app.services import check_ins
 from app.services.accounts import list_accounts
 from app.services.errors import NotFoundError
 from app.services.periods import Cadence
@@ -97,7 +98,9 @@ class UserFinance:
         )
 
 
-def load_user_finance(db: Session, user: User) -> UserFinance:
+def load_user_finance(db: Session, user: User, today: date | None = None) -> UserFinance:
+    """`today` (the user's local date) decides which fixed expenses still await an answer."""
+    today = check_ins.latest_allowed_day(today or date.today())
     settings = get_settings_for(db, user)
     accounts = list_accounts(db, user)
 
@@ -126,6 +129,7 @@ def load_user_finance(db: Session, user: User) -> UserFinance:
             Transfer.from_account_id, Transfer.to_account_id, Transfer.occurred_on, Transfer.amount
         ).where(Transfer.user_id == user.id, Transfer.occurred_on >= settings.balance_as_of)
     ).all()
+    answers = check_ins.answers_by_expense(db, user)
 
     return UserFinance(
         settings=settings,
@@ -156,6 +160,9 @@ def load_user_finance(db: Session, user: User) -> UserFinance:
                     id=f.id,
                     name=f.name,
                     category_id=f.category_id,
+                    excluded=check_ins.not_counted(
+                        f, answers.get(f.id, {}), settings.balance_as_of, today
+                    ),
                 ),
             )
             for f in fixed_expenses
@@ -177,10 +184,10 @@ def load_user_finance(db: Session, user: User) -> UserFinance:
 
 
 def load_finance_data(
-    db: Session, user: User, scope: AccountScope = None
+    db: Session, user: User, scope: AccountScope = None, today: date | None = None
 ) -> tuple[FinanceData, UserSettingsModel, Account | None]:
     """The data for one account (default: the primary one) or for all of them."""
-    finance = load_user_finance(db, user)
+    finance = load_user_finance(db, user, today)
     ids, account = finance.resolve(scope)
     return finance.data_for(ids), finance.settings, account
 

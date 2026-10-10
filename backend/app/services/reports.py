@@ -81,8 +81,10 @@ def build_report(
     type_filter: TypeFilter = None,
     today: date | None = None,
 ) -> Report:
-    finance = load_user_finance(db, user)
+    finance = load_user_finance(db, user, today)
     ids, single = finance.resolve(scope)
+    # Fixed-expense occurrences the user said they did not pay, or has not confirmed yet
+    not_counted = {r.id: r.excluded for _, r in finance.fixed_expenses}
     names = {a.id: a.name for a in finance.accounts}
     settings = finance.settings
 
@@ -167,6 +169,8 @@ def build_report(
                     custom_days=f.custom_period_days,
                     day_of_month=f.due_day,
                 ):
+                    if on in not_counted.get(f.id, frozenset()):
+                        continue
                     rows.append(
                         ReportRow(
                             on,

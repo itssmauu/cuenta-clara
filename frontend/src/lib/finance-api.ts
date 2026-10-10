@@ -71,6 +71,21 @@ export type FixedExpenseInput = {
   account_id?: string | null;
 };
 
+/** A fixed expense with due days that wait for "did you pay it?" (they don't count yet). */
+export type PendingFixedExpense = {
+  id: string;
+  name: string;
+  amount: Money;
+  frequency: Frequency;
+  category_id: string | null;
+  account_id: string;
+  account_name: string;
+  /** Due days without an answer, oldest first (YYYY-MM-DD) */
+  dates: string[];
+};
+
+export type CheckInAnswer = { fixed_expense_id: string; occurs_on: string; paid: boolean };
+
 export type Transaction = {
   id: string;
   type: TransactionType;
@@ -292,6 +307,15 @@ export const financeApi = {
   updateCategory: (id: string, data: { name: string; color: string }) =>
     request<Category>(`/categories/${id}`, { method: "PUT", body: data }),
   deleteCategory: (id: string) => request<void>(`/categories/${id}`, { method: "DELETE" }),
+
+  pendingFixedExpenses: (date: string) =>
+    request<PendingFixedExpense[]>(`/fixed-expenses/pending${query({ date })}`),
+  /** Paid ones start counting on their day; unpaid ones never count */
+  answerCheckIns: (answers: CheckInAnswer[], date: string) =>
+    request<void>(`/fixed-expenses/check-ins${query({ date })}`, {
+      method: "POST",
+      body: { answers },
+    }),
 
   listIncomes: () => request<Income[]>("/incomes"),
   createIncome: (data: IncomeInput) => request<Income>("/incomes", { method: "POST", body: data }),

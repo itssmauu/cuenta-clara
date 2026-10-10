@@ -92,7 +92,7 @@ export function FixedExpensesPage() {
     <>
       <PageHeader
         title="Gastos fijos"
-        subtitle="Lo que pagas sí o sí cada periodo"
+        subtitle="Lo que pagas cada periodo. El día que toca, te preguntamos si lo pagaste: solo entonces se descuenta"
         actions={addButton}
       />
       <Notice message={notice} />

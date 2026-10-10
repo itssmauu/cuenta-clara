@@ -2,6 +2,7 @@ import { expect, test } from "@playwright/test";
 
 import {
   completeOnboarding,
+  confirmDuePayments,
   expectAccessible,
   expectNoHorizontalScroll,
   kpi,
@@ -35,9 +36,19 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
-  test("completes onboarding and sees 100 − 30 + 160 = 230", async () => {
+  test("is asked whether today's bus fare was paid before it is deducted", async () => {
     await completeOnboarding(page);
 
+    const dialog = page.getByRole("dialog", { name: "¿Ya pagaste estos gastos?" });
+    await expect(dialog.getByRole("group", { name: "Hoy · Pasaje" })).toBeVisible();
+    // Until the user answers, the $30 does not come off the balance
+    await expect(kpi(page, "Gastado")).toHaveText("$0.00");
+    await expectAccessible(page);
+
+    await confirmDuePayments(page);
+  });
+
+  test("after confirming, sees 100 − 30 + 160 = 230", async () => {
     await expect(kpi(page, "Saldo inicial")).toHaveText("$100.00");
     await expect(kpi(page, "Ingresos del periodo")).toHaveText("$160.00");
     await expect(kpi(page, "Gastado")).toHaveText("$30.00");

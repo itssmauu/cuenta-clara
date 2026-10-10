@@ -104,6 +104,21 @@ def test_balance_before_tracking_started_is_the_initial_balance() -> None:
     assert balance_at_end_of(finance(), date(2026, 1, 1)) == D("100.00")
 
 
+def test_excluded_occurrences_never_count() -> None:
+    """A lunch the user skipped (or has not confirmed yet) does not touch the balance."""
+    lunch = Recurring(
+        amount=D("5.00"),
+        frequency=Frequency.DAILY,
+        start=MONDAY,
+        excluded=frozenset({date(2026, 10, 6)}),
+    )
+    data = finance(fixed_expenses=[lunch])
+
+    assert lunch.dates_in(Period(MONDAY, WEDNESDAY)) == [MONDAY, WEDNESDAY]
+    assert balance_at_end_of(data, WEDNESDAY) == D("90.00")
+    assert totals(data, Period(MONDAY, WEDNESDAY)).fixed_expenses == D("10.00")
+
+
 def test_inactive_items_are_not_in_the_data() -> None:
     """Only active incomes/fixed expenses are loaded, so an empty list means no effect."""
     assert totals(finance(), Period(MONDAY, WEDNESDAY)).net == D("0.00")

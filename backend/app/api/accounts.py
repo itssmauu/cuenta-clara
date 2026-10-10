@@ -41,8 +41,8 @@ def list_accounts(
     db: DbSession, user: CurrentUser, reference_date: DateParam = None
 ) -> list[AccountOut]:
     """Every account with its balance at the end of the reference day; primary first."""
-    finance = load_user_finance(db, user)
     today = reference_date or date.today()
+    finance = load_user_finance(db, user, today)
     return [_out(finance, account, today) for account in finance.accounts]
 
 

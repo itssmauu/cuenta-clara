@@ -191,6 +191,31 @@ class FixedExpenseOut(OutputModel):
     updated_at: datetime
 
 
+class PendingFixedExpenseOut(OutputModel):
+    """A fixed expense with occurrences waiting for "did you pay it?"."""
+
+    id: uuid.UUID
+    name: str
+    amount: Decimal
+    frequency: Frequency
+    category_id: uuid.UUID | None
+    account_id: uuid.UUID
+    account_name: str
+    # Due days without an answer, oldest first; none of them counts until answered
+    dates: list[date]
+
+
+class CheckInAnswer(InputModel):
+    fixed_expense_id: uuid.UUID
+    occurs_on: date
+    # True: paid, it counts on that day. False: not paid this time, it never counts.
+    paid: bool
+
+
+class CheckInsIn(InputModel):
+    answers: Annotated[list[CheckInAnswer], Field(min_length=1, max_length=400)]
+
+
 # ── Transactions ────────────────────────────────────────
 
 
