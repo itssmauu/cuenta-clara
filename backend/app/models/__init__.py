@@ -3,7 +3,7 @@ from app.models.account import Account
 from app.models.base import Base
 from app.models.category import Category
 from app.models.enums import AccountKind, Frequency, TransactionType
-from app.models.fixed_expense import FixedExpense
+from app.models.fixed_expense import FixedExpense, FixedExpenseCheckIn
 from app.models.income import Income
 from app.models.refresh_token import RefreshToken
 from app.models.savings_goal import SavingsGoal
@@ -18,6 +18,7 @@ __all__ = [
     "Base",
     "Category",
     "FixedExpense",
+    "FixedExpenseCheckIn",
     "Frequency",
     "Income",
     "RefreshToken",
