@@ -7,6 +7,8 @@ from fastapi import Request, Response
 from fastapi.responses import JSONResponse
 from starlette.middleware.base import BaseHTTPMiddleware
 
+from app.core.config import get_settings
+
 CSRF_COOKIE = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
@@ -18,6 +20,27 @@ API_CSP = "default-src 'none'; frame-ancestors 'none'"
 DOCS_PATHS = ("/docs", "/openapi.json")
 
 CallNext = Callable[[Request], Awaitable[Response]]
+
+PROXY_SECRET_HEADER = "X-Proxy-Secret"  # noqa: S105 - a header name, not a secret
+# Uptime checks may call it directly; it says nothing about anyone
+GATE_EXEMPT_PATHS = frozenset({"/api/v1/health"})
+
+
+class ProxyGateMiddleware(BaseHTTPMiddleware):
+    """With PROXY_SECRET set, only the web app's proxy can use the API.
+
+    On Vercel the API has a public URL of its own. Without this, anyone could call it
+    directly, skipping the web app and claiming any visitor IP. Unknown callers get the
+    same 404 as a missing page, so the API does not even reveal that it exists.
+    """
+
+    async def dispatch(self, request: Request, call_next: CallNext) -> Response:
+        secret = get_settings().proxy_secret
+        if secret is not None and request.url.path not in GATE_EXEMPT_PATHS:
+            sent = request.headers.get(PROXY_SECRET_HEADER, "")
+            if not secrets.compare_digest(sent.encode(), secret.get_secret_value().encode()):
+                return JSONResponse(status_code=404, content={"detail": "No encontrado."})
+        return await call_next(request)
 
 
 class CSRFMiddleware(BaseHTTPMiddleware):

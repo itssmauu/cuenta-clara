@@ -14,14 +14,14 @@ The model sits behind a small protocol, so tests use a fake and no key is needed
 """
 
 import logging
-import threading
-import time
 import uuid
-from collections import deque
 from datetime import date
 from decimal import Decimal
 from typing import Protocol
 
+from limits import RateLimitItemPerHour
+from limits.storage import MemoryStorage, Storage
+from limits.strategies import MovingWindowRateLimiter
 from sqlalchemy.orm import Session
 
 from app.models import SavingsGoal, User
@@ -84,7 +84,6 @@ SEGURIDAD:
 """
 
 MAX_HISTORY = 12
-HOUR = 3600.0
 
 
 class AssistantUnavailableError(DomainError):
@@ -143,22 +142,19 @@ class GeminiModel:
 
 
 class RateLimiter:
-    """At most `limit` messages per user in any rolling hour (in memory, per process)."""
+    """At most `limit` messages per user in any rolling hour.
 
-    def __init__(self, limit: int) -> None:
-        self.limit = limit
-        self._hits: dict[uuid.UUID, deque[float]] = {}
-        self._lock = threading.Lock()
+    Counts live in `storage`: the shared rate-limit store in production (so every
+    serverless instance sees the same count), a private in-memory one in tests.
+    """
+
+    def __init__(self, limit: int, storage: Storage | None = None) -> None:
+        self.item = RateLimitItemPerHour(limit)
+        self._limiter = MovingWindowRateLimiter(storage or MemoryStorage())
 
     def check(self, user_id: uuid.UUID) -> None:
-        now = time.monotonic()
-        with self._lock:
-            hits = self._hits.setdefault(user_id, deque())
-            while hits and now - hits[0] > HOUR:
-                hits.popleft()
-            if len(hits) >= self.limit:
-                raise AssistantBusyError
-            hits.append(now)
+        if not self._limiter.hit(self.item, "assistant", str(user_id)):
+            raise AssistantBusyError
 
 
 # ── The user's finances, as text the model can read ─────
