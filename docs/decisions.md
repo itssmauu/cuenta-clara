@@ -136,7 +136,7 @@ La única excepción son las categorías predeterminadas: son visibles para todo
 
 **Fase 5.** El navegador solo habla con el origen de Next.js; `next.config.ts` reescribe `/api/*` hacia FastAPI. Así las cookies de sesión son de primera parte (`SameSite=Lax` funciona sin excepciones), el navegador nunca hace peticiones cross-origin y en producción basta un solo dominio. El CORS restringido del backend se mantiene como segunda barrera.
 
-El proxy reenvía `X-Forwarded-For` y uvicorn lo usa para el rate limiting por IP, pero solo si la petición viene de una IP en `FORWARDED_ALLOW_IPS`. En Docker Compose se confía en la red interna (`*`); en producción debe ser la IP del proxy.
+~~El proxy reenvía `X-Forwarded-For` y uvicorn lo usa para el rate limiting por IP…~~ Reemplazado por D-066: Next.js no añade la IP del visitante, así que ese esquema permitía falsificarla.
 
 ## D-033 · CSP con nonce: todas las páginas se renderizan por petición
 
@@ -476,3 +476,21 @@ Las poses cambian con transiciones suaves. Con movimiento reducido el robot qued
 
 - Solo aplica a gastos fijos. Los ingresos fijos siguen sumándose solos.
 - No se puede confirmar un monto distinto; para eso se registra un movimiento.
+
+## D-066 · La API elige la IP del visitante (no uvicorn)
+
+**Contexto.** En una prueba de seguridad contra la app en marcha se probaron dos casos de login fallido:
+
+- **Sin cabeceras:** el límite por IP saltaba al 6.º intento.
+- **Inventando un `X-Forwarded-For` distinto en cada intento:** no saltaba nunca.
+
+Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FORWARDED_ALLOW_IPS=*`, uvicorn tomaba la primera entrada, que es la que escribe el cliente. Sin la cabecera, todos los visitantes compartían la IP del servidor de Next.js, así que 5 logins fallidos por minuto, de cualquiera, bloqueaban el login de todos.
+
+**Decisión.**
+
+- uvicorn corre con `--no-proxy-headers`: no reescribe la IP del cliente.
+- La API la elige en `client_ip()`. Con `TRUSTED_PROXY_HOPS=N` toma la N-ésima entrada desde la derecha, la que añadió el proxy HTTPS propio (Caddy, nginx o la plataforma). Con `0` usa la dirección de la conexión.
+- En producción, `FRONTEND_ORIGIN` debe ser `https://` o la API no arranca, igual que ya pasaba con `COOKIE_SECURE`.
+- uvicorn ya no envía la cabecera `Server`.
+
+**Consecuencia.** En producción hace falta un proxy HTTPS delante de la app web, que de todos modos es obligatorio para las cookies `Secure`. `TRUSTED_PROXY_HOPS` debe coincidir con el número real de proxies: uno de más vuelve a dejar que el cliente elija su IP. Ver `docs/deploy.md`.
