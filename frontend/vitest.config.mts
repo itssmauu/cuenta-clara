@@ -13,5 +13,7 @@ export default defineConfig({
     setupFiles: ["./vitest.setup.ts"],
     include: ["src/**/*.test.{ts,tsx}"],
     restoreMocks: true,
+    // Whole flows (onboarding: four steps of typing) need more than 5 s on a busy machine
+    testTimeout: 15_000,
   },
 });

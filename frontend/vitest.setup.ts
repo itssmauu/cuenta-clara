@@ -1,9 +1,12 @@
 import "@testing-library/jest-dom/vitest";
 
-import { cleanup } from "@testing-library/react";
+import { cleanup, configure } from "@testing-library/react";
 import { afterEach, beforeEach, vi } from "vitest";
 
 import { financeApi } from "@/lib/finance-api";
+
+// findBy*/waitFor give up after 1 s by default: too tight when every test file runs at once
+configure({ asyncUtilTimeout: 3000 });
 
 // Pages load the user's accounts; by default there is one, so no account choices show up.
 // (Defined here, not imported from test-utils: that would load next/navigation before the
@@ -24,6 +27,7 @@ beforeEach(() => {
 afterEach(() => {
   cleanup();
   // Cookies set by one test (e.g. csrf_token) must not leak into the next
+  if (typeof document === "undefined") return;
   for (const cookie of document.cookie.split(";")) {
     const name = cookie.split("=")[0]?.trim();
     if (name) document.cookie = `${name}=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/`;
@@ -37,9 +41,12 @@ globalThis.ResizeObserver ??= class {
   unobserve() {}
   disconnect() {}
 };
-HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
-  this.open = true;
-};
-HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
-  this.open = false;
-};
+// (Server-side tests run in the node environment, which has no DOM at all)
+if (typeof HTMLDialogElement !== "undefined") {
+  HTMLDialogElement.prototype.showModal ??= function (this: HTMLDialogElement) {
+    this.open = true;
+  };
+  HTMLDialogElement.prototype.close ??= function (this: HTMLDialogElement) {
+    this.open = false;
+  };
+}
