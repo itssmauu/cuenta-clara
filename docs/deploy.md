@@ -190,9 +190,18 @@ La recuperación de contraseña envía un código de 6 números por correo. Sirv
 2. Activa la **Verificación en dos pasos** en https://myaccount.google.com/security.
 3. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords con el nombre «Cuenta Clara». Google muestra 16 letras: esa es `SMTP_PASSWORD`. No es la contraseña normal de la cuenta, y se puede revocar en cualquier momento.
 4. Configura las variables `SMTP_*` (tabla de arriba): en Vercel en el proyecto de la **API**, y en local en tu `.env`.
-5. Prueba: en `/recuperar-contrasena`, pide un código para tu propia cuenta. Si no llega, revisa spam y los logs de la API («Password reset email failed»).
+5. Prueba que puede enviar, sin mostrar la contraseña a nadie:
+
+   ```bash
+   cd backend
+   python -m app.mail_check tu-correo-personal@ejemplo.com
+   ```
+
+   Si falla, el comando explica qué revisar. Después, en `/recuperar-contrasena`, pide un código para tu propia cuenta. Si no llega, revisa spam y los logs de la API («Password reset email failed»).
 
 Ten en cuenta:
+
+- **Outlook.com y Hotmail personales no sirven para enviar.** Microsoft ya no acepta contraseñas (ni contraseñas de aplicación) para SMTP en esas cuentas: responde `535 5.7.139 basic authentication is disabled`. Solo admite OAuth2. Un Outlook sí sirve como correo de **contacto** (`NEXT_PUBLIC_PRIVACY_EMAIL`), donde la gente escribe.
 
 - **Límite de Gmail:** unos 500 correos al día, de sobra para empezar.
 - **Para que no caigan en spam con más usuarios,** usa un dominio propio con un servicio de envío (Brevo, Resend, Amazon SES). Basta cambiar las variables `SMTP_*`.

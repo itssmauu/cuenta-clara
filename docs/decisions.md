@@ -553,6 +553,9 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 - Enlace con token: se consume con los escáneres de correo.
 - SDK de un proveedor (Resend, SendGrid): una dependencia más, cuando SMTP sirve para todos.
 - Preguntas de seguridad: son inseguras y ya nadie las recomienda.
+- Outlook.com como remitente. Las cuentas personales ya no aceptan contraseñas para SMTP, ni siquiera las de aplicación (error `5.7.139`), y OAuth2 obligaría a registrar una app en Azure y a renovar el permiso si pasan unos 90 días sin enviar.
+  - Se usa **Gmail con contraseña de aplicación para enviar** y `cuenta_clara@outlook.com` como **correo de contacto** de la Política de privacidad.
+  - `python -m app.mail_check` prueba la configuración sin mostrar la contraseña.
 
 **Verificación.**
 
