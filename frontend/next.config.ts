@@ -2,11 +2,9 @@ import type { NextConfig } from "next";
 
 // Where the Next.js server reaches the FastAPI backend. Read at build time
 // (standalone output serializes this config), so Docker passes it as a build arg.
+// On Vercel, vercel.json sends /api/* straight to the backend service, so this app
+// never sees those requests and needs no address for it.
 const apiInternalUrl = process.env.API_INTERNAL_URL ?? "http://localhost:8000";
-if (process.env.VERCEL && !process.env.API_INTERNAL_URL) {
-  // Otherwise every /api call would silently go to localhost and fail
-  throw new Error("Set API_INTERNAL_URL to the API's URL in the Vercel project settings");
-}
 
 const securityHeaders = [
   { key: "X-Content-Type-Options", value: "nosniff" },
@@ -22,7 +20,9 @@ const nextConfig: NextConfig = {
   poweredByHeader: false,
   async rewrites() {
     // The browser only ever talks to this origin: /api/* is proxied to FastAPI, so
-    // session cookies are first-party and no CORS is needed.
+    // session cookies are first-party and no CORS is needed. (On Vercel the platform
+    // routes /api/* to the backend service before this app is involved.)
+    if (process.env.VERCEL) return [];
     return [{ source: "/api/:path*", destination: `${apiInternalUrl}/api/:path*` }];
   },
   async headers() {

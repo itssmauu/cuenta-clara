@@ -113,13 +113,15 @@ class Settings(BaseSettings):
         # Secure cookies and HSTS only make sense over HTTPS
         if self.is_production and not self.frontend_origin.startswith("https://"):
             raise ValueError("FRONTEND_ORIGIN must be an https:// address in production")
-        # On Vercel every request may land on a different instance, and the API has a
-        # public URL of its own: refuse to run without shared counters and the proxy secret
+        # On Vercel every request may land on a different instance, so counters must be
+        # shared; and the visitor IP must come from somewhere trustworthy: Vercel's own
+        # X-Forwarded-For (TRUSTED_PROXY_HOPS=1, the one-project "services" setup) or the
+        # web app's proxy (PROXY_SECRET, when the API is a separate project)
         if self.is_production and os.environ.get("VERCEL"):
             if self.rate_limit_storage_uri.startswith("memory"):
                 raise ValueError("On Vercel, set RATE_LIMIT_STORAGE_URI (or REDIS_URL) to Redis")
-            if self.proxy_secret is None:
-                raise ValueError("On Vercel, set PROXY_SECRET (the same value in the web app)")
+            if self.proxy_secret is None and self.trusted_proxy_hops == 0:
+                raise ValueError("On Vercel, set TRUSTED_PROXY_HOPS=1 (or PROXY_SECRET)")
         return self
 
 
