@@ -5,4 +5,4 @@ accept again: everyone with an older version is asked to accept the new one.
 The same date appears on the documents (frontend/src/lib/legal.ts).
 """
 
-TERMS_VERSION = "2026-10-09"
+TERMS_VERSION = "2026-10-11"
