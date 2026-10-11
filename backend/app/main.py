@@ -5,7 +5,12 @@ from slowapi.errors import RateLimitExceeded
 
 from app.api.router import api_router
 from app.core.config import get_settings
-from app.core.http_security import CSRF_HEADER, CSRFMiddleware, SecurityHeadersMiddleware
+from app.core.http_security import (
+    CSRF_HEADER,
+    CSRFMiddleware,
+    ProxyGateMiddleware,
+    SecurityHeadersMiddleware,
+)
 from app.core.logging import configure_logging
 from app.core.rate_limit import EmailRateLimitedError, limiter, rate_limit_exceeded_handler
 from app.services.errors import DomainError
@@ -44,6 +49,8 @@ def create_app() -> FastAPI:
         allow_methods=["GET", "POST", "PUT", "PATCH", "DELETE"],
         allow_headers=["Content-Type", CSRF_HEADER],
     )
+    # Outermost: callers without the proxy secret never reach anything else
+    app.add_middleware(ProxyGateMiddleware)
 
     app.include_router(api_router)
     return app

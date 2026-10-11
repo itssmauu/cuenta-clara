@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field, StringConstraints, model_validator
 
 from app.api.deps import CurrentUser, DbSession
+from app.core import rate_limit
 from app.core.config import get_settings
 from app.schemas.common import InputModel
 from app.services import assistant as assistant_service
@@ -62,7 +63,9 @@ def get_assistant_model() -> assistant_service.AssistantModel | None:
 
 @lru_cache
 def get_rate_limiter() -> assistant_service.RateLimiter:
-    return assistant_service.RateLimiter(get_settings().assistant_messages_per_hour)
+    return assistant_service.RateLimiter(
+        get_settings().assistant_messages_per_hour, rate_limit.shared_storage
+    )
 
 
 Model = Annotated[assistant_service.AssistantModel | None, Depends(get_assistant_model)]

@@ -494,3 +494,34 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 - uvicorn ya no envía la cabecera `Server`.
 
 **Consecuencia.** En producción hace falta un proxy HTTPS delante de la app web, que de todos modos es obligatorio para las cookies `Secure`. `TRUSTED_PROXY_HOPS` debe coincidir con el número real de proxies: uno de más vuelve a dejar que el cliente elija su IP. Ver `docs/deploy.md`.
+
+## D-067 · Desplegar en Vercel: dos proyectos, secreto compartido y contadores en Redis
+
+**Contexto.** El objetivo es publicar en Vercel. Allí:
+
+- La API corre como funciones y cada petición puede caer en una instancia distinta, con su propia memoria.
+- La API tiene una URL pública propia.
+- Vercel reescribe `X-Forwarded-For`, así que la API solo vería la IP de la app web.
+
+**Decisión.**
+
+- **Dos proyectos de Vercel del mismo repositorio:** `frontend/` (Next.js) y `backend/` (FastAPI, detectado por `app/main.py`). Base de datos en Neon y contadores en Upstash Redis, ambos del Marketplace.
+- **Puerta con secreto.** El proxy de la app web (`proxy.ts`) añade `X-Proxy-Secret` y `X-Client-IP`, esta última tomada de `x-real-ip` de Vercel. Antes borra cualquier valor que haya mandado el cliente. La API responde `404` a todo lo que no traiga el secreto (`ProxyGateMiddleware`), salvo `/health`, y con secreto usa `X-Client-IP` para los límites.
+- **Contadores compartidos.** `RATE_LIMIT_STORAGE_URI` (o `REDIS_URL`) para los límites por IP, por correo y de Balbo. Por defecto sigue siendo `memory://`.
+- **Fallo seguro.** En producción sobre Vercel, la API no arranca sin Redis o sin el secreto.
+- **Base de datos alojada.**
+  - Las URLs `postgres://` se convierten a psycopg 3.
+  - Sin prepared statements en el servidor, porque se rompen tras el pooler de Neon.
+  - `pool_recycle` de 5 minutos.
+- **Migraciones.** Se aplican con un workflow manual de GitHub Actions (`migrate.yml`) o a mano. Vercel no las ejecuta.
+- **Dependabot.** Abre PRs semanales con actualizaciones de dependencias de pip, npm y GitHub Actions, y mensuales para las imágenes Docker.
+
+**Alternativas descartadas.**
+
+- API en un servidor aparte (Render, Railway): otro proveedor más, cuando Vercel ya ejecuta FastAPI.
+- Límites guardados en Postgres: más código propio. Redis es lo que `slowapi` y `limits` ya soportan.
+
+**Verificación.** Se simuló en local, con el secreto y `VERCEL=1`:
+
+- **Prueba de seguridad:** 36/36. La API directa da `404`, y la IP falsificada o el `X-Client-IP` que manda el cliente no esquivan el límite.
+- **E2E:** 41/41 a través del proxy.

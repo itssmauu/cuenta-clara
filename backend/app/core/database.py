@@ -9,8 +9,16 @@ from app.core.config import get_settings
 
 @lru_cache
 def get_engine() -> Engine:
-    # pool_pre_ping drops dead connections (e.g. after a DB restart) instead of failing a request
-    return create_engine(str(get_settings().database_url), pool_pre_ping=True)
+    return create_engine(
+        str(get_settings().database_url),
+        # Drop dead connections (e.g. after a DB restart) instead of failing a request
+        pool_pre_ping=True,
+        # Serverless instances sleep and hosted databases close idle connections
+        pool_recycle=300,
+        # No server-side prepared statements: they break behind transaction poolers
+        # such as PgBouncer (Neon's "-pooler" URLs)
+        connect_args={"prepare_threshold": None},
+    )
 
 
 @lru_cache

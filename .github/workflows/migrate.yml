@@ -1,0 +1,37 @@
+name: Migrate production database
+
+# Vercel runs the API as functions, so nothing applies migrations on deploy (the Docker
+# image does it at start-up). Run this by hand from the Actions tab before deploying a
+# change that adds a migration.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  migrate:
+    name: alembic upgrade head
+    runs-on: ubuntu-latest
+    # Lets you require an approval in Settings › Environments › production
+    environment: production
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install the API
+        run: pip install .
+
+      - name: Apply migrations
+        run: alembic upgrade head
+        env:
+          # The database's direct (non-pooler) URL, stored as a secret of the environment
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          # Required to load the settings; migrations never sign anything with it
+          JWT_SECRET_KEY: migrations-only-never-used-to-sign-tokens
