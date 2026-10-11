@@ -38,6 +38,12 @@ services:
       EMAIL_RATE_LIMIT: ${EMAIL_RATE_LIMIT:-10/hour}
       MAX_FAILED_LOGINS: ${MAX_FAILED_LOGINS:-5}
       LOCKOUT_MINUTES: ${LOCKOUT_MINUTES:-15}
+      # Password recovery emails (empty = recovery unavailable)
+      SMTP_HOST: ${SMTP_HOST:-}
+      SMTP_PORT: ${SMTP_PORT:-587}
+      SMTP_USERNAME: ${SMTP_USERNAME:-}
+      SMTP_PASSWORD: ${SMTP_PASSWORD:-}
+      SMTP_FROM: ${SMTP_FROM:-}
       # Balbo, the assistant: optional (empty key = assistant off)
       GEMINI_API_KEY: ${GEMINI_API_KEY:-}
       GEMINI_MODEL: ${GEMINI_MODEL:-gemini-3.5-flash-lite}

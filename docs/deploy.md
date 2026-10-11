@@ -51,6 +51,11 @@ Guárdalos solo en Vercel (y en un gestor de contraseñas). Nunca en el reposito
    | `PROXY_SECRET` | el generado en el paso 1 |
    | `FRONTEND_ORIGIN` | `https://<dominio de la app web>` |
    | `GEMINI_API_KEY` | opcional (Balbo) |
+   | `SMTP_HOST` | `smtp.gmail.com` (o el de tu proveedor) |
+   | `SMTP_PORT` | `587` |
+   | `SMTP_USERNAME` | el correo que envía los códigos |
+   | `SMTP_PASSWORD` | su **contraseña de aplicación** (ver «Correo para recuperar contraseñas») |
+   | `SMTP_FROM` | `Cuenta Clara <ese-correo@gmail.com>` |
 
 4. En **Settings › Functions**, pon la región de la API en la misma región que la base de Neon. Así cada consulta no cruza el continente.
 
@@ -129,6 +134,7 @@ Internet ──HTTPS──▶ proxy HTTPS (Caddy, nginx o la plataforma)
 | `COOKIE_SECURE` | `true` | Ya es el valor por defecto. |
 | `TRUSTED_PROXY_HOPS` | normalmente `1` | Cuántos proxies delante añaden la IP del visitante. Ver abajo. |
 | `GEMINI_API_KEY` | opcional | Sin ella, Balbo aparece como no disponible. Con el plan gratuito, Google puede usar los datos (la Política de privacidad lo dice). |
+| `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | el correo que envía los códigos | Sin ellos no hay recuperación de contraseña. Ver «Correo para recuperar contraseñas». |
 | `NEXT_PUBLIC_PRIVACY_EMAIL` | tu correo de privacidad | Se lee **al compilar** el frontend (build arg). |
 | `API_INTERNAL_URL` | dirección interna de la API | También se lee al compilar. En Compose es `http://backend:8000`. |
 
@@ -176,8 +182,23 @@ Los límites de intentos de login y registro van por IP. Next.js reenvía la cab
   Si todos son `401`, `TRUSTED_PROXY_HOPS` es demasiado alto.
 - **Backups.** Programa copias diarias de PostgreSQL (`pg_dump`) fuera del servidor y prueba a restaurar una al menos una vez.
 
+## Correo para recuperar contraseñas
+
+La recuperación de contraseña envía un código de 6 números por correo. Sirve cualquier proveedor SMTP. Lo más simple es una cuenta de Gmail creada solo para esto:
+
+1. Crea la cuenta, por ejemplo `cuentaclara.soporte@gmail.com`. No uses tu correo personal.
+2. Activa la **Verificación en dos pasos** en https://myaccount.google.com/security.
+3. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords con el nombre «Cuenta Clara». Google muestra 16 letras: esa es `SMTP_PASSWORD`. No es la contraseña normal de la cuenta, y se puede revocar en cualquier momento.
+4. Configura las variables `SMTP_*` (tabla de arriba): en Vercel en el proyecto de la **API**, y en local en tu `.env`.
+5. Prueba: en `/recuperar-contrasena`, pide un código para tu propia cuenta. Si no llega, revisa spam y los logs de la API («Password reset email failed»).
+
+Ten en cuenta:
+
+- **Límite de Gmail:** unos 500 correos al día, de sobra para empezar.
+- **Para que no caigan en spam con más usuarios,** usa un dominio propio con un servicio de envío (Brevo, Resend, Amazon SES). Basta cambiar las variables `SMTP_*`.
+- **Sin `SMTP_*` configurado,** la página de recuperación dice que no está disponible. En desarrollo, los correos se escriben en el log de la API en vez de enviarse.
+
 ## Limitaciones conocidas
 
-- **No hay recuperación de contraseña.** Necesita envío de correo, que la API todavía no tiene. Quien la olvide no puede recuperar su cuenta.
 - **Límites de intentos en memoria:** se reinician si se reinicia la API y no sirven con varias réplicas.
 - **Revisión legal:** los textos de las páginas legales deberían pasar por un abogado antes del lanzamiento (D-064).

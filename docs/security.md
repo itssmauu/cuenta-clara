@@ -116,6 +116,31 @@ Exentos: `login` y `register`, que crean la sesión y por eso aún no hay cookie
   - El proxy reenvía `X-Forwarded-For` sin tocarlo. La API solo confía en las entradas que añadieron los proxies propios (`TRUSTED_PROXY_HOPS`, sección 3).
 - **Fuentes self-hosted** con `next/font`: ninguna petición a terceros al cargar la página.
 
+### Recuperación de contraseña
+
+- **Código de 6 números por correo**, en vez de un enlace, porque algunos filtros de correo "abren" los enlaces y gastarían un token de un solo uso.
+- **El código:**
+  - Se genera con `secrets` y se guarda como HMAC-SHA256 con la clave del servidor. Con solo la tabla no se pueden probar offline el millón de códigos.
+  - Vence a los 15 minutos, admite 5 intentos fallidos y sirve una vez. Pedir uno nuevo borra los anteriores.
+- **Fuerza bruta:**
+  - 3 códigos por hora por correo y 5 por IP.
+  - La verificación tiene los límites del login (5 por minuto por IP y 10 por hora por correo).
+  - En total, unas 15 adivinanzas por hora sobre un millón de códigos.
+- **Sin enumeración:**
+  - `forgot` responde siempre lo mismo y tarda al menos 3 segundos (`PASSWORD_RESET_MIN_SECONDS`), exista o no la cuenta, y aunque falle el envío.
+  - `reset` da el mismo `400` para correo desconocido, código incorrecto, vencido o usado.
+  - Los casos que fallan hacen el mismo trabajo de hash que uno real.
+- **Al cambiarla:**
+  - Se revocan todos los refresh tokens.
+  - Los access tokens emitidos antes del cambio dejan de valer (`password_changed_at`).
+  - Se levanta el bloqueo temporal.
+  - Se avisa por correo «Tu contraseña cambió».
+- **La nueva contraseña** pasa la misma política que en el registro.
+- **Los correos** son texto y HTML sin imágenes ni rastreadores. El nombre del usuario va escapado. SMTP con STARTTLS (puerto 587) o TLS (465), con certificado verificado.
+- **Los endpoints no requieren CSRF,** porque no hay sesión todavía. Forzar un `forgot` solo manda un correo al dueño.
+
+Cubierto por `tests/test_password_reset.py`, `RecoverPasswordForm.test.tsx` y la E2E.
+
 ## 8. Secretos y logs
 
 - Toda la configuración sale de variables de entorno (`app/core/config.py`). `JWT_SECRET_KEY` es obligatoria y debe tener al menos 32 caracteres.

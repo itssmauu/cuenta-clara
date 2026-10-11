@@ -63,6 +63,8 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `POST` | `/api/v1/auth/refresh` | Rota la sesión (requiere `X-CSRF-Token`) |
 | `POST` | `/api/v1/auth/logout` | Revoca la sesión y borra las cookies (requiere `X-CSRF-Token`) |
 | `GET` | `/api/v1/auth/me` | Usuario de la sesión actual, con `terms_accepted` (si aceptó la versión vigente) |
+| `POST` | `/api/v1/auth/password/forgot` | Envía por correo un código de 6 números. Siempre `202` con el mismo mensaje (y al menos 3 s), exista o no la cuenta. `503` si no hay SMTP configurado |
+| `POST` | `/api/v1/auth/password/reset` | `email`, `code` y `new_password`. Cambia la contraseña y cierra todas las sesiones (`204`). `400` si el código no sirve; `422` si la contraseña es débil |
 | `POST` | `/api/v1/me/consent` | Acepta la versión vigente de los Términos y la Política de privacidad. Cuerpo: `terms_version` |
 | `GET` | `/api/v1/me/export` | Todos los datos del usuario en JSON (derecho de acceso y portabilidad), sin hashes ni tokens |
 | `POST` | `/api/v1/me/delete` | Elimina la cuenta y todos sus datos. Cuerpo: `password`. Borra las cookies (`204`) |

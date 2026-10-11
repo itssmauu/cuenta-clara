@@ -23,6 +23,7 @@ Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la s
 
 - **Página de inicio** que explica la app, con animaciones y demos interactivas.
 - **Registro e inicio de sesión** con una proyección animada y requisitos de contraseña en vivo.
+- **Recuperación de contraseña** con un código de 6 números enviado por correo.
 - **Onboarding** guiado: tus cuentas, gastos fijos, ingresos y límite.
 - **Dashboard:**
   - tu saldo, lo que ingresaste y lo que gastaste en el periodo;

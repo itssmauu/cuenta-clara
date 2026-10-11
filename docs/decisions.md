@@ -525,3 +525,36 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 
 - **Prueba de seguridad:** 36/36. La API directa da `404`, y la IP falsificada o el `X-Client-IP` que manda el cliente no esquivan el límite.
 - **E2E:** 41/41 a través del proxy.
+
+## D-068 · Recuperar la contraseña con un código enviado por correo
+
+**Contexto.** Sin recuperación, quien olvidaba su contraseña perdía su cuenta y su historial. Hace falta enviar correos, y la app no tenía cómo.
+
+**Decisión.**
+
+- **SMTP genérico con la librería estándar** (`smtplib`). Sirve con Gmail y su contraseña de aplicación, Outlook, Brevo, Resend, SES… sin dependencias ni atarse a un proveedor. Vercel permite SMTP saliente.
+- **Código de 6 números en vez de enlace.**
+  - Los filtros corporativos y los antivirus "abren" los enlaces y gastarían un token de un solo uso.
+  - Un código funciona aunque se lea el correo en otro dispositivo.
+  - Es lo que el usuario espera ("código de verificación").
+- **Seguridad** (detalle en `docs/security.md`):
+  - El código se guarda como HMAC.
+  - Vence en 15 minutos, admite 5 intentos y sirve una vez.
+  - Hay límites por IP y por correo, y respuestas que no delatan qué cuentas existen, ni por contenido ni por tiempo.
+  - Al cambiar la contraseña se cierran todas las sesiones, incluidos los access tokens vivos (`users.password_changed_at`), y se avisa por correo.
+- **Respuesta con duración mínima, no envío en segundo plano.** Python en Vercel no documenta cómo seguir trabajando después de responder. Por eso `forgot` envía en la misma petición y siempre tarda al menos 3 segundos.
+- **Sin SMTP configurado:**
+  - En producción, `503` («no está disponible»).
+  - En desarrollo, el correo se escribe en el log para poder probar.
+- **Política de privacidad, versión 2026-10-11.** Ahora informa del proveedor de correo y de los códigos de recuperación, así que los usuarios la aceptan de nuevo al entrar.
+
+**Alternativas descartadas.**
+
+- Enlace con token: se consume con los escáneres de correo.
+- SDK de un proveedor (Resend, SendGrid): una dependencia más, cuando SMTP sirve para todos.
+- Preguntas de seguridad: son inseguras y ya nadie las recomienda.
+
+**Verificación.**
+
+- **En el navegador real:** se pidió el código y se leyó del log de desarrollo. Con él, se cambió la contraseña y se entró al dashboard.
+- **Después del cambio:** la contraseña vieja da `401`, reusar el código da `400` y salió el aviso «Tu contraseña cambió».
