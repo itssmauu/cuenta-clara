@@ -37,7 +37,7 @@ jobs:
       # Throwaway CI-only credentials for the service container above
       TEST_DATABASE_URL: postgresql+psycopg://test:test@localhost:5432/cuentaclara_test
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
@@ -67,7 +67,7 @@ jobs:
       run:
         working-directory: frontend
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-node@v5
         with:
@@ -105,7 +105,7 @@ jobs:
     name: Infra (docker compose + E2E)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7
 
       - name: Create .env from example
         run: cp .env.example .env
