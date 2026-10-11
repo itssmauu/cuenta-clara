@@ -126,7 +126,10 @@ test.describe("public pages", () => {
     // Never says whether the account exists: any email gets the same answer
     await page.getByLabel("Correo electrónico").fill(uniqueEmail("nadie"));
     await page.getByRole("button", { name: "Enviarme un código" }).click();
-    await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeFocused();
+    // The API always takes a few seconds here, so timing never reveals who has an account
+    await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeFocused({
+      timeout: 15_000,
+    });
     await expectAccessible(page);
 
     await page.getByLabel("Código de 6 números").fill("123456");
