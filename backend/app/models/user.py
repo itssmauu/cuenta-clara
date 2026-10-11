@@ -22,6 +22,8 @@ class User(IdMixin, TimestampMixin, Base):
     # Proof of consent (Ley 81): which version of the Terms and Privacy Policy, and when
     terms_version: Mapped[str | None] = mapped_column(String(20))
     terms_accepted_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
+    # Access tokens issued before this moment stop working (set by a password reset)
+    password_changed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
 
     # Temporary lockout after repeated failed logins (see services/auth.py)
     failed_login_attempts: Mapped[int] = mapped_column(Integer, server_default="0")
