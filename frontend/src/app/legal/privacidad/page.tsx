@@ -225,9 +225,9 @@ const sections: LegalSection[] = [
       <p>
         Si activas a Balbo, tu pregunta y el resumen de tus finanzas se procesan en servidores de
         Google, que pueden estar fuera de Panamá (por ejemplo, en Estados Unidos). Los proveedores
-        de alojamiento y de correo electrónico también pueden estar fuera del país. Al activar Balbo das tu consentimiento
-        expreso a esa transferencia, y solo trabajamos con proveedores que ofrecen garantías de
-        seguridad adecuadas.
+        de alojamiento y de correo electrónico también pueden estar fuera del país. Al activar Balbo
+        das tu consentimiento expreso a esa transferencia, y solo trabajamos con proveedores que
+        ofrecen garantías de seguridad adecuadas.
       </p>
     ),
   },
@@ -244,8 +244,8 @@ const sections: LegalSection[] = [
           <strong>Sesiones:</strong> caducan a los 7 días o cuando cierras sesión.
         </li>
         <li>
-          <strong>Códigos de recuperación:</strong> vencen a los 15 minutos y se borran al usarlos
-          o al pedir uno nuevo.
+          <strong>Códigos de recuperación:</strong> vencen a los 15 minutos y se borran al usarlos o
+          al pedir uno nuevo.
         </li>
         <li>
           <strong>Conversaciones con Balbo:</strong> no las guardamos; desaparecen al cerrar o
