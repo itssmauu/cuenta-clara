@@ -1,6 +1,6 @@
 # Despliegue a producción
 
-Guía para publicar Cuenta Clara de forma segura. Las razones de cada punto están en `docs/security.md` y en las decisiones D-064 a D-067.
+Guía para publicar Cuenta Clara de forma segura. Las razones de cada punto están en `docs/security.md` y en las decisiones D-064 a D-069.
 
 Hay dos formas de hacerlo:
 
@@ -9,55 +9,55 @@ Hay dos formas de hacerlo:
 
 ## En Vercel
 
-Son **dos proyectos de Vercel del mismo repositorio**: la app web (`frontend/`) y la API (`backend/`). Se les suman una base de datos Postgres (Neon) y un Redis (Upstash), ambos gratis desde el Marketplace de Vercel.
+Es **un solo proyecto de Vercel con dos servicios**, definidos en `vercel.json` en la raíz del repositorio:
+
+| Servicio | Carpeta | Qué atiende |
+| --- | --- | --- |
+| `backend` | `backend/` (FastAPI) | `/api/*`, la API |
+| `frontend` | `frontend/` (Next.js) | todo lo demás, las páginas |
 
 ```
-navegador ──▶ web (Next.js en Vercel) ──/api/*──▶ API (FastAPI en Vercel) ──▶ Neon (Postgres)
-                  añade X-Client-IP                 solo responde si trae          └─▶ Upstash (Redis)
-                  y X-Proxy-Secret                  el secreto correcto
+navegador ──▶ tu-dominio ──/api/*──▶ backend (FastAPI) ──▶ Neon (Postgres)
+                     │                                  └─▶ Upstash (Redis)
+                     └──/*──────▶ frontend (Next.js)
 ```
 
-Por qué hacen falta Redis y el secreto:
+- **Un solo dominio.** Las cookies de sesión son de primera parte y no hace falta CORS.
+- **Sin bindings.** Ningún servicio llama a otro: el navegador llama a `/api/*` y Vercel lo envía directo al backend.
+- **La IP real.** Vercel reescribe `X-Forwarded-For` con la IP del visitante y descarta la que mande el cliente. Por eso `TRUSTED_PROXY_HOPS=1` es exacto.
+- **Redis es obligatorio.** Cada petición puede caer en una instancia distinta, así que los contadores de intentos (login, registro, recuperación, Balbo) viven en Upstash.
+- **Fallo seguro.** Con `APP_ENV=production` en Vercel, la API **no arranca** sin Redis o sin `TRUSTED_PROXY_HOPS`.
 
-- **Redis.** En Vercel cada petición puede caer en una instancia distinta. Los contadores de intentos (login, registro, Balbo) tienen que estar en un sitio compartido.
-- **El secreto.** Vercel reescribe `X-Forwarded-For`, así que la API solo vería la IP de la app web.
-  - La app web le pasa la IP real del visitante, que toma de Vercel y nunca del cliente.
-  - Firma cada petición con un secreto que solo conocen las dos.
-  - Sin el secreto, la API responde `404` a todo. Así nadie puede saltarse la app web ni inventarse una IP.
-- **Fallo seguro.** Con `APP_ENV=production` en Vercel, la API **no arranca** si falta Redis o el secreto.
-
-### 1. Genera los secretos (en tu computadora)
+### 1. Genera la clave de sesión (en tu computadora)
 
 ```bash
-python -c "import secrets; print('JWT_SECRET_KEY=' + secrets.token_urlsafe(48)); print('PROXY_SECRET=' + secrets.token_urlsafe(48))"
+python -c "import secrets; print(secrets.token_urlsafe(48))"
 ```
 
-Guárdalos solo en Vercel (y en un gestor de contraseñas). Nunca en el repositorio ni en un chat.
+Ese valor es `JWT_SECRET_KEY`. Guárdalo solo en Vercel (y en un gestor de contraseñas), nunca en el repositorio ni en un chat.
 
-### 2. Proyecto de la API
+### 2. Crea el proyecto
 
-1. En Vercel: **Add New › Project**, importa el repositorio y en **Root Directory** elige `backend`. Vercel detecta FastAPI (`app/main.py`).
+1. En Vercel: **Add New › Project**, importa el repositorio y deja **Root Directory** en la raíz. Vercel lee `vercel.json` y crea los dos servicios.
 2. En **Storage** (Marketplace), crea y conecta al proyecto:
    - **Neon (Postgres).** Usa la URL con `-pooler` como `DATABASE_URL`. Las URLs `postgres://` se aceptan tal cual.
    - **Upstash (Redis).** Usa su URL `rediss://…` como `RATE_LIMIT_STORAGE_URI` (también vale `REDIS_URL`).
-3. En **Settings › Environment Variables**, solo para **Production**:
+3. En **Settings › Environment Variables**, solo para **Production**. Las comparten los dos servicios:
 
    | Variable | Valor |
    | --- | --- |
    | `APP_ENV` | `production` |
    | `DATABASE_URL` | la de Neon (con `-pooler`) |
    | `RATE_LIMIT_STORAGE_URI` | la de Upstash (`rediss://…`) |
-   | `JWT_SECRET_KEY` | el generado en el paso 1 |
-   | `PROXY_SECRET` | el generado en el paso 1 |
-   | `FRONTEND_ORIGIN` | `https://<dominio de la app web>` |
+   | `JWT_SECRET_KEY` | la del paso 1 |
+   | `TRUSTED_PROXY_HOPS` | `1` |
+   | `FRONTEND_ORIGIN` | `https://<tu dominio>` |
+   | `NEXT_PUBLIC_PRIVACY_EMAIL` | el correo de contacto, p. ej. `cuenta_clara@outlook.com` |
+   | `SMTP_HOST` / `SMTP_PORT` / `SMTP_USERNAME` / `SMTP_PASSWORD` / `SMTP_FROM` | el servicio de correo (ver «Correo para recuperar contraseñas») |
    | `GEMINI_API_KEY` | opcional (Balbo) |
-   | `SMTP_HOST` | `smtp.gmail.com` (o el de tu proveedor) |
-   | `SMTP_PORT` | `587` |
-   | `SMTP_USERNAME` | el correo que envía los códigos |
-   | `SMTP_PASSWORD` | su **contraseña de aplicación** (ver «Correo para recuperar contraseñas») |
-   | `SMTP_FROM` | `Cuenta Clara <ese-correo@gmail.com>` |
 
-4. En **Settings › Functions**, pon la región de la API en la misma región que la base de Neon. Así cada consulta no cruza el continente.
+   **No hacen falta** en este montaje: `API_INTERNAL_URL`, `PROXY_SECRET` ni `API_PROXY_SECRET`.
+4. En **Settings › Functions**, pon la región en la misma que la base de Neon. Así cada consulta no cruza el continente.
 
 ### 3. Crea las tablas
 
@@ -73,33 +73,25 @@ Vercel no aplica migraciones al desplegar. Hazlo antes del primer deploy y cada 
   DATABASE_URL="<url directa de Neon>" JWT_SECRET_KEY=solo-migraciones-no-firma-nada-xxxxx alembic upgrade head
   ```
 
-### 4. Proyecto de la app web
+### 4. Despliega y protege
 
-1. **Add New › Project** con el mismo repositorio, y **Root Directory** `frontend`. Vercel detecta Next.js.
-2. Variables, solo para **Production**:
-
-   | Variable | Valor |
-   | --- | --- |
-   | `API_INTERNAL_URL` | `https://<proyecto-de-la-api>.vercel.app` |
-   | `API_PROXY_SECRET` | **el mismo** valor que `PROXY_SECRET` de la API |
-   | `NEXT_PUBLIC_PRIVACY_EMAIL` | tu correo para temas de privacidad |
-
-   Si falta `API_INTERNAL_URL`, el build falla a propósito, para no publicar una app que no llega a su API.
-3. Despliega. Si el dominio final cambia (por ejemplo, uno propio), actualiza `FRONTEND_ORIGIN` en la API y vuelve a desplegarla.
-
-### 5. Previews y protección
-
-- **Variables solo en Production.** Así un deploy de prueba (preview) nunca toca la base real.
-- **Deployment Protection.** Actívala para los previews (**Settings › Deployment Protection**).
+- **Despliega.** Si cambias el dominio (por ejemplo, a uno propio), actualiza `FRONTEND_ORIGIN` y vuelve a desplegar.
+- **Variables solo en Production.** Así un deploy de prueba (preview) nunca toca la base real. Activa **Deployment Protection** para los previews.
 - **Plan Hobby.** Es para uso no comercial. Si Cuenta Clara va a cobrar o tener fines comerciales, hace falta el plan Pro.
 - **Firewall.** Si algún día hay un ataque, Vercel ofrece **Attack Challenge Mode** en Firewall.
+- **Probar en local.** `vercel dev` arranca los dos servicios juntos, como en producción.
 
-### 6. Comprueba que todo está en su sitio
+### 5. Comprueba que todo está en su sitio
 
-- `https://<web>/api/v1/health` responde `200`.
-- `https://<api>.vercel.app/api/v1/auth/me` responde **`404`**: la API no atiende a nadie más que a la app web.
-- Crear una cuenta, iniciar sesión, completar el onboarding y responder "¿Ya pagaste?" funciona.
-- La prueba de IP falsificada de más abajo da `429` antes del 7.º intento, apuntando a `https://<web>`.
+- `https://<dominio>/api/v1/health` responde `200`.
+- `https://<dominio>/api/v1/docs` responde `404`: la documentación de la API no se publica en producción.
+- Crear una cuenta, iniciar sesión, completar el onboarding, responder «¿Ya pagaste?» y recuperar la contraseña funciona.
+- La prueba de IP falsificada de más abajo da `429` antes del 7.º intento.
+
+**Alternativa: dos proyectos separados** (la API con su propia URL). Si alguna vez se necesita, el código lo soporta:
+
+- Se configura `PROXY_SECRET` en la API, y `API_PROXY_SECRET` y `API_INTERNAL_URL` en la web.
+- La API solo responde a peticiones firmadas por la web y toma la IP de `X-Client-IP` (D-067).
 
 ## En un servidor propio (Docker Compose)
 
@@ -189,7 +181,7 @@ La recuperación de contraseña envía un código de 6 números por correo. Sirv
 1. Crea la cuenta, por ejemplo `cuentaclara.soporte@gmail.com`. No uses tu correo personal.
 2. Activa la **Verificación en dos pasos** en https://myaccount.google.com/security.
 3. Crea una **contraseña de aplicación** en https://myaccount.google.com/apppasswords con el nombre «Cuenta Clara». Google muestra 16 letras: esa es `SMTP_PASSWORD`. No es la contraseña normal de la cuenta, y se puede revocar en cualquier momento.
-4. Configura las variables `SMTP_*` (tabla de arriba): en Vercel en el proyecto de la **API**, y en local en tu `.env`.
+4. Configura las variables `SMTP_*` (tabla de arriba): en las variables del proyecto en Vercel y, en local, en tu `.env`.
 5. Prueba que puede enviar, sin mostrar la contraseña a nadie:
 
    ```bash
