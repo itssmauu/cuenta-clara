@@ -55,6 +55,24 @@ class Settings(BaseSettings):
     max_failed_logins: int = Field(default=5, ge=1)
     lockout_minutes: int = Field(default=15, ge=1)
 
+    # ── Email (password recovery) ───────────────────────
+    # Any SMTP provider. Gmail: smtp.gmail.com, 587, the address and an app password.
+    # Without it, password recovery reports itself as unavailable (in development the
+    # emails are printed to the log instead).
+    smtp_host: str = ""
+    smtp_port: int = Field(default=587, ge=1, le=65535)
+    smtp_username: str = ""
+    smtp_password: SecretStr | None = None
+    # Shown as the sender, e.g. "Cuenta Clara <cuentaclara.soporte@gmail.com>"
+    smtp_from: str = ""
+    password_reset_code_minutes: int = Field(default=15, ge=5, le=60)
+    # Per IP and per email address, for asking for a code
+    password_reset_rate_limit: str = "5/hour"  # noqa: S105 - a rate, not a password
+    password_reset_email_rate_limit: str = "3/hour"  # noqa: S105 - a rate, not a password
+    # "Forgot password" always takes at least this long, so the response time does not
+    # reveal whether an email was sent (that is, whether the account exists)
+    password_reset_min_seconds: float = Field(default=3.0, ge=0, le=10)
+
     # ── Assistant (Balbo) ───────────────────────────────
     # Gemini API key. Without it the assistant reports itself as unavailable.
     # Server-side only: it never reaches the browser.

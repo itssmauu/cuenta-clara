@@ -13,7 +13,15 @@ CSRF_COOKIE = "csrf_token"
 CSRF_HEADER = "X-CSRF-Token"
 SAFE_METHODS = frozenset({"GET", "HEAD", "OPTIONS"})
 # Endpoints that start a session: there is no CSRF cookie yet when they are called
-CSRF_EXEMPT_PATHS = frozenset({"/api/v1/auth/login", "/api/v1/auth/register"})
+CSRF_EXEMPT_PATHS = frozenset(
+    {
+        "/api/v1/auth/login",
+        "/api/v1/auth/register",
+        # Password recovery: by definition there is no session (nor CSRF cookie) yet
+        "/api/v1/auth/password/forgot",
+        "/api/v1/auth/password/reset",
+    }
+)
 
 # The API only returns JSON, so it never needs to load scripts, styles or frames
 API_CSP = "default-src 'none'; frame-ancestors 'none'"

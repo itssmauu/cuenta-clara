@@ -5,6 +5,7 @@ from app.models.category import Category
 from app.models.enums import AccountKind, Frequency, TransactionType
 from app.models.fixed_expense import FixedExpense, FixedExpenseCheckIn
 from app.models.income import Income
+from app.models.password_reset import PasswordResetCode
 from app.models.refresh_token import RefreshToken
 from app.models.savings_goal import SavingsGoal
 from app.models.transaction import Transaction
@@ -21,6 +22,7 @@ __all__ = [
     "FixedExpenseCheckIn",
     "Frequency",
     "Income",
+    "PasswordResetCode",
     "RefreshToken",
     "SavingsGoal",
     "Transaction",

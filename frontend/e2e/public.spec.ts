@@ -120,6 +120,27 @@ test.describe("public pages", () => {
     await expect(page).toHaveURL(/\/register$/);
   });
 
+  test("a forgotten password can be recovered with an emailed code", async ({ page }) => {
+    await page.goto("/login");
+    await page.getByRole("link", { name: "¿Olvidaste tu contraseña?" }).click();
+    // Never says whether the account exists: any email gets the same answer
+    await page.getByLabel("Correo electrónico").fill(uniqueEmail("nadie"));
+    await page.getByRole("button", { name: "Enviarme un código" }).click();
+    // The API always takes a few seconds here, so timing never reveals who has an account
+    await expect(page.getByRole("heading", { name: "Revisa tu correo" })).toBeFocused({
+      timeout: 15_000,
+    });
+    await expectAccessible(page);
+
+    await page.getByLabel("Código de 6 números").fill("123456");
+    await page.getByLabel("Contraseña nueva", { exact: true }).fill(PASSWORD);
+    await page.getByLabel("Confirmar contraseña nueva").fill(PASSWORD);
+    await page.getByRole("button", { name: "Cambiar contraseña" }).click();
+    await expect(
+      page.getByRole("alert").filter({ hasText: "El código no es válido o ya venció" }),
+    ).toBeVisible();
+  });
+
   test("unknown pages show a friendly 404", async ({ page }) => {
     const response = await page.goto("/no-existe");
 

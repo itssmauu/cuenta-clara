@@ -30,6 +30,8 @@ os.environ["APP_ENV"] = "test"
 os.environ.setdefault("JWT_SECRET_KEY", "test-only-secret-key-with-at-least-32-characters")
 # Many tests register several users from the same "IP"; the login limit stays at its default
 os.environ.setdefault("REGISTER_RATE_LIMIT", "1000/minute")
+# "Forgot password" pads its response time; tests do not need to wait for it
+os.environ.setdefault("PASSWORD_RESET_MIN_SECONDS", "0")
 
 from alembic import command  # noqa: E402
 from alembic.config import Config  # noqa: E402

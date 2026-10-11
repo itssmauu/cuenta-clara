@@ -1,6 +1,7 @@
+import time
 from typing import Annotated
 
-from fastapi import APIRouter, Cookie, HTTPException, Request, Response, status
+from fastapi import APIRouter, Cookie, Depends, HTTPException, Request, Response, status
 from fastapi.responses import JSONResponse
 
 from app.api.cookies import REFRESH_COOKIE, clear_session_cookies, set_session_cookies
@@ -8,19 +9,34 @@ from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
 from app.core.rate_limit import check_email_rate_limit, limiter
 from app.schemas.auth import (
+    ForgotPasswordRequest,
     LoginRequest,
     MessageResponse,
     RegisterRequest,
+    ResetPasswordRequest,
     UserOut,
     WeakPasswordResponse,
 )
 from app.services import auth as auth_service
+from app.services import password_reset
+from app.services.mailer import Mailer, mailer_from_settings
 
 router = APIRouter(prefix="/auth", tags=["auth"])
 
 REGISTER_MESSAGE = "Si los datos son válidos, tu cuenta está lista. Inicia sesión para continuar."
 INVALID_CREDENTIALS = "Correo o contraseña incorrectos, o la cuenta está bloqueada temporalmente."
 INVALID_SESSION = "Tu sesión expiró. Inicia sesión de nuevo."
+FORGOT_MESSAGE = (
+    "Si hay una cuenta con ese correo, te enviamos un código. Revisa también la carpeta de spam."
+)
+
+
+def get_mailer() -> Mailer | None:
+    """The configured mailer, or None if email is not set up (tests replace this)."""
+    return mailer_from_settings(get_settings())
+
+
+MailerDep = Annotated[Mailer | None, Depends(get_mailer)]
 
 
 def _user_agent(request: Request) -> str | None:
@@ -93,6 +109,60 @@ def logout(
 ) -> None:
     auth_service.end_session(db, refresh_token)
     clear_session_cookies(response)
+
+
+# ── Forgotten password ──────────────────────────────────
+
+
+@router.post(
+    "/password/forgot",
+    status_code=status.HTTP_202_ACCEPTED,
+    response_model=MessageResponse,
+    responses={429: {"model": MessageResponse}, 503: {"model": MessageResponse}},
+)
+@limiter.limit(lambda: get_settings().password_reset_rate_limit)
+def forgot_password(
+    request: Request, body: ForgotPasswordRequest, db: DbSession, mailer: MailerDep
+) -> MessageResponse:
+    """Email a 6-digit code. The answer, and how long it takes, never reveal who has an account."""
+    if mailer is None:
+        raise password_reset.RecoveryUnavailableError
+    settings = get_settings()
+    check_email_rate_limit("password-reset", body.email, settings.password_reset_email_rate_limit)
+    started = time.monotonic()
+    password_reset.request_code(db, mailer, email=body.email)
+    remaining = settings.password_reset_min_seconds - (time.monotonic() - started)
+    if remaining > 0:
+        time.sleep(remaining)
+    return MessageResponse(message=FORGOT_MESSAGE)
+
+
+@router.post(
+    "/password/reset",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_model=None,
+    responses={
+        400: {"model": MessageResponse},
+        422: {"model": WeakPasswordResponse},
+        429: {"model": MessageResponse},
+    },
+)
+@limiter.limit(lambda: get_settings().login_rate_limit)
+def reset_password(
+    request: Request, body: ResetPasswordRequest, db: DbSession, mailer: MailerDep
+) -> JSONResponse | None:
+    """Set a new password with the emailed code; every open session is closed."""
+    check_email_rate_limit("password-reset-code", body.email, get_settings().email_rate_limit)
+    try:
+        password_reset.reset_password(
+            db, mailer, email=body.email, code=body.code, new_password=body.new_password
+        )
+    except auth_service.WeakPasswordError as exc:
+        return JSONResponse(
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+            content={"detail": "La contraseña no es segura.", "problems": exc.problems},
+        )
+    return None
 
 
 @router.get("/me", response_model=UserOut, responses={401: {"model": MessageResponse}})

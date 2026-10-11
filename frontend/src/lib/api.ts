@@ -11,7 +11,13 @@ const API_PREFIX = "/api/v1";
 const CSRF_COOKIE = "csrf_token";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
 // These start or renew a session themselves: never retry them through a refresh
-const NO_REFRESH_PATHS = new Set(["/auth/login", "/auth/register", "/auth/refresh"]);
+const NO_REFRESH_PATHS = new Set([
+  "/auth/login",
+  "/auth/register",
+  "/auth/refresh",
+  "/auth/password/forgot",
+  "/auth/password/reset",
+]);
 
 export type User = { id: string; email: string; name: string; terms_accepted: boolean };
 
@@ -109,4 +115,10 @@ export const authApi = {
     request<User>("/auth/login", { method: "POST", body: data }),
   logout: () => request<void>("/auth/logout", { method: "POST" }),
   me: () => request<User>("/auth/me"),
+  /** Emails a 6-digit code if the account exists; the answer is the same either way */
+  forgotPassword: (email: string) =>
+    request<{ message: string }>("/auth/password/forgot", { method: "POST", body: { email } }),
+  /** Sets a new password with the code; every open session is closed */
+  resetPassword: (data: { email: string; code: string; new_password: string }) =>
+    request<void>("/auth/password/reset", { method: "POST", body: data }),
 };

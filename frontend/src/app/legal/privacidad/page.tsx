@@ -90,6 +90,11 @@ const sections: LegalSection[] = [
             <strong>Consentimientos:</strong> qué versión de estos documentos aceptaste y cuándo, y
             si activaste a Balbo y cuándo.
           </li>
+          <li>
+            <strong>Recuperación de contraseña:</strong> si la pides, un código de 6 números que
+            guardamos cifrado durante 15 minutos como máximo, y la fecha del último cambio de
+            contraseña (para cerrar las sesiones anteriores).
+          </li>
         </ul>
       </>
     ),
@@ -127,6 +132,10 @@ const sections: LegalSection[] = [
         <li>Generar los reportes CSV o PDF que descargues.</li>
         <li>Responder tus preguntas con Balbo, solo si lo activas.</li>
         <li>Detectar y prevenir accesos indebidos y abusos del servicio.</li>
+        <li>
+          Enviarte correos de seguridad: el código para recuperar tu contraseña y el aviso de que
+          cambió. No enviamos publicidad ni boletines.
+        </li>
       </ul>
     ),
   },
@@ -195,6 +204,10 @@ const sections: LegalSection[] = [
             usarlos para eso.
           </li>
           <li>
+            <strong>El proveedor de correo electrónico</strong> con el que enviamos los correos de
+            seguridad (por ejemplo, Google Gmail). Solo recibe tu correo, tu nombre y el mensaje.
+          </li>
+          <li>
             <strong>Google LLC</strong>, como proveedor de Gemini, solo si activas a Balbo y en los
             términos del punto anterior.
           </li>
@@ -212,9 +225,9 @@ const sections: LegalSection[] = [
       <p>
         Si activas a Balbo, tu pregunta y el resumen de tus finanzas se procesan en servidores de
         Google, que pueden estar fuera de Panamá (por ejemplo, en Estados Unidos). Los proveedores
-        de alojamiento también pueden estar fuera del país. Al activar Balbo das tu consentimiento
-        expreso a esa transferencia, y solo trabajamos con proveedores que ofrecen garantías de
-        seguridad adecuadas.
+        de alojamiento y de correo electrónico también pueden estar fuera del país. Al activar Balbo
+        das tu consentimiento expreso a esa transferencia, y solo trabajamos con proveedores que
+        ofrecen garantías de seguridad adecuadas.
       </p>
     ),
   },
@@ -229,6 +242,10 @@ const sections: LegalSection[] = [
         </li>
         <li>
           <strong>Sesiones:</strong> caducan a los 7 días o cuando cierras sesión.
+        </li>
+        <li>
+          <strong>Códigos de recuperación:</strong> vencen a los 15 minutos y se borran al usarlos o
+          al pedir uno nuevo.
         </li>
         <li>
           <strong>Conversaciones con Balbo:</strong> no las guardamos; desaparecen al cerrar o
