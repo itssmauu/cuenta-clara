@@ -1,11 +1,11 @@
 # ── Dependencies ────────────────────────────────────────
-FROM node:24-alpine AS deps
+FROM node:25-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci
 
 # ── Build ───────────────────────────────────────────────
-FROM node:24-alpine AS build
+FROM node:25-alpine AS build
 WORKDIR /app
 # next.config.ts is read at build time: the API address is baked into the rewrites
 ARG API_INTERNAL_URL=http://backend:8000
@@ -19,7 +19,7 @@ COPY . .
 RUN npm run build
 
 # ── Runtime: only the standalone server, as an unprivileged user ──
-FROM node:24-alpine AS runner
+FROM node:25-alpine AS runner
 WORKDIR /app
 ENV NODE_ENV=production \
     NEXT_TELEMETRY_DISABLED=1 \
