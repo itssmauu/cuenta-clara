@@ -38,6 +38,13 @@ export const loginSchema = z.object({
   password: z.string().min(1, { error: "Escribe tu contraseña." }),
 });
 
+const newPassword = z
+  .string()
+  .max(PASSWORD_MAX, { error: `La contraseña puede tener hasta ${PASSWORD_MAX} caracteres.` })
+  .refine((p) => PASSWORD_RULES.every((rule) => rule.test(p)), {
+    error: "La contraseña aún no cumple todos los requisitos.",
+  });
+
 export const registerSchema = z
   .object({
     name: z
@@ -46,12 +53,7 @@ export const registerSchema = z
       .min(1, { error: "Escribe tu nombre." })
       .max(100, { error: "Tu nombre puede tener hasta 100 caracteres." }),
     email,
-    password: z
-      .string()
-      .max(PASSWORD_MAX, { error: `La contraseña puede tener hasta ${PASSWORD_MAX} caracteres.` })
-      .refine((p) => PASSWORD_RULES.every((rule) => rule.test(p)), {
-        error: "La contraseña aún no cumple todos los requisitos.",
-      }),
+    password: newPassword,
     confirmPassword: z.string().min(1, { error: "Repite tu contraseña." }),
     // Consent must be an explicit, unticked-by-default choice (Ley 81 de 2019)
     acceptTerms: z.boolean().refine((accepted) => accepted, {
@@ -63,5 +65,25 @@ export const registerSchema = z
     path: ["confirmPassword"],
   });
 
+export const forgotPasswordSchema = z.object({ email });
+
+export const resetPasswordSchema = z
+  .object({
+    // Spaces are forgiven ("123 456" as some mail apps show it)
+    code: z
+      .string()
+      .transform((value) => value.replace(/\s/g, ""))
+      .pipe(z.string().regex(/^\d{6}$/, { error: "Escribe los 6 números del código." })),
+    password: newPassword,
+    confirmPassword: z.string().min(1, { error: "Repite tu contraseña." }),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    error: "Las contraseñas no coinciden.",
+    path: ["confirmPassword"],
+  });
+
 export type LoginValues = z.infer<typeof loginSchema>;
+export type ForgotPasswordValues = z.infer<typeof forgotPasswordSchema>;
+export type ResetPasswordInput = z.input<typeof resetPasswordSchema>;
+export type ResetPasswordValues = z.output<typeof resetPasswordSchema>;
 export type RegisterValues = z.infer<typeof registerSchema>;
