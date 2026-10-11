@@ -77,6 +77,20 @@ class DeleteAccountRequest(BaseModel):
     password: Password
 
 
+class ForgotPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: NormalizedEmail
+
+
+class ResetPasswordRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    email: NormalizedEmail
+    code: Annotated[str, StringConstraints(strip_whitespace=True, pattern=r"^\d{6}$")]
+    new_password: Password
+
+
 class MessageResponse(BaseModel):
     message: str
 
