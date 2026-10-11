@@ -1,14 +1,18 @@
 """Forgotten password: a 6-digit code by email, then a new password."""
 
 import re
+import smtplib
+import socket
 import time
 from collections.abc import Iterator
 from datetime import UTC, datetime, timedelta
 
 import pytest
 from fastapi.testclient import TestClient
+from pydantic import SecretStr
 from sqlalchemy import select, update
 
+from app import mail_check
 from app.api.auth import FORGOT_MESSAGE, get_mailer
 from app.core.config import get_settings
 from app.core.database import get_sessionmaker
@@ -331,3 +335,53 @@ def test_smtp_uses_tls_and_signs_in(
     assert server.message["From"] == "Cuenta Clara <bot@example.com>"
     assert server.message["To"] == "ana@example.com"
     assert server.message["Message-ID"].endswith("@example.com>")
+
+
+# ── python -m app.mail_check ────────────────────────────
+
+
+@pytest.mark.parametrize(
+    ("error", "hint"),
+    [
+        (
+            smtplib.SMTPAuthenticationError(535, b"5.7.139 basic authentication is disabled"),
+            "Outlook",
+        ),
+        (
+            smtplib.SMTPAuthenticationError(535, b"5.7.8 Username and Password not accepted"),
+            "16 letras",
+        ),
+        (socket.gaierror("no such host"), "SMTP_HOST"),
+    ],
+)
+def test_mail_check_explains_common_failures(error: Exception, hint: str) -> None:
+    assert hint in mail_check.explain(error)
+
+
+def test_mail_check_reports_missing_settings(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    monkeypatch.setattr(get_settings(), "smtp_host", "")
+
+    assert mail_check.main(["mail_check", "ana@example.com"]) == 1
+    assert "SMTP_HOST" in capsys.readouterr().out
+
+
+def test_mail_check_sends_a_test_email_without_printing_the_password(
+    monkeypatch: pytest.MonkeyPatch, capsys: pytest.CaptureFixture[str]
+) -> None:
+    FakeSMTP.instances.clear()
+    monkeypatch.setattr(mailer_module.smtplib, "SMTP", FakeSMTP)
+    settings = get_settings()
+    monkeypatch.setattr(settings, "smtp_host", "smtp.gmail.com")
+    monkeypatch.setattr(settings, "smtp_port", 587)
+    monkeypatch.setattr(settings, "smtp_username", "bot@gmail.com")
+    monkeypatch.setattr(settings, "smtp_password", SecretStr("abcd efgh ijkl mnop"))
+    monkeypatch.setattr(settings, "smtp_from", "Cuenta Clara <bot@gmail.com>")
+
+    assert mail_check.main(["mail_check", "ana@example.com"]) == 0
+
+    [server] = FakeSMTP.instances
+    assert server.calls == ["starttls", "login:bot@gmail.com", "send", "quit"]
+    output = capsys.readouterr().out
+    assert "Enviado" in output and "abcd" not in output
