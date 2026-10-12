@@ -256,3 +256,15 @@ export const contributionSchema = z
 export type GoalForm = z.input<typeof goalSchema>;
 export type GoalValues = z.output<typeof goalSchema>;
 export type ContributionForm = z.input<typeof contributionSchema>;
+
+// A ceiling no personal budget gets near (the API enforces the same one)
+export const MAX_BUDGET = 1_000_000;
+
+export const budgetSchema = z.object({
+  amount: money({ allowZero: false }).refine((value) => Number(value) <= MAX_BUDGET, {
+    error: "El presupuesto puede ser de hasta $1,000,000.",
+  }),
+});
+
+export type BudgetForm = z.input<typeof budgetSchema>;
+export type BudgetValues = z.output<typeof budgetSchema>;
