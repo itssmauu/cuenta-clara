@@ -141,7 +141,7 @@ SAFE_ON_VERCEL = {"rate_limit_storage_uri": "rediss://h:6379", "proxy_secret": S
     "missing",
     ["rate_limit_storage_uri", "proxy_secret"],
 )
-def test_vercel_production_needs_shared_counters_and_the_proxy_secret(
+def test_vercel_production_needs_shared_counters_and_a_trusted_ip(
     monkeypatch: pytest.MonkeyPatch, missing: str
 ) -> None:
     monkeypatch.setenv("DATABASE_URL", VALID_URL)
@@ -152,6 +152,21 @@ def test_vercel_production_needs_shared_counters_and_the_proxy_secret(
         Settings(_env_file=None, **(PRODUCTION | values))  # type: ignore[arg-type]
 
     Settings(_env_file=None, **(PRODUCTION | SAFE_ON_VERCEL))  # type: ignore[arg-type]
+
+
+def test_vercel_services_trust_vercels_own_forwarded_for(monkeypatch: pytest.MonkeyPatch) -> None:
+    """One project (vercel.json services): no proxy secret, one trusted hop (Vercel)."""
+    monkeypatch.setenv("DATABASE_URL", VALID_URL)
+    monkeypatch.setenv("VERCEL", "1")
+
+    settings = Settings(
+        _env_file=None,
+        **PRODUCTION,  # type: ignore[arg-type]
+        rate_limit_storage_uri="rediss://h:6379",
+        trusted_proxy_hops=1,
+    )
+
+    assert settings.proxy_secret is None
 
 
 def test_an_empty_proxy_secret_means_none(monkeypatch: pytest.MonkeyPatch) -> None:

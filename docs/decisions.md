@@ -561,3 +561,21 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 
 - **En el navegador real:** se pidió el código y se leyó del log de desarrollo. Con él, se cambió la contraseña y se entró al dashboard.
 - **Después del cambio:** la contraseña vieja da `401`, reusar el código da `400` y salió el aviso «Tu contraseña cambió».
+
+## D-069 · Vercel como un solo proyecto con dos servicios
+
+**Contexto.** D-067 desplegaba la web y la API como dos proyectos de Vercel. La API tenía una URL pública propia, así que hacía falta un secreto compartido para que solo la web pudiera llamarla y para pasarle la IP del visitante. Vercel Services permite tener ambos en un solo proyecto, con un dominio y variables compartidas.
+
+**Decisión.**
+
+- **`vercel.json` en la raíz con dos servicios:** `backend` (`backend/`, FastAPI) y `frontend` (`frontend/`, Next.js). Las rutas públicas son `/api/*` hacia `backend` y el resto hacia `frontend`. El backend recibe la ruta original (`/api/v1/…`), que coincide con sus rutas.
+- **Sin bindings.** Ningún servicio llama a otro. El navegador llama a `/api/*` en el mismo dominio y el servidor de Next.js nunca consulta la API.
+- **IP del visitante.** Vercel reescribe `X-Forwarded-For` con la IP real, así que basta `TRUSTED_PROXY_HOPS=1`. En Vercel, la API exige `TRUSTED_PROXY_HOPS ≥ 1` o `PROXY_SECRET`, además de Redis.
+- **Next.js** ya no reescribe `/api` en Vercel, porque lo enruta la plataforma, ni exige `API_INTERNAL_URL` al compilar.
+- **El modo de dos proyectos de D-067** (`PROXY_SECRET`) sigue soportado como alternativa.
+
+**Consecuencias.**
+
+- Un dominio y un solo lugar para las variables.
+- No hacen falta `API_INTERNAL_URL`, `PROXY_SECRET` ni `API_PROXY_SECRET`.
+- `vercel dev` arranca los dos servicios juntos para probar en local.
