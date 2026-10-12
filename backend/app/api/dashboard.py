@@ -35,7 +35,7 @@ AccountParam = Annotated[
 ]
 
 
-def _cadence(period: str | None, fallback: Cadence) -> Cadence:
+def cadence_from_param(period: str | None, fallback: Cadence) -> Cadence:
     return Cadence(Frequency(period)) if period else fallback
 
 
@@ -50,7 +50,7 @@ def get_dashboard(
     finance = dashboard_service.load_user_finance(db, user, reference_date)
     ids, single = finance.resolve(account)
     data, settings = finance.data_for(ids), finance.settings
-    cadence = _cadence(period, data.limit_cadence)
+    cadence = cadence_from_param(period, data.limit_cadence)
     result = projections.build_dashboard(data, cadence, reference_date or date.today())
 
     return DashboardOut(
@@ -138,7 +138,7 @@ def get_forecast(
     account: AccountParam = None,
 ) -> ForecastOut:
     data, settings, single = dashboard_service.load_finance_data(db, user, account, reference_date)
-    cadence = _cadence(period, data.limit_cadence)
+    cadence = cadence_from_param(period, data.limit_cadence)
     forecast = projections.build_forecast(
         data, cadence, reference_date or date.today(), periods, estimator=estimator
     )

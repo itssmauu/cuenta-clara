@@ -165,13 +165,21 @@ def balance_at_end_of(data: FinanceData, day: date) -> Decimal:
     return money(data.initial_balance + totals(data, Period(data.balance_as_of, day)).net)
 
 
+def convert_amount(amount: Decimal, source: Cadence, target: Cadence) -> Decimal:
+    """An amount per `source` period expressed per `target` period, by average length.
+
+    A month counts as 30.4375 days, so $304.38/month ≈ $70.00/week.
+    """
+    if target == source:
+        return money(amount)
+    return money(amount * target.average_days / source.average_days)
+
+
 def limit_for(data: FinanceData, cadence: Cadence) -> Decimal | None:
     """The spending limit converted to another period length (e.g. monthly → weekly)."""
     if data.spending_limit is None:
         return None
-    if cadence == data.limit_cadence:
-        return money(data.spending_limit)
-    return money(data.spending_limit * cadence.average_days / data.limit_cadence.average_days)
+    return convert_amount(data.spending_limit, data.limit_cadence, cadence)
 
 
 # ── Dashboard ───────────────────────────────────────────
@@ -305,16 +313,30 @@ class ForecastPeriod:
         )
 
 
+def complete_periods(
+    data: FinanceData, cadence: Cadence, current: Period, *, max_periods: int
+) -> list[Period]:
+    """The last periods before `current` that were fully tracked, oldest first.
+
+    A period that started before `balance_as_of` is only partly recorded and would drag
+    averages down, so the history stops there.
+    """
+    periods: list[Period] = []
+    period = cadence.previous(current)
+    while len(periods) < max_periods and period.start >= data.balance_as_of:
+        periods.insert(0, period)
+        period = cadence.previous(period)
+    return periods
+
+
 def variable_spending_history(
     data: FinanceData, cadence: Cadence, current: Period, *, max_periods: int
 ) -> list[Decimal]:
     """Variable spending of the last fully tracked periods, oldest first."""
-    samples: list[Decimal] = []
-    period = cadence.previous(current)
-    while len(samples) < max_periods and period.start >= data.balance_as_of:
-        samples.insert(0, totals(data, period).variable_expenses)
-        period = cadence.previous(period)
-    return samples
+    return [
+        totals(data, period).variable_expenses
+        for period in complete_periods(data, cadence, current, max_periods=max_periods)
+    ]
 
 
 def average_variable_spending(
