@@ -35,7 +35,7 @@ export function SiteFooter() {
   return (
     <footer className="text-muted flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-10 text-sm font-semibold">
       <p>
-        © {new Date().getFullYear()} {LEGAL.service} · Responsable: {LEGAL.owner}
+        © {new Date().getFullYear()} {LEGAL.service} · Hecho en Panamá
       </p>
       <div className="flex flex-wrap items-center gap-x-5">
         <LegalLinks />

@@ -32,7 +32,7 @@ export function LegalFooter() {
   return (
     <footer className="text-muted flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-6 text-sm font-semibold">
       <p>
-        © {new Date().getFullYear()} {LEGAL.service} · Responsable: {LEGAL.owner}, {LEGAL.country}
+        © {new Date().getFullYear()} {LEGAL.service} · Hecho en Panamá
       </p>
       <LegalLinks />
     </footer>
