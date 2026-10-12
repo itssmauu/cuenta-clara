@@ -232,6 +232,38 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
+  test("sets a budget per category, sees it fill up and removes it", async () => {
+    const nav = page.getByRole("navigation", { name: "Principal" });
+    await nav.getByRole("link", { name: "Presupuesto" }).click();
+    await expect(page.getByRole("heading", { name: "Por categoría" })).toBeVisible();
+    await expectAccessible(page);
+
+    await page.getByRole("button", { name: "Poner presupuesto a Ocio" }).click();
+    await page.getByLabel("Presupuesto de Ocio por semana").fill("20");
+    await page.getByRole("button", { name: "Guardar", exact: true }).click();
+    const bar = page.getByRole("progressbar", { name: "Presupuesto de Ocio" });
+    await expect(bar).toHaveAttribute("aria-valuenow", "0");
+    await expect(page.getByText("Vas bien · 0.00 %")).toBeVisible();
+
+    // Spend on it, then come back: the bar fills and the words change too
+    await nav.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("button", { name: "Añadir movimiento" }).click();
+    const dialog = page.getByRole("dialog", { name: "Añadir movimiento" });
+    await dialog.getByLabel("Monto").fill("18");
+    await dialog.getByLabel("Categoría").selectOption({ label: "Ocio" });
+    await dialog.getByRole("button", { name: "Guardar movimiento" }).click();
+    await expect(dialog).toBeHidden();
+    await nav.getByRole("link", { name: "Presupuesto" }).click();
+    await expect(bar).toHaveAttribute("aria-valuenow", "90");
+    await expect(page.getByText("Cerca del tope · 90.00 %")).toBeVisible();
+    await expect(page.getByText(/\$18\.00 de \$20\.00 · te quedan \$2\.00/)).toBeVisible();
+    await expectAccessible(page);
+
+    await page.getByRole("button", { name: "Quitar el presupuesto de Ocio" }).click();
+    await expect(page.getByText("Quitaste el presupuesto de Ocio.")).toBeVisible();
+    await expect(bar).toBeHidden();
+  });
+
   test("Balbo opens from the round button on any page and is accessible", async () => {
     await page
       .getByRole("navigation", { name: "Principal" })
