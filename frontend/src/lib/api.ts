@@ -7,6 +7,8 @@
  * `csrf_token` cookie and copies it into the `X-CSRF-Token` header.
  */
 
+import { clearSessionStart, markSessionStart } from "./session-clock";
+
 const API_PREFIX = "/api/v1";
 const CSRF_COOKIE = "csrf_token";
 const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
@@ -111,9 +113,15 @@ export async function request<T>(path: string, options: RequestOptions = {}): Pr
 export const authApi = {
   register: (data: { name: string; email: string; password: string; accept_terms: boolean }) =>
     request<{ message: string }>("/auth/register", { method: "POST", body: data }),
-  login: (data: { email: string; password: string }) =>
-    request<User>("/auth/login", { method: "POST", body: data }),
-  logout: () => request<void>("/auth/logout", { method: "POST" }),
+  login: async (data: { email: string; password: string }) => {
+    const user = await request<User>("/auth/login", { method: "POST", body: data });
+    markSessionStart(); // the session timer at the top right starts here
+    return user;
+  },
+  logout: async () => {
+    clearSessionStart();
+    await request<void>("/auth/logout", { method: "POST" });
+  },
   me: () => request<User>("/auth/me"),
   /** Emails a 6-digit code if the account exists; the answer is the same either way */
   forgotPassword: (email: string) =>
