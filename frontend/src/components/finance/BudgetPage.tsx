@@ -1,6 +1,6 @@
 "use client";
 
-import { AlertTriangle, PiggyBank, Sparkles } from "lucide-react";
+import { AlertTriangle, PiggyBank, Plus, Sparkles } from "lucide-react";
 import { useState, type FormEvent } from "react";
 
 import { PageHeader } from "@/components/app/PageHeader";
@@ -12,6 +12,7 @@ import {
   periodRange,
 } from "@/components/dashboard/period-labels";
 import { buttonClass } from "@/components/ui/button";
+import { Dialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
@@ -32,6 +33,7 @@ import { formatMoney, todayISO } from "@/lib/format";
 import { notifyDataChanged, useResource } from "@/lib/use-resource";
 
 import { AccountPicker } from "./accounts-ui";
+import { NewBudgetCategoryForm } from "./NewBudgetCategory";
 
 /** Status in words: the bar's color is never the only signal */
 export const STATUS_TEXT: Record<BudgetStatus, string> = {
@@ -67,6 +69,7 @@ export function BudgetPage() {
   const [suggestions, setSuggestions] = useState<Suggestions | null>(null);
   const [suggesting, setSuggesting] = useState(false);
   const [suggestError, setSuggestError] = useState<string | null>(null);
+  const [adding, setAdding] = useState(false);
 
   const [summary, reload] = useResource(`budgets:${period}:${account ?? "primary"}:${today}`, () =>
     financeApi.getBudgets(period, today, account),
@@ -171,16 +174,26 @@ export function BudgetPage() {
                   .
                 </p>
               </div>
-              <button
-                type="button"
-                onClick={() => void suggest()}
-                disabled={suggesting}
-                aria-busy={suggesting}
-                className={buttonClass("ghost", "md", "border-line border-2")}
-              >
-                <Sparkles aria-hidden="true" className="size-4" />
-                {suggesting ? "Calculando…" : "Sugerir según mi promedio"}
-              </button>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setAdding(true)}
+                  className={buttonClass("ink")}
+                >
+                  <Plus aria-hidden="true" className="size-4" />
+                  Añadir categoría
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void suggest()}
+                  disabled={suggesting}
+                  aria-busy={suggesting}
+                  className={buttonClass("ghost", "md", "border-line border-2")}
+                >
+                  <Sparkles aria-hidden="true" className="size-4" />
+                  {suggesting ? "Calculando…" : "Sugerir según mi promedio"}
+                </button>
+              </div>
             </div>
             {suggestError ? <FormAlert title={suggestError} /> : null}
 
@@ -188,7 +201,7 @@ export function BudgetPage() {
               <EmptyState
                 icon={PiggyBank}
                 title="Aún no tienes presupuestos"
-                text={`Elige cuánto quieres gastar por ${PERIOD_NOUN[data.income_period]} en una categoría con «Poner presupuesto», o pide una sugerencia basada en lo que sueles gastar.`}
+                text={`Elige cuánto quieres gastar por ${PERIOD_NOUN[data.income_period]} en una categoría con «Poner presupuesto», crea una nueva con «Añadir categoría» o pide una sugerencia basada en lo que sueles gastar.`}
               />
             ) : null}
 
@@ -204,6 +217,22 @@ export function BudgetPage() {
                 />
               ))}
             </ul>
+
+            <Dialog
+              open={adding}
+              onClose={() => setAdding(false)}
+              title="Nueva categoría"
+              description="Queda guardada en tus categorías: podrás elegirla al registrar cualquier gasto."
+            >
+              <NewBudgetCategoryForm
+                incomePeriod={data.income_period}
+                onCancel={() => setAdding(false)}
+                onSaved={(message) => {
+                  setAdding(false);
+                  saved(message);
+                }}
+              />
+            </Dialog>
 
             <p className="border-line text-body flex flex-wrap justify-between gap-2 border-t pt-4 text-sm">
               <span className="font-bold">Gasto sin presupuesto (incluye «Sin categoría»)</span>

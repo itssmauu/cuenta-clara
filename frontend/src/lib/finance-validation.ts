@@ -268,3 +268,12 @@ export const budgetSchema = z.object({
 
 export type BudgetForm = z.input<typeof budgetSchema>;
 export type BudgetValues = z.output<typeof budgetSchema>;
+
+/** A new category created from the budget page, with an optional budget at once. */
+export const budgetCategorySchema = categorySchema.extend({
+  // Empty = no budget yet (it can be set later)
+  amount: z.union([z.literal(""), budgetSchema.shape.amount]),
+});
+
+export type BudgetCategoryForm = z.input<typeof budgetCategorySchema>;
+export type BudgetCategoryValues = z.output<typeof budgetCategorySchema>;
