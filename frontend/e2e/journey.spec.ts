@@ -262,6 +262,21 @@ test.describe("a new user's first week", () => {
     await page.getByRole("button", { name: "Quitar el presupuesto de Ocio" }).click();
     await expect(page.getByText("Quitaste el presupuesto de Ocio.")).toBeVisible();
     await expect(bar).toBeHidden();
+
+    // A category made here is a real one: it can be picked when logging an expense
+    await page.getByRole("button", { name: "Añadir categoría" }).click();
+    const create = page.getByRole("dialog", { name: "Nueva categoría" });
+    await create.getByLabel("Nombre de la categoría").fill("Gimnasio");
+    await create.getByLabel("Presupuesto por semana (opcional)").fill("15");
+    await create.getByRole("button", { name: "Crear categoría" }).click();
+    await expect(page.getByRole("progressbar", { name: "Presupuesto de Gimnasio" })).toBeVisible();
+    await nav.getByRole("link", { name: "Dashboard" }).click();
+    await page.getByRole("button", { name: "Añadir movimiento" }).click();
+    const expense = page.getByRole("dialog", { name: "Añadir movimiento" });
+    await expect(
+      expense.getByLabel("Categoría").getByRole("option", { name: "Gimnasio" }),
+    ).toBeAttached();
+    await expense.getByRole("button", { name: "Cancelar" }).click();
   });
 
   test("Balbo opens from the round button on any page and is accessible", async () => {

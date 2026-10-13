@@ -198,6 +198,83 @@ describe("BudgetPage", () => {
     expect(save).toHaveBeenCalledWith("c-fun", "18.00");
   });
 
+  it("creates a new category with its budget, usable everywhere", async () => {
+    const user = userEvent.setup();
+    const create = vi.spyOn(financeApi, "createCategory").mockResolvedValue({
+      id: "c-gym",
+      name: "Gimnasio",
+      color: "#5b4bdb",
+      is_default: false,
+    });
+    const save = vi.spyOn(financeApi, "setBudget").mockResolvedValue({
+      category_id: "c-gym",
+      amount: "25",
+      income_period: "weekly",
+    });
+    const changed = vi.fn();
+    window.addEventListener("cuenta-clara:data-changed", changed);
+    await renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Añadir categoría" }));
+    const dialog = screen.getByRole("dialog", { name: "Nueva categoría" });
+    expect(dialog).toHaveTextContent("podrás elegirla al registrar cualquier gasto");
+    await user.type(within(dialog).getByLabelText("Nombre de la categoría"), "Gimnasio");
+    await user.type(within(dialog).getByLabelText("Presupuesto por semana (opcional)"), "25");
+    await user.click(within(dialog).getByRole("button", { name: "Crear categoría" }));
+
+    expect(create).toHaveBeenCalledWith({ name: "Gimnasio", color: expect.any(String) });
+    expect(save).toHaveBeenCalledWith("c-gym", "25");
+    expect(
+      await screen.findByText("Categoría «Gimnasio» creada con su presupuesto."),
+    ).toBeInTheDocument();
+    // Every page with a category picker refreshes, so it is available right away
+    expect(changed).toHaveBeenCalled();
+    window.removeEventListener("cuenta-clara:data-changed", changed);
+  });
+
+  it("can create the category without a budget yet", async () => {
+    const user = userEvent.setup();
+    vi.spyOn(financeApi, "createCategory").mockResolvedValue({
+      id: "c-pets",
+      name: "Mascotas",
+      color: "#5b4bdb",
+      is_default: false,
+    });
+    const save = vi.spyOn(financeApi, "setBudget");
+    await renderPage();
+
+    await user.click(screen.getByRole("button", { name: "Añadir categoría" }));
+    const dialog = screen.getByRole("dialog", { name: "Nueva categoría" });
+    await user.type(within(dialog).getByLabelText("Nombre de la categoría"), "Mascotas");
+    await user.click(within(dialog).getByRole("button", { name: "Crear categoría" }));
+
+    expect(save).not.toHaveBeenCalled();
+    expect(
+      await screen.findByText("Categoría «Mascotas» creada. Ya puedes usarla en tus gastos."),
+    ).toBeInTheDocument();
+  });
+
+  it("explains a repeated name and checks the amount before creating anything", async () => {
+    const user = userEvent.setup();
+    const create = vi
+      .spyOn(financeApi, "createCategory")
+      .mockRejectedValue(new ApiError(409, "Ya tienes una categoría con ese nombre."));
+    await renderPage();
+    await user.click(screen.getByRole("button", { name: "Añadir categoría" }));
+    const dialog = screen.getByRole("dialog", { name: "Nueva categoría" });
+
+    await user.type(within(dialog).getByLabelText("Nombre de la categoría"), "Comida");
+    await user.type(within(dialog).getByLabelText("Presupuesto por semana (opcional)"), "-3");
+    await user.click(within(dialog).getByRole("button", { name: "Crear categoría" }));
+    expect(create).not.toHaveBeenCalled();
+
+    await user.clear(within(dialog).getByLabelText("Presupuesto por semana (opcional)"));
+    await user.click(within(dialog).getByRole("button", { name: "Crear categoría" }));
+    expect(await within(dialog).findByRole("alert")).toHaveTextContent(
+      "Ya tienes una categoría con ese nombre.",
+    );
+  });
+
   it("switches the period shown", async () => {
     const user = userEvent.setup();
     await renderPage();
