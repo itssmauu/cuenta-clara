@@ -458,7 +458,7 @@ Las poses cambian con transiciones suaves. Con movimiento reducido el robot qued
   - Sin responder: no cuenta todavía.
 
   Los pagos futuros no se preguntan y la predicción los sigue esperando.
-- **Sin cambiar el pasado.** Cada gasto fijo tiene `confirm_from`. Los pagos anteriores a esa fecha cuentan solos, como antes. Para los gastos que ya existían, es el día de la migración; para los nuevos, el día en que se crean.
+- **Sin cambiar el pasado.** Cada gasto fijo tiene `confirm_from`. Los pagos anteriores a esa fecha cuentan solos, como antes. Para los gastos que ya existían, es el día de la migración; para los nuevos, el día en que se crean **según la fecha local del usuario** (`?date=`, aceptada dentro de ±1 día de UTC). Con la fecha UTC del servidor, un gasto creado después de las 7 p. m. en Panamá se saltaba la pregunta de ese día y se descontaba solo.
 - **Una sola regla para todo.** Las fechas que no cuentan se quitan en `Recurring.dates_in`, así que el saldo de las cuentas, el dashboard, la predicción, los reportes y Balbo dan las mismas cifras.
 - **"Más tarde"** cierra la pregunta y deja un aviso arriba de cada página con un botón "Revisar". Al día siguiente vuelve a preguntar.
 - **Seguridad.**

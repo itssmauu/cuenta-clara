@@ -84,6 +84,18 @@ def latest_allowed_day(today: date) -> date:
     return min(today, clock.utc_today() + timedelta(days=1))
 
 
+def local_today(client_day: date | None) -> date:
+    """The user's "today": their local date if sent, kept within a day of UTC's.
+
+    Every timezone is within a day of UTC, so this only drops nonsense. In Panama (UTC−5)
+    it is still the 12th at 8 p.m. while UTC is already on the 13th.
+    """
+    utc = clock.utc_today()
+    if client_day is None:
+        return utc
+    return min(max(client_day, utc - timedelta(days=1)), utc + timedelta(days=1))
+
+
 @dataclass(frozen=True)
 class PendingExpense:
     expense: FixedExpense
