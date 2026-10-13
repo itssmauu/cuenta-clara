@@ -596,6 +596,7 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
   - Cada barra es un `progressbar` con su `aria-valuetext`, y el estado también va escrito: el color nunca es la única señal.
   - Cuando los presupuestos superan el límite aparece un aviso con `role="status"`.
 - **Balbo** recibe los presupuestos y su estado. Esa línea solo se agrega si hay alguno.
+- **«Añadir categoría» desde Presupuesto** crea una categoría propia normal (`POST /categories`) y, si se indica, su presupuesto. Queda en el sistema como cualquier otra: aparece al registrar gastos y gastos fijos y en Configuración, sin crearla dos veces. Un nombre repetido da `409`, y el monto se valida antes de crear nada.
 - **La exportación de datos** los incluye.
 
 **Sin dependencias nuevas.** Las peticiones `PUT`/`DELETE` siguen las reglas de los demás CRUD: sesión y CSRF, sin límite de frecuencia propio (solo login, registro, recuperación y borrado de cuenta lo tienen).
