@@ -35,6 +35,7 @@ import {
 } from "@/lib/finance-validation";
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { AccountIcon, accountName, accountOptions, kindLabel } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
@@ -190,7 +191,7 @@ export function AccountsPage() {
                 }
               />
             ) : (
-              <div className="overflow-x-auto">
+              <ScrollRegion label="Tabla de transferencias">
                 <table className="w-full min-w-[560px] border-collapse text-sm">
                   <caption className="sr-only">Movimientos entre cuentas, del más reciente</caption>
                   <thead>
@@ -248,7 +249,7 @@ export function AccountsPage() {
                     })}
                   </tbody>
                 </table>
-              </div>
+              </ScrollRegion>
             )}
           </section>
         </div>

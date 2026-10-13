@@ -14,6 +14,7 @@ import { financeApi, incomePayload, type Income } from "@/lib/finance-api";
 import { FREQUENCY_LABELS } from "@/lib/finance-validation";
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { IncomeDialog } from "./RecurringDialogs";
 import { accountName } from "./accounts-ui";
@@ -109,7 +110,7 @@ export function IncomesPage() {
             action={addButton}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Tabla de ingresos">
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr>
@@ -171,7 +172,7 @@ export function IncomesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <p className="text-muted text-[13px]">
           Pausar un ingreso lo excluye de los cálculos (también de periodos pasados) sin borrarlo.

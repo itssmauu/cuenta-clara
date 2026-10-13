@@ -117,7 +117,7 @@ export function RegisterForm() {
             type="checkbox"
             aria-invalid={errors.acceptTerms ? true : undefined}
             aria-describedby={errors.acceptTerms ? "acceptTerms-error" : undefined}
-            className="accent-primary mt-0.5 size-5 shrink-0 cursor-pointer"
+            className="accent-primary mt-0.5 size-6 shrink-0 cursor-pointer"
             {...register("acceptTerms")}
           />
           <label htmlFor="acceptTerms" className="text-body text-sm leading-relaxed">

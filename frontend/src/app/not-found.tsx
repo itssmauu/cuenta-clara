@@ -9,7 +9,9 @@ export const metadata: Metadata = { title: "Página no encontrada" };
 export default function NotFound() {
   return (
     <div className="mx-auto flex min-h-dvh max-w-[720px] flex-col gap-8 px-4 py-6 sm:px-10">
-      <Logo />
+      <header>
+        <Logo />
+      </header>
       <main
         id="contenido"
         tabIndex={-1}

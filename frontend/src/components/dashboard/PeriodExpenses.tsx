@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import type { Category, Transaction } from "@/lib/finance-api";
 import { formatDate, formatMoney } from "@/lib/format";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 type Props = {
   title: string;
@@ -48,7 +49,7 @@ export function PeriodExpenses({ title, transactions, categories, currency, onAd
         </div>
       ) : (
         // Wide table scrolls inside its own box on small screens
-        <div className="overflow-x-auto">
+        <ScrollRegion label="Tabla de gastos del periodo">
           <table className="w-full min-w-[560px] border-collapse text-sm">
             <thead>
               <tr className="text-muted text-left text-xs tracking-[0.06em]">
@@ -101,7 +102,7 @@ export function PeriodExpenses({ title, transactions, categories, currency, onAd
               })}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       )}
     </section>
   );

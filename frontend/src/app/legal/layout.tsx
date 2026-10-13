@@ -9,9 +9,8 @@ export default function LegalLayout({ children }: Readonly<{ children: ReactNode
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[1200px] flex-col gap-8 px-4 py-6 sm:px-10">
       <header className="flex flex-wrap items-center justify-between gap-4">
-        <Link href="/" aria-label="Cuenta Clara, ir al inicio">
-          <Logo />
-        </Link>
+        {/* Logo is already a link home: wrapping it in another link nests <a> in <a> */}
+        <Logo />
         <Link
           href="/"
           className="text-body hover:text-ink inline-flex min-h-11 items-center gap-2 text-sm font-bold"

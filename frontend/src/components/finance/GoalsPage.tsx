@@ -98,6 +98,7 @@ export function GoalsPage() {
       ) : items.length === 0 ? (
         <section className="rounded-[32px] bg-white p-6 sm:p-7">
           <EmptyState
+            headingLevel={2}
             icon={PiggyBank}
             title="Aún no tienes metas de ahorro"
             text="Crea una meta (una laptop, un viaje, un fondo de emergencia) y te diremos cuánto apartar cada periodo para llegar a tiempo."

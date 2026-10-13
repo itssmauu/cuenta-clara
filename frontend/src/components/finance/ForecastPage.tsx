@@ -30,6 +30,7 @@ import {
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { AccountPicker } from "./accounts-ui";
 import { td, th } from "./RowActions";
@@ -272,7 +273,7 @@ export function ForecastPage() {
             <h2 id="forecast-table-title" className="font-display text-xl font-bold">
               Detalle por periodo
             </h2>
-            <div className="overflow-x-auto">
+            <ScrollRegion label="Tabla de predicción por periodo">
               <table className="w-full min-w-[760px] border-collapse text-sm">
                 <thead>
                   <tr>
@@ -341,7 +342,7 @@ export function ForecastPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
           </section>
         </div>
       )}

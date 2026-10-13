@@ -15,6 +15,7 @@ import {
 
 import type { Dashboard } from "@/lib/finance-api";
 import { formatMoney } from "@/lib/format";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { periodRange, periodTick } from "./period-labels";
 
@@ -187,7 +188,7 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
         <summary className="text-primary inline-flex min-h-11 cursor-pointer items-center font-bold">
           Ver los datos como tabla
         </summary>
-        <div className="overflow-x-auto">
+        <ScrollRegion label="Tabla de gasto por periodo">
           <table className="w-full min-w-[360px] border-collapse">
             <caption className="sr-only">Gasto por periodo comparado con el límite</caption>
             <thead>
@@ -221,7 +222,7 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </details>
     </div>
   );

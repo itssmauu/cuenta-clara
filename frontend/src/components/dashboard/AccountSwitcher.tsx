@@ -36,7 +36,7 @@ export function AccountSwitcher({
     <div
       role="group"
       aria-label="Cuenta"
-      className="-mx-1 flex [scrollbar-width:thin] gap-3 overflow-x-auto px-1 pt-1 pb-2"
+      className="relative -mx-1 flex [scrollbar-width:thin] gap-3 overflow-x-auto px-1 pt-1 pb-2"
     >
       {accounts.map((account) => {
         const active = selected === account.id;

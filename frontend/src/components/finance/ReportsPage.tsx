@@ -23,6 +23,7 @@ import {
 import { FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
 import { formatMoney, subtractMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { AccountPicker } from "./accounts-ui";
 import { td, th } from "./RowActions";
@@ -128,18 +129,19 @@ export function ReportsPage() {
             <h2 id="comparison-title" className="font-display text-xl font-bold">
               Este periodo frente a {PREVIOUS_PERIOD_NAME[data.period]}
             </h2>
-            <div className="overflow-x-auto">
+            <ScrollRegion label="Tabla de comparación entre periodos">
               <table className="w-full min-w-[560px] border-collapse text-sm">
                 <thead>
                   <tr>
                     <th scope="col" className={th}>
                       <span className="sr-only">Concepto</span>
                     </th>
-                    <th scope="col" className={`${th} text-right`}>
-                      ANTERIOR ({periodRange(data.previous_period_start, data.previous_period_end)})
-                    </th>
+                    {/* Current first: on a phone it is the column that fits without scrolling */}
                     <th scope="col" className={`${th} text-right`}>
                       ACTUAL ({periodRange(data.period_start, data.period_end)})
+                    </th>
+                    <th scope="col" className={`${th} text-right`}>
+                      ANTERIOR ({periodRange(data.previous_period_start, data.previous_period_end)})
                     </th>
                     <th scope="col" className={`${th} text-right`}>
                       DIFERENCIA
@@ -160,10 +162,10 @@ export function ReportsPage() {
                       <th scope="row" className={`${td} text-left font-bold`}>
                         {label}
                       </th>
-                      <td className={`${td} text-right tabular-nums`}>{money(previous!)}</td>
                       <td className={`${td} text-right font-bold tabular-nums`}>
                         {money(current!)}
                       </td>
+                      <td className={`${td} text-right tabular-nums`}>{money(previous!)}</td>
                       <td className={`${td} text-right tabular-nums`}>
                         <Difference
                           current={current!}
@@ -175,7 +177,7 @@ export function ReportsPage() {
                   ))}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
           </section>
 
           <section

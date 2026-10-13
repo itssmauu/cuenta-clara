@@ -4,6 +4,7 @@ import Link from "next/link";
 import { LegalDocument, type LegalSection } from "@/components/legal/LegalDocument";
 import { COOKIE_NOTICE_KEY } from "@/components/legal/CookieNotice";
 import { LEGAL } from "@/lib/legal";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 export const metadata: Metadata = {
   title: "Política de cookies",
@@ -55,7 +56,7 @@ const sections: LegalSection[] = [
           Todas son propias, de sesión segura (solo viajan por HTTPS y nunca a otras webs) y
           estrictamente necesarias:
         </p>
-        <div className="overflow-x-auto">
+        <ScrollRegion label="Tabla de cookies">
           <table>
             <thead>
               <tr>
@@ -76,7 +77,7 @@ const sections: LegalSection[] = [
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </>
     ),
   },

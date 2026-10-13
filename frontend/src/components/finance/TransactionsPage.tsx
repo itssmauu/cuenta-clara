@@ -20,6 +20,7 @@ import {
 } from "@/lib/finance-api";
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { accountName } from "./accounts-ui";
 import { CategoryChip } from "./CategoryChip";
@@ -244,7 +245,7 @@ export function TransactionsPage() {
           )
         ) : (
           <>
-            <div className="overflow-x-auto" aria-busy={page.status === "loading"}>
+            <ScrollRegion label="Tabla de movimientos" busy={page.status === "loading"}>
               <table className="w-full min-w-[720px] border-collapse text-sm">
                 <thead>
                   <tr>
@@ -323,7 +324,7 @@ export function TransactionsPage() {
                   })}
                 </tbody>
               </table>
-            </div>
+            </ScrollRegion>
 
             <nav
               aria-label="Paginación"

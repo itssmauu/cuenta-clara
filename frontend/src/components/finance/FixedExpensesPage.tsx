@@ -18,6 +18,7 @@ import {
 } from "@/lib/finance-api";
 import { formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { CategoryChip } from "./CategoryChip";
 import { frequencyText } from "./IncomesPage";
@@ -117,7 +118,7 @@ export function FixedExpensesPage() {
             action={addButton}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion label="Tabla de gastos fijos">
             <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead>
                 <tr>
@@ -182,7 +183,7 @@ export function FixedExpensesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
       </section>
 

@@ -133,7 +133,10 @@ function FinanceSettings({
         <p className="bg-canvas text-body flex flex-wrap items-center gap-2 rounded-2xl p-4 text-sm font-semibold">
           <Landmark aria-hidden="true" className="text-primary size-5 shrink-0" />
           El saldo inicial de cada cuenta se cambia en
-          <Link href="/cuentas" className="text-primary font-bold hover:underline">
+          <Link
+            href="/cuentas"
+            className="text-primary inline-flex min-h-6 items-center font-bold hover:underline"
+          >
             Cuentas
           </Link>
         </p>

@@ -65,16 +65,20 @@ export function EmptyState({
   title,
   text,
   action,
+  headingLevel = 3,
 }: {
   icon: LucideIcon;
   title: string;
   text: string;
   action?: ReactNode;
+  /** 2 when it sits right under the page title, so heading levels never skip */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <div className="bg-canvas flex flex-col items-start gap-3 rounded-3xl p-6 sm:p-8">
       <Icon aria-hidden="true" className="text-primary size-9" />
-      <h3 className="font-display text-lg font-bold">{title}</h3>
+      <Heading className="font-display text-lg font-bold">{title}</Heading>
       <p className="text-body max-w-prose text-sm leading-relaxed">{text}</p>
       {action}
     </div>
