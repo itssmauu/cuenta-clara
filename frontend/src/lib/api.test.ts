@@ -89,10 +89,30 @@ describe("request", () => {
     await expect(failure).rejects.toMatchObject({ problems: ["Es demasiado común."] });
   });
 
-  it("uses the first message of a FastAPI validation error", async () => {
-    mockFetch(json(422, { detail: [{ msg: "Field required", loc: ["body", "email"] }] }));
+  it("shows our own validation messages without Pydantic's prefix", async () => {
+    mockFetch(
+      json(422, {
+        detail: [{ msg: "Value error, El monto no puede ser 0.", loc: ["body", "amount"] }],
+      }),
+    );
 
-    await expect(request("/x")).rejects.toThrow("Field required");
+    await expect(request("/x")).rejects.toThrow(/^El monto no puede ser 0\.$/);
+  });
+
+  it("replaces Pydantic's technical English with a plain message", async () => {
+    mockFetch(
+      json(422, {
+        detail: [{ msg: "value is not a valid email address", loc: ["body", "email"] }],
+      }),
+    );
+    await expect(request("/x")).rejects.toThrow(
+      "Escribe un correo válido, por ejemplo ana@correo.com.",
+    );
+
+    mockFetch(json(422, { detail: [{ msg: "Field required", loc: ["body", "name"] }] }));
+    await expect(request("/x")).rejects.toThrow(
+      "Revisa los datos del formulario e inténtalo de nuevo.",
+    );
   });
 
   it("turns network failures into a friendly ApiError", async () => {
