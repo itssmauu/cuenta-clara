@@ -129,6 +129,44 @@ export type ForecastPeriod = {
   is_current: boolean;
 };
 
+/** none: no budget · ok · warning: 80 % or more used · over: more than the budget */
+export type BudgetStatus = "none" | "ok" | "warning" | "over";
+
+export type BudgetRow = {
+  category_id: string;
+  name: string;
+  /** As stored: per the user's income period. null = no budget */
+  amount: Money | null;
+  /** Converted to the period shown */
+  budget: Money | null;
+  spent: Money;
+  remaining: Money | null;
+  /** Share of the budget used, e.g. "79.99" */
+  percent: string | null;
+  status: BudgetStatus;
+};
+
+export type BudgetSummary = {
+  account: AccountRef | null;
+  currency: string;
+  income_period: Frequency;
+  period: { start: string; end: string; type: Frequency };
+  rows: BudgetRow[];
+  /** Spent on categories without a budget, plus uncategorized */
+  unbudgeted_spent: Money;
+  totals: { budgeted: Money; spent: Money; remaining: Money };
+  /** The global limit for the period shown; the next two are null without one */
+  spending_limit: Money | null;
+  unassigned: Money | null;
+  over_limit_warning: boolean | null;
+};
+
+export type BudgetSuggestions = {
+  period: Frequency;
+  based_on_periods: number;
+  suggestions: { category_id: string; name: string; amount: Money }[];
+};
+
 export type Forecast = {
   account: AccountRef | null;
   period: Frequency;
@@ -357,6 +395,20 @@ export const financeApi = {
     estimator: Estimator = "average",
     account?: AccountScope,
   ) => request<Forecast>(`/forecast${query({ periods, period, date, estimator, account })}`),
+
+  getBudgets: (period: DashboardPeriod | undefined, date: string, account?: AccountScope) =>
+    request<BudgetSummary>(`/budgets${query({ period, date, account })}`),
+  /** `amount` is per the user's income period */
+  setBudget: (categoryId: string, amount: Money) =>
+    request<{ category_id: string; amount: Money; income_period: Frequency }>(
+      `/budgets/${categoryId}`,
+      { method: "PUT", body: { amount } },
+    ),
+  removeBudget: (categoryId: string) =>
+    request<void>(`/budgets/${categoryId}`, { method: "DELETE" }),
+  /** Averages per the user's income period by default, so they can be saved as they are */
+  getBudgetSuggestions: (date: string, account?: AccountScope) =>
+    request<BudgetSuggestions>(`/budgets/suggestions${query({ date, account })}`),
 
   listGoals: (date: string) => request<SavingsGoal[]>(`/savings-goals${query({ date })}`),
   createGoal: (data: SavingsGoalInput) =>

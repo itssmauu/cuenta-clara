@@ -87,6 +87,9 @@ Nunca se modifica la base a mano: todo cambio de esquema es una migración.
 | `GET` | `/api/v1/forecast` | Saldo proyectado por periodo. Parámetros: `periods` (1–12, por defecto 4), `period`, `date`, `estimator` (`average` o `trend`) y `account` (id o `all`; por defecto la principal) |
 | `GET` / `POST` | `/api/v1/savings-goals` | Metas de ahorro con progreso y plan por periodo (`?date=` para el plan) |
 | `PUT` / `DELETE` | `/api/v1/savings-goals/{id}` | |
+| `GET` | `/api/v1/budgets` | Presupuesto por categoría del periodo: presupuesto (convertido), gastado, restante, `percent`, `status` (`none`/`ok`/`warning`/`over`), gasto sin presupuesto, totales y comparación con el límite. Parámetros: `period`, `date` y `account` |
+| `PUT` / `DELETE` | `/api/v1/budgets/{category_id}` | Pone o quita el presupuesto de una categoría predeterminada o propia (`amount` por periodo de ingreso, > 0 y ≤ 1 000 000). Categoría ajena: `404` |
+| `GET` | `/api/v1/budgets/suggestions` | Monto sugerido por categoría: promedio de los últimos 6 periodos completos |
 | `POST` | `/api/v1/savings-goals/{id}/contributions` | Aportar (monto positivo) o retirar (negativo); nunca por debajo de 0. Con `from_account_id` el dinero se mueve entre esa cuenta y la de la meta |
 | `GET` | `/api/v1/transactions/export` | CSV de movimientos con los mismos filtros que la lista |
 | `GET` | `/api/v1/assistant` | Nombre de Balbo, si está disponible (hay `GEMINI_API_KEY`) y si el usuario lo activó (`consented`) |

@@ -26,6 +26,8 @@ from sqlalchemy.orm import Session
 
 from app.models import SavingsGoal, User
 from app.services import projections
+from app.services.budget_store import load_budgets
+from app.services.budgets import CategoryRef, build_budget_summary
 from app.services.categories import list_categories
 from app.services.dashboard import load_user_finance
 from app.services.errors import DomainError
@@ -215,13 +217,34 @@ def build_context(db: Session, user: User, today: date) -> str:
             f"usado {dashboard.limit_used_percent}% ({dashboard.limit_status}); "
             f"le quedan {m(dashboard.limit_remaining or Decimal(0))}"
         )
+    categories = list_categories(db, user)
     if dashboard.by_category:
-        names = {c.id: c.name for c in list_categories(db, user)}
+        names = {c.id: c.name for c in categories}
         lines.append("- Gasto por categoría este periodo:")
         lines += [
             f"  - {names.get(c.category_id, 'Sin categoría')}: {m(c.amount)}"
             for c in dashboard.by_category[:6]
         ]
+    stored = load_budgets(db, user)
+    if stored:
+        summary = build_budget_summary(
+            period=dashboard.period,
+            categories=[CategoryRef(c.id, c.name) for c in categories],
+            spending=dashboard.by_category,
+            budgets=stored,
+            income_cadence=cadence,
+            shown_cadence=cadence,
+            spending_limit=dashboard.limit,
+        )
+        state = {"ok": "bien", "warning": "cerca del tope", "over": "pasado"}
+        lines.append("- Presupuestos por categoría este periodo (gastado de presupuesto):")
+        lines += [
+            f"  - {r.name}: {m(r.spent)} de {m(r.budget)} ({r.percent}%, {state[r.status]})"
+            for r in summary.rows
+            if r.budget is not None
+        ]
+        if summary.over_limit_warning:
+            lines.append("  - Ojo: la suma de los presupuestos supera su límite de gasto.")
     # Recurring items, as the user named them (they explain most of the money flow)
     names = {a.id: a.name for a in finance.accounts}
     for title, items in (

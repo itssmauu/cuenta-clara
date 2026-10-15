@@ -2,6 +2,7 @@
 from app.models.account import Account
 from app.models.base import Base
 from app.models.category import Category
+from app.models.category_budget import CategoryBudget
 from app.models.enums import AccountKind, Frequency, TransactionType
 from app.models.fixed_expense import FixedExpense, FixedExpenseCheckIn
 from app.models.income import Income
@@ -18,6 +19,7 @@ __all__ = [
     "AccountKind",
     "Base",
     "Category",
+    "CategoryBudget",
     "FixedExpense",
     "FixedExpenseCheckIn",
     "Frequency",

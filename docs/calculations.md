@@ -123,3 +123,47 @@ Ejemplo semanal, miércoles 7 de octubre, meta $200 con $100 ahorrados para el d
 5. Con menos de 3 periodos se usa el promedio, y la respuesta lo indica (`estimator: "average"`).
 
 Ejemplo: gastos de 10, 20 y 30 en tres semanas → pendiente 10, R² 1. La semana actual es x = 3, así que las dos siguientes se estiman en **50** y **60**.
+
+## Presupuesto por categoría (`GET /budgets?period=weekly&date=2026-10-07`)
+
+Funciones puras en `backend/app/services/budgets.py`, probadas en `tests/test_budgets.py`.
+
+- **Se guarda por el periodo de ingreso del usuario**, el mismo del límite de gasto. Si se muestra otro periodo, se convierte por duración promedio (`convert_amount`, la misma regla del límite):
+
+  ```
+  presupuesto en el periodo mostrado = monto × días(periodo mostrado) / días(periodo de ingreso)
+  ```
+
+  Se redondea a centavos solo al final. Ejemplo: $70/semana → 70 × 30.4375 / 7 = **$304.38/mes**.
+- **Gastado en una categoría** = gastos fijos + gasto variable de esa categoría en la ventana del periodo. Es exactamente el desglose por categoría del dashboard (`spending_by_category`):
+  - Sin ingresos ni transferencias.
+  - Nada anterior a `balance_as_of`.
+  - Dentro del alcance de cuenta (la principal o `?account=all`).
+- **Uso y estado:**
+
+  ```
+  percent = gastado × 100 / presupuesto   (2 decimales)
+  ```
+
+  | Estado | Cuándo |
+  | --- | --- |
+  | `none` | la categoría no tiene presupuesto |
+  | `ok` | menos del 80 % |
+  | `warning` | desde el 80 % (`WARNING_PERCENT`), sin pasarse |
+  | `over` | gastado **estrictamente** mayor que el presupuesto |
+
+  Los umbrales se comparan sin redondear: 79.99 % es `ok`, 80 % y 100 % son `warning`, y 100.01 % es `over`.
+- **`unbudgeted_spent`** = lo gastado en categorías sin presupuesto más «Sin categoría».
+- **Totales:**
+  - presupuestado = suma de los presupuestos ya convertidos;
+  - gastado = lo gastado en categorías con presupuesto;
+  - restante = presupuestado − gastado (negativo si se pasó).
+- **Contra el límite global** (el que da `limit_for` para el periodo y el alcance):
+  - `unassigned` = límite − total presupuestado.
+  - `over_limit_warning` es verdadero si los presupuestos suman más que el límite.
+  - Sin límite, o si la cuenta principal no está en el alcance, ambos son `null`.
+- **Sugerencias** (`GET /budgets/suggestions`): para cada categoría, el promedio de lo gastado en los últimos 6 periodos **completos** desde `balance_as_of` (`complete_periods`, la misma historia que usa la predicción).
+  - Sin periodos completos, se usa lo gastado en el periodo actual.
+  - «Sin categoría» no se sugiere, porque no puede tener presupuesto.
+
+Ejemplo semanal: presupuesto de Comida $40 y $35 gastados → quedan $5, 87.50 %, `warning`.
