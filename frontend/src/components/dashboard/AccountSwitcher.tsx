@@ -38,7 +38,11 @@ export function AccountSwitcher({
     <div
       role="group"
       aria-label={t("Cuenta")}
-      className="relative -mx-1 flex [scrollbar-width:thin] gap-3 overflow-x-auto px-1 pt-1 pb-2"
+      // One account: the "add another" card wraps below instead of being cut off on phones.
+      // Several: they scroll sideways like a row of cards.
+      className={`relative -mx-1 flex gap-3 px-1 pt-1 pb-2 ${
+        accounts.length > 1 ? "[scrollbar-width:thin] overflow-x-auto" : "flex-wrap"
+      }`}
     >
       {accounts.map((account) => {
         const active = selected === account.id;
@@ -107,7 +111,7 @@ export function AccountSwitcher({
         // With a single account, show where to add the others (savings, funds…)
         <Link
           href="/cuentas"
-          className={`${card} border-line text-body hover:border-primary hover:text-ink border-2 border-dashed`}
+          className={`${card} border-line text-body hover:border-primary hover:text-ink grow border-2 border-dashed sm:grow-0`}
         >
           <Plus aria-hidden="true" className="size-5" />
           <span className="text-sm leading-snug font-bold">

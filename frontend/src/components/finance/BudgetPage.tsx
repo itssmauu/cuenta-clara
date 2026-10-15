@@ -127,7 +127,7 @@ export function BudgetPage() {
               }))}
               value={period}
               onChange={setPeriod}
-              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              layoutClass="grid w-full grid-cols-2 max-[399px]:rounded-[26px] min-[400px]:grid-cols-4 sm:flex sm:w-auto"
               optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
             />
           </>
