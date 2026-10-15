@@ -13,6 +13,8 @@ import {
 } from "react";
 
 import { useSession } from "@/components/app/session";
+import { useT } from "@/i18n/client";
+import { msg, rich } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import {
   assistantApi,
@@ -25,10 +27,10 @@ import { privacyApi } from "@/lib/privacy-api";
 import { BalboBot, type BalboState } from "./BalboBot";
 
 const SUGGESTIONS = [
-  "¿Me alcanza para comprar una PS5?",
-  "Dame un plan para ahorrar este mes",
-  "¿Cómo voy esta semana?",
-  "¿En qué estoy gastando más?",
+  msg("¿Me alcanza para comprar una PS5?"),
+  msg("Dame un plan para ahorrar este mes"),
+  msg("¿Cómo voy esta semana?"),
+  msg("¿En qué estoy gastando más?"),
 ];
 
 // Static classes (Tailwind only sees literal class names): a wave across the three dots
@@ -42,6 +44,7 @@ type Shown = ChatMessage & { id: number; offTopic?: boolean; error?: boolean };
  * replies arrive with a short rise, and nothing is stored outside this browser tab.
  */
 export function Balbo() {
+  const t = useT();
   const { user } = useSession();
   const [open, setOpen] = useState(false);
   const [status, setStatus] = useState<AssistantStatus | null>(null);
@@ -117,7 +120,7 @@ export function Balbo() {
           id: nextId.current++,
           role: "assistant",
           error: true,
-          content: "No pude activarme ahora mismo. Inténtalo de nuevo.",
+          content: t("No pude activarme ahora mismo. Inténtalo de nuevo."),
         },
       ]);
     } finally {
@@ -156,8 +159,8 @@ export function Balbo() {
           error: true,
           content:
             error instanceof ApiError
-              ? error.message
-              : "No pude responder ahora mismo. Inténtalo de nuevo.",
+              ? t(error.message)
+              : t("No pude responder ahora mismo. Inténtalo de nuevo."),
         },
       ]);
     } finally {
@@ -202,21 +205,21 @@ export function Balbo() {
           <BalboBot size={44} state={botState} />
           <div className="flex min-w-0 flex-1 flex-col">
             <h2 id={titleId} className="font-display text-lg leading-tight font-bold">
-              Balbo
+              {t("Balbo")}
             </h2>
             <span className="text-on-ink flex items-center gap-1.5 text-xs font-semibold">
               <span
                 aria-hidden="true"
                 className={`size-2 rounded-full ${offline ? "bg-on-ink-muted" : "bg-mint"}`}
               />
-              {offline ? "No disponible ahora" : "Tu copiloto financiero"}
+              {offline ? t("No disponible ahora") : t("Tu copiloto financiero")}
             </span>
           </div>
           <button
             type="button"
             ref={closeRef}
             onClick={close}
-            aria-label="Cerrar el chat con Balbo"
+            aria-label={t("Cerrar el chat con Balbo")}
             className="hover:bg-ink-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,scale] duration-200 active:scale-[0.94]"
           >
             <X aria-hidden="true" className="size-5" />
@@ -227,7 +230,7 @@ export function Balbo() {
           ref={logRef}
           role="log"
           aria-live="polite"
-          aria-label="Conversación con Balbo"
+          aria-label={t("Conversación con Balbo")}
           // Focusable so keyboard users can scroll it even when it holds no buttons
           tabIndex={0}
           className="focus-visible:outline-primary flex flex-1 flex-col gap-3 overflow-y-auto px-4 py-4 focus-visible:outline-2 focus-visible:-outline-offset-2"
@@ -237,16 +240,21 @@ export function Balbo() {
               <BalboBot
                 size={108}
                 state="greeting"
-                label="Balbo, el robot de Cuenta Clara, saludando"
+                label={t("Balbo, el robot de Cuenta Clara, saludando")}
               />
             </div>
           ) : null}
           <Bubble role="assistant">
-            {`¡Hola, ${firstName}! Soy Balbo 👋\nConozco tus cuentas, tus gastos fijos, tu predicción y tus metas. Pregúntame si te conviene una compra o cómo ahorrar para algo.`}
+            {t(
+              "¡Hola, {firstName}! Soy Balbo 👋\nConozco tus cuentas, tus gastos fijos, tu predicción y tus metas. Pregúntame si te conviene una compra o cómo ahorrar para algo.",
+              { firstName },
+            )}
           </Bubble>
           {offline ? (
             <Bubble role="assistant" tone="error">
-              Balbo no está disponible en este momento. El resto de Cuenta Clara funciona normal.
+              {t(
+                "Balbo no está disponible en este momento. El resto de Cuenta Clara funciona normal.",
+              )}
             </Bubble>
           ) : null}
 
@@ -255,15 +263,15 @@ export function Balbo() {
           ) : null}
 
           {messages.length === 0 && consented && !offline ? (
-            <ul aria-label="Preguntas sugeridas" className="flex flex-wrap gap-2 pt-1">
+            <ul aria-label={t("Preguntas sugeridas")} className="flex flex-wrap gap-2 pt-1">
               {SUGGESTIONS.map((suggestion) => (
                 <li key={suggestion}>
                   <button
                     type="button"
-                    onClick={() => void send(suggestion)}
+                    onClick={() => void send(t(suggestion))}
                     className="border-primary-soft text-primary hover:bg-primary-tint min-h-9 cursor-pointer rounded-full border-2 px-3 text-left text-[13px] font-bold transition-[background-color,scale] duration-200 active:scale-[0.97]"
                   >
-                    {suggestion}
+                    {t(suggestion)}
                   </button>
                 </li>
               ))}
@@ -282,7 +290,7 @@ export function Balbo() {
 
           {sending ? (
             <div role="status" className="animate-rise-in flex items-end gap-1 self-start">
-              <span className="sr-only">Balbo está escribiendo…</span>
+              <span className="sr-only">{t("Balbo está escribiendo…")}</span>
               {/* Balbo pulls out its phone and types */}
               <BalboBot size={46} state="typing" />
               <div className="bg-canvas mb-2 flex items-center gap-1.5 rounded-2xl rounded-bl-md px-4 py-3">
@@ -304,7 +312,7 @@ export function Balbo() {
         >
           <div className="flex items-end gap-2">
             <label htmlFor={`${panelId}-input`} className="sr-only">
-              Escribe tu pregunta para Balbo
+              {t("Escribe tu pregunta para Balbo")}
             </label>
             <textarea
               id={`${panelId}-input`}
@@ -317,25 +325,26 @@ export function Balbo() {
               onKeyDown={onKeyDown}
               placeholder={
                 offline
-                  ? "No disponible ahora"
+                  ? t("No disponible ahora")
                   : !consented
-                    ? "Activa a Balbo para preguntar"
-                    : "Pregúntale a Balbo…"
+                    ? t("Activa a Balbo para preguntar")
+                    : t("Pregúntale a Balbo…")
               }
               className="rounded-field border-field hover:border-primary-soft focus:border-primary text-ink placeholder:text-muted/80 max-h-32 min-h-11 flex-1 resize-none border-2 bg-white px-3.5 py-2.5 text-[15px] transition-colors duration-200 disabled:cursor-not-allowed disabled:opacity-60"
             />
             <button
               type="submit"
               disabled={locked || sending || !draft.trim()}
-              aria-label="Enviar pregunta"
+              aria-label={t("Enviar pregunta")}
               className="bg-primary hover:bg-primary-hover grid size-11 shrink-0 cursor-pointer place-items-center rounded-full text-white transition-[background-color,scale,opacity] duration-200 active:scale-[0.94] disabled:cursor-not-allowed disabled:opacity-50"
             >
               <Send aria-hidden="true" className="size-5" />
             </button>
           </div>
           <p className="text-muted text-[11px] leading-snug">
-            Balbo usa IA (Gemini de Google) con un resumen de tus finanzas. Es orientación, no
-            asesoría financiera profesional. Puedes desactivarlo en Configuración.
+            {t(
+              "Balbo usa IA (Gemini de Google) con un resumen de tus finanzas. Es orientación, no asesoría financiera profesional. Puedes desactivarlo en Configuración.",
+            )}
           </p>
         </form>
       </section>
@@ -347,7 +356,9 @@ export function Balbo() {
         aria-expanded={open}
         aria-controls={panelId}
         aria-label={
-          open ? "Cerrar el chat con Balbo" : "Abrir el chat con Balbo, tu copiloto financiero"
+          open
+            ? t("Cerrar el chat con Balbo")
+            : t("Abrir el chat con Balbo, tu copiloto financiero")
         }
         className="bg-primary hover:bg-primary-hover ease-out-strong fixed right-4 bottom-5 z-40 grid size-14 cursor-pointer place-items-center rounded-full text-white shadow-[0_14px_30px_-10px_rgb(91_75_219/0.7)] transition-[background-color,scale] duration-200 hover:scale-105 active:scale-95 sm:right-6 sm:bottom-6"
       >
@@ -374,22 +385,33 @@ function ConsentCard({
   busy: boolean;
   onActivate: () => void;
 }) {
+  const t = useT();
   return (
     <div className="bg-primary-tint text-on-tint animate-rise-in flex flex-col gap-3 rounded-2xl p-4 text-[13px] leading-relaxed">
       <p className="text-ink flex items-center gap-2 text-sm font-bold">
         <ShieldCheck aria-hidden="true" className="text-primary size-5" />
-        Antes de empezar
+        {t("Antes de empezar")}
       </p>
       <p>
-        Para responderte, Balbo envía a <strong className="text-ink">Gemini, de Google</strong>, tu
-        pregunta y un resumen de tus finanzas: tu primer nombre, tus cuentas y saldos, tus ingresos,
-        gastos y metas. Nunca tu correo ni tu contraseña.
+        {rich(
+          t(
+            "Para responderte, Balbo envía a <b>Gemini, de Google</b>, tu pregunta y un resumen de tus finanzas: tu primer nombre, tus cuentas y saldos, tus ingresos, gastos y metas. Nunca tu correo ni tu contraseña.",
+          ),
+          {
+            b: (text) => (
+              <strong key="b" className="text-ink">
+                {text}
+              </strong>
+            ),
+          },
+        )}
       </p>
       <p>
-        Google puede procesarlo fuera de Panamá. Puedes desactivar a Balbo cuando quieras en
-        Configuración.{" "}
+        {t(
+          "Google puede procesarlo fuera de Panamá. Puedes desactivar a Balbo cuando quieras en Configuración.",
+        )}{" "}
         <Link href="/legal/privacidad#balbo" className="text-primary font-bold hover:underline">
-          Más detalles
+          {t("Más detalles")}
         </Link>
       </p>
       <button
@@ -399,7 +421,7 @@ function ConsentCard({
         disabled={busy}
         className="bg-primary hover:bg-primary-hover min-h-11 cursor-pointer self-start rounded-full px-5 text-sm font-bold text-white transition-[background-color,scale,opacity] duration-200 active:scale-[0.97] disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {busy ? "Activando…" : "Acepto, activar Balbo"}
+        {busy ? t("Activando…") : t("Acepto, activar Balbo")}
       </button>
     </div>
   );
@@ -414,6 +436,7 @@ function Bubble({
   tone?: "error" | "info";
   children: string;
 }) {
+  const t = useT();
   const mine = role === "user";
   const surface = mine
     ? "bg-primary self-end rounded-br-md text-white"
@@ -426,7 +449,7 @@ function Bubble({
     <div
       className={`animate-rise-in max-w-[85%] rounded-2xl px-4 py-2.5 text-sm leading-relaxed ${surface}`}
     >
-      <span className="sr-only">{mine ? "Tú: " : "Balbo: "}</span>
+      <span className="sr-only">{mine ? t("Tú: ") : t("Balbo: ")}</span>
       <RichText text={children} />
     </div>
   );

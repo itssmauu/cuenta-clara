@@ -3,16 +3,29 @@
  * converted to numbers to format them or to size a chart bar, never to do math.
  */
 
-// es-US renders "$1,234.50", the convention used in Panama for dollars
-const LOCALE = "es-US";
+import { INTL_LOCALE, type Locale } from "@/i18n/config";
+
+// es-US renders "$1,234.50" and "12 oct", the conventions used in Panama. The language
+// switch changes it on the client (LocaleProvider); the server always renders Spanish.
+let LOCALE = INTL_LOCALE.es;
+
+export function setFormatLocale(locale: Locale): void {
+  LOCALE = INTL_LOCALE[locale];
+}
+
+/** The Intl locale in use, for components that format dates themselves */
+export function intlLocale(): string {
+  return LOCALE;
+}
 
 const moneyFormatters = new Map<string, Intl.NumberFormat>();
 
 export function formatMoney(value: string | number, currency = "USD"): string {
-  let formatter = moneyFormatters.get(currency);
+  const key = `${LOCALE}:${currency}`;
+  let formatter = moneyFormatters.get(key);
   if (!formatter) {
     formatter = new Intl.NumberFormat(LOCALE, { style: "currency", currency });
-    moneyFormatters.set(currency, formatter);
+    moneyFormatters.set(key, formatter);
   }
   return formatter.format(Number(value));
 }

@@ -2,12 +2,20 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalDocument, PrivacyContact, type LegalSection } from "@/components/legal/LegalDocument";
+import { termsEn } from "@/components/legal/en/terms";
+import { TranslationNotice } from "@/components/legal/en/legal-en";
+import { getLocale } from "@/i18n/server";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata: Metadata = {
-  title: "Términos y condiciones",
-  description: "Las condiciones para usar Cuenta Clara.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === "en") {
+    return { title: termsEn.title, description: termsEn.description };
+  }
+  return {
+    title: "Términos y condiciones",
+    description: "Las condiciones para usar Cuenta Clara.",
+  };
+}
 
 const summary = [
   `${LEGAL.service} es una herramienta gratuita para organizar tus finanzas personales; no es un banco ni mueve dinero.`,
@@ -205,7 +213,18 @@ const sections: LegalSection[] = [
   },
 ];
 
-export default function TermsPage() {
+export default async function TermsPage() {
+  if ((await getLocale()) === "en") {
+    return (
+      <LegalDocument
+        title={termsEn.title}
+        current="/legal/terminos"
+        summary={termsEn.summary}
+        sections={termsEn.sections}
+        notice={<TranslationNotice />}
+      />
+    );
+  }
   return (
     <LegalDocument
       title="Términos y condiciones"

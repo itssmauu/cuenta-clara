@@ -12,6 +12,35 @@ test.describe("public pages", () => {
     await expect(page).toHaveURL(/\/register$/);
   });
 
+  test("the site can be read in English and remembers the choice", async ({ page }) => {
+    await page.goto("/");
+    await page
+      .getByRole("group", { name: "Idioma" })
+      .getByRole("button", { name: "English" })
+      .click();
+
+    await expect(page.getByRole("heading", { level: 1 })).toContainText("Know what you have left");
+    await expect(page.locator("html")).toHaveAttribute("lang", "en");
+    await expect(page.getByRole("button", { name: "English" })).toHaveAttribute(
+      "aria-pressed",
+      "true",
+    );
+
+    // The choice is kept: other pages, and the next visit, open in English
+    await page.goto("/login");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Welcome back");
+    await page.goto("/legal/privacidad");
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Privacy policy");
+    await expect(
+      page.getByText("The Spanish version of this document is the binding one"),
+    ).toBeVisible();
+    await expectAccessible(page);
+
+    await page.getByRole("button", { name: "Español" }).click();
+    await expect(page.getByRole("heading", { level: 1 })).toHaveText("Política de privacidad");
+    await expect(page.locator("html")).toHaveAttribute("lang", "es");
+  });
+
   test("landing sections fade in on scroll and their figures count up", async ({ page }) => {
     await page.goto("/");
     const prediction = page.locator("#prediccion");

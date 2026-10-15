@@ -2,13 +2,21 @@ import type { Metadata } from "next";
 import Link from "next/link";
 
 import { LegalDocument, PrivacyContact, type LegalSection } from "@/components/legal/LegalDocument";
+import { privacyEn } from "@/components/legal/en/privacy";
+import { TranslationNotice } from "@/components/legal/en/legal-en";
+import { getLocale } from "@/i18n/server";
 import { LEGAL } from "@/lib/legal";
 
-export const metadata: Metadata = {
-  title: "Política de privacidad",
-  description:
-    "Qué datos trata Cuenta Clara, para qué, con quién se comparten y cómo ejercer tus derechos.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === "en") {
+    return { title: privacyEn.title, description: privacyEn.description };
+  }
+  return {
+    title: "Política de privacidad",
+    description:
+      "Qué datos trata Cuenta Clara, para qué, con quién se comparten y cómo ejercer tus derechos.",
+  };
+}
 
 const summary = [
   `El responsable de tus datos es ${LEGAL.owner} (${LEGAL.ownerKind}), en la ${LEGAL.country}.`,
@@ -369,7 +377,18 @@ const sections: LegalSection[] = [
   },
 ];
 
-export default function PrivacyPage() {
+export default async function PrivacyPage() {
+  if ((await getLocale()) === "en") {
+    return (
+      <LegalDocument
+        title={privacyEn.title}
+        current="/legal/privacidad"
+        summary={privacyEn.summary}
+        sections={privacyEn.sections}
+        notice={<TranslationNotice />}
+      />
+    );
+  }
   return (
     <LegalDocument
       title="Política de privacidad"

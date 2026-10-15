@@ -7,6 +7,8 @@ import { useSession } from "@/components/app/session";
 import { buttonClass } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/Dialog";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, type PendingFixedExpense } from "@/lib/finance-api";
 import { formatDate, formatMoney, parseISODate, todayISO } from "@/lib/format";
@@ -21,10 +23,10 @@ const keyOf = (id: string, day: string) => `${id}|${day}`;
 
 /** "Hoy", "Ayer" or "lun, 6 oct". */
 export function dayLabel(day: string, today: string): string {
-  if (day === today) return "Hoy";
+  if (day === today) return msg("Hoy");
   const yesterday = parseISODate(today);
   yesterday.setDate(yesterday.getDate() - 1);
-  if (day === todayISO(yesterday)) return "Ayer";
+  if (day === todayISO(yesterday)) return msg("Ayer");
   return formatDate(day, { weekday: "short", day: "numeric", month: "short" });
 }
 
@@ -49,6 +51,7 @@ function useToday(): string {
  * changes. Only what they confirm counts. "Más tarde" leaves a reminder banner.
  */
 export function CheckInPrompt() {
+  const t = useT();
   const { settings } = useSession();
   const today = useToday();
   const [pending, setPending] = useState<PendingFixedExpense[]>([]);
@@ -78,25 +81,27 @@ export function CheckInPrompt() {
     <>
       {count > 0 && !open ? (
         <section
-          aria-label="Pagos por confirmar"
+          aria-label={t("Pagos por confirmar")}
           className="bg-accent-tint text-ink flex flex-wrap items-center justify-between gap-3 rounded-3xl px-5 py-3"
         >
           <p className="flex items-center gap-2 text-sm font-bold">
             <CalendarCheck aria-hidden="true" className="size-5 shrink-0" />
             {count === 1
-              ? "Tienes 1 pago por confirmar. No se descuenta hasta que lo confirmes."
-              : `Tienes ${count} pagos por confirmar. No se descuentan hasta que los confirmes.`}
+              ? t("Tienes 1 pago por confirmar. No se descuenta hasta que lo confirmes.")
+              : t("Tienes {count} pagos por confirmar. No se descuentan hasta que los confirmes.", {
+                  count,
+                })}
           </p>
           <button type="button" onClick={() => setOpen(true)} className={buttonClass("ink")}>
-            Revisar
+            {t("Revisar")}
           </button>
         </section>
       ) : null}
       <Dialog
         open={open}
         onClose={() => setOpen(false)}
-        title="¿Ya pagaste estos gastos?"
-        description="Solo se descuentan de tu saldo los que confirmes."
+        title={t("¿Ya pagaste estos gastos?")}
+        description={t("Solo se descuentan de tu saldo los que confirmes.")}
       >
         <CheckInForm
           key={pending.map((p) => p.id + p.dates.join()).join()}
@@ -128,6 +133,7 @@ function CheckInForm({
   onLater: () => void;
   onSaved: (remaining: PendingFixedExpense[]) => void;
 }) {
+  const t = useT();
   const [answers, setAnswers] = useState<Answers>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -159,7 +165,7 @@ function CheckInForm({
       onSaved(remaining);
     } catch (failure) {
       setError(
-        failure instanceof ApiError ? failure.message : "No pudimos guardar tus respuestas.",
+        failure instanceof ApiError ? failure.message : t("No pudimos guardar tus respuestas."),
       );
       setBusy(false);
     }
@@ -184,14 +190,14 @@ function CheckInForm({
                   onClick={() => set(item.id, item.dates, true)}
                   className="text-primary hover:bg-primary-tint min-h-11 cursor-pointer rounded-full px-3 text-[13px] font-bold"
                 >
-                  Pagué todos ({item.dates.length})
+                  {t("Pagué todos ({n})", { n: item.dates.length })}
                 </button>
                 <button
                   type="button"
                   onClick={() => set(item.id, item.dates, false)}
                   className="text-body hover:bg-canvas min-h-11 cursor-pointer rounded-full px-3 text-[13px] font-bold"
                 >
-                  No pagué ninguno
+                  {t("No pagué ninguno")}
                 </button>
               </div>
             ) : null}
@@ -199,8 +205,8 @@ function CheckInForm({
               {item.dates.map((day) => (
                 <DayRow
                   key={day}
-                  label={`${dayLabel(day, today)} · ${item.name}`}
-                  day={dayLabel(day, today)}
+                  label={`${t(dayLabel(day, today))} · ${item.name}`}
+                  day={t(dayLabel(day, today))}
                   value={answers[keyOf(item.id, day)]}
                   onChange={(paid) => set(item.id, [day], paid)}
                 />
@@ -211,7 +217,7 @@ function CheckInForm({
       </ul>
       <div className="flex flex-wrap items-center justify-end gap-3">
         <button type="button" onClick={onLater} className={buttonClass("ghost")}>
-          Más tarde
+          {t("Más tarde")}
         </button>
         <button
           type="button"
@@ -221,10 +227,12 @@ function CheckInForm({
           className={buttonClass("primary")}
         >
           {busy
-            ? "Guardando…"
+            ? t("Guardando…")
             : answered === 0
-              ? "Guardar respuestas"
-              : `Guardar ${answered} ${answered === 1 ? "respuesta" : "respuestas"}`}
+              ? t("Guardar respuestas")
+              : answered === 1
+                ? t("Guardar 1 respuesta")
+                : t("Guardar {n} respuestas", { n: answered })}
         </button>
       </div>
     </div>
@@ -242,6 +250,7 @@ function DayRow({
   value: boolean | undefined;
   onChange: (paid: boolean) => void;
 }) {
+  const t = useT();
   return (
     <li className="border-line border-t py-1.5 first:border-t-0">
       <div role="group" aria-label={label} className="flex items-center justify-between gap-3">
@@ -258,7 +267,7 @@ function DayRow({
             }`}
           >
             <Check aria-hidden="true" className="size-4" />
-            Lo pagué
+            {t("Lo pagué")}
           </button>
           <button
             type="button"
@@ -271,7 +280,7 @@ function DayRow({
             }`}
           >
             <X aria-hidden="true" className="size-4" />
-            No
+            {t("No")}
           </button>
         </div>
       </div>

@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useSyncExternalStore } from "react";
 
 import { buttonClass } from "@/components/ui/button";
+import { useT } from "@/i18n/client";
 
 export const COOKIE_NOTICE_KEY = "cc-cookie-notice";
 
@@ -38,6 +39,7 @@ let hiddenThisView = false;
  * no consent, so there is nothing to choose. It sits bottom-left to stay clear of Balbo.
  */
 export function CookieNotice() {
+  const t = useT();
   const hidden = useSyncExternalStore(
     subscribe,
     () => hiddenThisView || isDismissed(),
@@ -47,14 +49,15 @@ export function CookieNotice() {
 
   return (
     <section
-      aria-label="Aviso de cookies"
+      aria-label={t("Aviso de cookies")}
       className="motion-safe:animate-rise-in fixed bottom-4 left-4 z-30 flex w-[min(380px,calc(100vw-7rem))] flex-col gap-3 rounded-3xl bg-white p-5 shadow-[0_24px_64px_-16px_rgb(21_25_61/0.35)] sm:bottom-6 sm:left-6"
     >
       <p className="text-body text-sm leading-relaxed">
-        Solo usamos cookies técnicas, necesarias para iniciar sesión y proteger tu cuenta. Nada de
-        publicidad ni seguimiento.{" "}
+        {t(
+          "Solo usamos cookies técnicas, necesarias para iniciar sesión y proteger tu cuenta. Nada de publicidad ni seguimiento.",
+        )}{" "}
         <Link href="/legal/cookies" className="text-primary font-bold hover:underline">
-          Más información
+          {t("Más información")}
         </Link>
       </p>
       <button
@@ -65,7 +68,7 @@ export function CookieNotice() {
         }}
         className={buttonClass("ink", "md", "self-start")}
       >
-        Entendido
+        {t("Entendido")}
       </button>
     </section>
   );

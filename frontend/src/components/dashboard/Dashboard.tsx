@@ -11,6 +11,7 @@ import { buttonClass } from "@/components/ui/button";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { Notice, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
 import {
   financeApi,
   type AccountScope,
@@ -33,6 +34,7 @@ function isPeriod(value: string | null): value is DashboardPeriod {
 }
 
 export function Dashboard() {
+  const t = useT();
   const { user, settings } = useSession();
   const router = useRouter();
   const pathname = usePathname();
@@ -100,17 +102,17 @@ export function Dashboard() {
   return (
     <>
       <PageHeader
-        eyebrow="Dashboard"
-        title={`Hola, ${user.name.split(" ")[0]}`}
+        eyebrow={t("Dashboard")}
+        title={t("Hola, {name}", { name: user.name.split(" ")[0] ?? "" })}
         subtitle={
           current
-            ? `${current.account?.name ?? "Todas tus cuentas"} · ${CURRENT_PERIOD_NAME[period]}, ${periodRange(current.period_start, current.period_end)}`
-            : "Resumen de tus finanzas"
+            ? `${current.account?.name ?? t("Todas tus cuentas")} · ${t(CURRENT_PERIOD_NAME[period])}, ${periodRange(current.period_start, current.period_end)}`
+            : t("Resumen de tus finanzas")
         }
         actions={
           <>
             <SegmentedControl
-              label="Periodo"
+              label={t("Periodo")}
               options={PERIOD_OPTIONS.map((option) => ({
                 value: option,
                 label: FREQUENCY_LABELS[option],
@@ -126,7 +128,7 @@ export function Dashboard() {
               className={buttonClass("accent", "md", "font-extrabold")}
             >
               <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-              Añadir movimiento
+              {t("Añadir movimiento")}
             </button>
           </>
         }
@@ -145,9 +147,12 @@ export function Dashboard() {
 
       {dashboard.status === "error" && !current ? (
         <div className="flex flex-col items-start gap-3">
-          <FormAlert title="No pudimos cargar tu dashboard." items={[dashboard.error.message]} />
+          <FormAlert
+            title={t("No pudimos cargar tu dashboard.")}
+            items={[dashboard.error.message]}
+          />
           <button type="button" onClick={reloadDashboard} className={buttonClass("ink")}>
-            Reintentar
+            {t("Reintentar")}
           </button>
         </div>
       ) : !current ? (
@@ -165,10 +170,10 @@ export function Dashboard() {
               <div className="flex flex-wrap items-center justify-between gap-3">
                 <div className="flex flex-col gap-1">
                   <h2 id="chart-title" className="font-display text-xl font-bold">
-                    Gasto vs. límite
+                    {t("Gasto vs. límite")}
                   </h2>
                   <p className="text-muted text-[13px] font-semibold">
-                    Los periodos que pasan la línea se marcan en coral
+                    {t("Los periodos que pasan la línea se marcan en coral")}
                   </p>
                 </div>
                 <LimitChip dashboard={current} />
@@ -190,13 +195,13 @@ export function Dashboard() {
             className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
           >
             <h2 id="categories-chart-title" className="font-display text-xl font-bold">
-              Gasto por categoría
+              {t("Gasto por categoría")}
             </h2>
             <CategoryBreakdown items={current.spending_by_category} currency={current.currency} />
           </section>
 
           <PeriodExpenses
-            title={`Gastos de ${CURRENT_PERIOD_NAME[period]}`}
+            title={t("Gastos de {period}", { period: t(CURRENT_PERIOD_NAME[period]) })}
             transactions={expenses.data?.items}
             categories={categories}
             currency={current.currency}
@@ -221,9 +226,10 @@ export function Dashboard() {
 }
 
 function DashboardSkeleton() {
+  const t = useT();
   return (
     <div role="status" className="flex flex-col gap-5">
-      <span className="sr-only">Cargando tu dashboard…</span>
+      <span className="sr-only">{t("Cargando tu dashboard…")}</span>
       <div aria-hidden="true" className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4">
         {[0, 1, 2, 3].map((i) => (
           <div key={i} className="rounded-card h-[132px] animate-pulse bg-white/70" />

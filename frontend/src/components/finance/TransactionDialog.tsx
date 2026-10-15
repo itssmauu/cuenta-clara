@@ -9,11 +9,14 @@ import { Dialog } from "@/components/ui/Dialog";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, type Account, type Category, type Transaction } from "@/lib/finance-api";
 import {
-  transactionSchema,
+  categoryName,
   type TransactionForm,
+  transactionSchema,
   type TransactionValues,
 } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
@@ -43,13 +46,16 @@ export function TransactionDialog({
   defaultAccountId = null,
   transaction,
 }: Props) {
+  const t = useT();
   const editing = Boolean(transaction);
   return (
     <Dialog
       open={open}
       onClose={onClose}
-      title={editing ? "Editar movimiento" : "Añadir movimiento"}
-      description="Tus ingresos y gastos fijos se registran solos. Aquí anota lo que no se repite."
+      title={editing ? t("Editar movimiento") : t("Añadir movimiento")}
+      description={t(
+        "Tus ingresos y gastos fijos se registran solos. Aquí anota lo que no se repite.",
+      )}
     >
       <TransactionFormBody
         transaction={transaction ?? null}
@@ -81,6 +87,7 @@ function TransactionFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -111,14 +118,14 @@ function TransactionFormBody({
     try {
       if (transaction) {
         await financeApi.updateTransaction(transaction.id, payload);
-        onSaved("Movimiento actualizado.");
+        onSaved(msg("Movimiento actualizado."));
       } else {
         await financeApi.createTransaction(payload);
-        onSaved("Movimiento guardado.");
+        onSaved(msg("Movimiento guardado."));
       }
     } catch (error) {
       setServerError(
-        error instanceof ApiError ? error.message : "No pudimos guardar el movimiento.",
+        error instanceof ApiError ? error.message : t("No pudimos guardar el movimiento."),
       );
     }
   }
@@ -128,7 +135,7 @@ function TransactionFormBody({
       {serverError ? <FormAlert title={serverError} /> : null}
 
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-bold">Tipo</legend>
+        <legend className="mb-2 text-sm font-bold">{t("Tipo")}</legend>
         <div className="bg-canvas grid grid-cols-2 gap-1.5 rounded-full p-[5px]">
           {(
             [
@@ -143,7 +150,7 @@ function TransactionFormBody({
               }`}
             >
               <input type="radio" value={value} className="sr-only" {...register("type")} />
-              {label}
+              {t(label)}
             </label>
           ))}
         </div>
@@ -151,7 +158,7 @@ function TransactionFormBody({
 
       <TextField
         id="tx-amount"
-        label="Monto"
+        label={t("Monto")}
         inputMode="decimal"
         placeholder="0.00"
         autoComplete="off"
@@ -162,10 +169,10 @@ function TransactionFormBody({
       {type === "expense" ? (
         <SelectField
           id="tx-category"
-          label="Categoría"
+          label={t("Categoría")}
           options={[
-            { value: "", label: "Sin categoría" },
-            ...categories.map((c) => ({ value: c.id, label: c.name })),
+            { value: "", label: t("Sin categoría") },
+            ...categories.map((c) => ({ value: c.id, label: categoryName(c.name, t) })),
           ]}
           {...register("category_id")}
         />
@@ -174,30 +181,30 @@ function TransactionFormBody({
       {accounts.length > 1 ? (
         <SelectField
           id="tx-account"
-          label={type === "income" ? "¿A qué cuenta llegó?" : "¿De qué cuenta salió?"}
-          options={accountOptions(accounts)}
+          label={type === "income" ? t("¿A qué cuenta llegó?") : t("¿De qué cuenta salió?")}
+          options={accountOptions(accounts, t)}
           {...register("account_id")}
         />
       ) : null}
 
       <TextField
         id="tx-date"
-        label="Fecha"
+        label={t("Fecha")}
         type="date"
         error={errors.occurred_on?.message}
         {...register("occurred_on")}
       />
       <TextField
         id="tx-note"
-        label="Nota (opcional)"
-        placeholder="Ej. almuerzo, regalo, taxi"
+        label={t("Nota (opcional)")}
+        placeholder={t("Ej. almuerzo, regalo, taxi")}
         error={errors.note?.message}
         {...register("note")}
       />
 
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -205,7 +212,7 @@ function TransactionFormBody({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Guardando…" : "Guardar movimiento"}
+          {isSubmitting ? t("Guardando…") : t("Guardar movimiento")}
         </button>
       </div>
     </form>

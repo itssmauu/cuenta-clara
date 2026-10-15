@@ -1,4 +1,8 @@
+"use client";
+
 import type { ComponentProps } from "react";
+
+import { useT } from "@/i18n/client";
 
 type SelectFieldProps = ComponentProps<"select"> & {
   id: string;
@@ -8,6 +12,7 @@ type SelectFieldProps = ComponentProps<"select"> & {
 };
 
 export function SelectField({ id, label, error, options, ...select }: SelectFieldProps) {
+  const t = useT();
   const errorId = `${id}-error`;
   return (
     <div className="flex flex-col gap-2">
@@ -25,13 +30,13 @@ export function SelectField({ id, label, error, options, ...select }: SelectFiel
       >
         {options.map((option) => (
           <option key={option.value} value={option.value}>
-            {option.label}
+            {t(option.label)}
           </option>
         ))}
       </select>
       {error ? (
         <p id={errorId} className="text-danger text-[13px] font-semibold">
-          {error}
+          {t(error)}
         </p>
       ) : null}
     </div>

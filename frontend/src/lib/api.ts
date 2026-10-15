@@ -65,8 +65,14 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 type RequestOptions = { method?: string; body?: unknown };
 
+/** "en" when the page is shown in English (the language switcher sets <html lang>). */
+function pageLanguage(): string {
+  return typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "es";
+}
+
 async function send(path: string, { method = "GET", body }: RequestOptions): Promise<Response> {
-  const headers = new Headers({ Accept: "application/json" });
+  // The API writes emails and Balbo's replies in the language the app is read in
+  const headers = new Headers({ Accept: "application/json", "Accept-Language": pageLanguage() });
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (!SAFE_METHODS.has(method)) {
     const csrf = readCookie(CSRF_COOKIE);

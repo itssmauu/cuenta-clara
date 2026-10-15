@@ -8,6 +8,8 @@ import { useSessionLoader } from "@/components/app/session";
 import { PERIOD_ADJECTIVE } from "@/components/dashboard/period-labels";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { Logo } from "@/components/ui/Logo";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi } from "@/lib/finance-api";
 import type { FixedExpenseValues } from "@/lib/finance-validation";
@@ -27,21 +29,22 @@ import {
 
 const STEPS = [
   {
-    title: "Tus cuentas",
-    intro: "¿Cuántas cuentas usas? Sepáralas como en tu banco: gastos, ahorro, fondos…",
+    title: msg("Tus cuentas"),
+    intro: msg("¿Cuántas cuentas usas? Sepáralas como en tu banco: gastos, ahorro, fondos…"),
   },
-  { title: "Tus gastos fijos", intro: "Lo que pagas sí o sí: internet, datos, pasaje…" },
-  { title: "Tus ingresos", intro: "Cuánto recibes y cada cuánto." },
-  { title: "Tu límite de gasto", intro: "Para saber si vas dentro o por encima." },
+  { title: msg("Tus gastos fijos"), intro: msg("Lo que pagas sí o sí: internet, datos, pasaje…") },
+  { title: msg("Tus ingresos"), intro: msg("Cuánto recibes y cada cuánto.") },
+  { title: msg("Tu límite de gasto"), intro: msg("Para saber si vas dentro o por encima.") },
 ];
 
 export function OnboardingWizard() {
+  const t = useT();
   const router = useRouter();
   const { state } = useSessionLoader("onboarding");
   const [today] = useState(todayISO);
   const [step, setStep] = useState(0);
   const [accountsForm, setAccountsForm] = useState<AccountsStepForm>({
-    accounts: [FIRST_ACCOUNT],
+    accounts: [{ ...FIRST_ACCOUNT, name: t(FIRST_ACCOUNT.name ?? "") }],
     primary: "0",
   });
   const [accountsValues, setAccountsValues] = useState<AccountsStepValues | null>(null);
@@ -105,7 +108,7 @@ export function OnboardingWizard() {
         incomeValues.frequency === "custom" ? Number(incomeValues.custom_period_days) : null;
       if (incomeValues.amount && !saved.current.income) {
         await financeApi.createIncome({
-          label: incomeValues.label || "Ingreso principal",
+          label: incomeValues.label || t("Ingreso principal"),
           amount: incomeValues.amount,
           frequency: incomeValues.frequency,
           custom_period_days: custom,
@@ -126,8 +129,10 @@ export function OnboardingWizard() {
     } catch (caught) {
       setError(
         caught instanceof ApiError
-          ? `No pudimos guardar todo: ${caught.message} Inténtalo de nuevo.`
-          : "No pudimos guardar tus datos. Inténtalo de nuevo.",
+          ? t("No pudimos guardar todo: {message} Inténtalo de nuevo.", {
+              message: t(caught.message),
+            })
+          : t("No pudimos guardar tus datos. Inténtalo de nuevo."),
       );
       setSaving(false);
     }
@@ -139,7 +144,7 @@ export function OnboardingWizard() {
   if (state.status === "loading") {
     return (
       <p role="status" className="text-muted font-semibold">
-        Cargando…
+        {t("Cargando…")}
       </p>
     );
   }
@@ -151,10 +156,10 @@ export function OnboardingWizard() {
       <Logo />
       <div className="flex flex-col gap-6 rounded-[32px] bg-white p-6 sm:p-10">
         <p className="text-muted font-semibold">
-          Hola, {state.user.name}. Configuremos tu cuenta en 4 pasos.
+          {t("Hola, {name}. Configuremos tu cuenta en 4 pasos.", { name: state.user.name })}
         </p>
 
-        <ol aria-label="Progreso" className="grid grid-cols-4 gap-2">
+        <ol aria-label={t("Progreso")} className="grid grid-cols-4 gap-2">
           {STEPS.map((s, index) => {
             const done = index < step;
             const active = index === step;
@@ -172,10 +177,10 @@ export function OnboardingWizard() {
                   className={`flex items-center gap-1 text-xs font-bold ${active ? "text-ink" : "text-muted"}`}
                 >
                   {done ? <Check aria-hidden="true" className="size-3.5" strokeWidth={3} /> : null}
-                  <span className="hidden sm:inline">{s.title}</span>
-                  <span className="sm:hidden">Paso {index + 1}</span>
+                  <span className="hidden sm:inline">{t(s.title)}</span>
+                  <span className="sm:hidden">{t("Paso {n}", { n: index + 1 })}</span>
                   <span className="sr-only">
-                    {done ? " (completado)" : active ? " (actual)" : ""}
+                    {done ? t(" (completado)") : active ? t(" (actual)") : ""}
                   </span>
                 </span>
               </li>
@@ -185,16 +190,16 @@ export function OnboardingWizard() {
 
         <div className="flex flex-col gap-1">
           <p className="text-primary text-sm font-bold">
-            Paso {step + 1} de {STEPS.length}
+            {t("Paso {n} de {total}", { n: step + 1, total: STEPS.length })}
           </p>
           <h1
             ref={headingRef}
             tabIndex={-1}
             className="font-display text-[28px] font-extrabold tracking-[-0.02em] focus:outline-none"
           >
-            {current.title}
+            {t(current.title)}
           </h1>
-          <p className="text-body">{current.intro}</p>
+          <p className="text-body">{t(current.intro)}</p>
         </div>
 
         {step === 0 ? (
@@ -231,7 +236,7 @@ export function OnboardingWizard() {
         {step === 3 ? (
           <LimitStep
             initial={limit}
-            periodLabel={PERIOD_ADJECTIVE[incomeValues?.frequency ?? "weekly"]}
+            periodLabel={t(PERIOD_ADJECTIVE[incomeValues?.frequency ?? "weekly"])}
             submitting={saving}
             error={error}
             onBack={() => setStep(2)}

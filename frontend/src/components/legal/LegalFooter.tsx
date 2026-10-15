@@ -1,5 +1,8 @@
+"use client";
+
 import Link from "next/link";
 
+import { useT } from "@/i18n/client";
 import { LEGAL, LEGAL_PAGES } from "@/lib/legal";
 
 /** Links to the legal documents, shown on every public page and inside the app. */
@@ -13,13 +16,14 @@ export function LegalLinks({
   compact?: boolean;
   linkClassName?: string;
 }) {
+  const t = useT();
   return (
-    <nav aria-label="Información legal" className={className}>
+    <nav aria-label={t("Información legal")} className={className}>
       <ul className={`flex flex-wrap ${compact ? "gap-x-3" : "gap-x-5"} gap-y-1`}>
         {LEGAL_PAGES.map((page) => (
           <li key={page.href}>
             <Link href={page.href} className={`inline-flex min-h-11 items-center ${linkClassName}`}>
-              {compact ? page.short : page.label}
+              {t(compact ? page.short : page.label)}
             </Link>
           </li>
         ))}
@@ -29,10 +33,14 @@ export function LegalLinks({
 }
 
 export function LegalFooter() {
+  const t = useT();
   return (
     <footer className="text-muted flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-6 text-sm font-semibold">
       <p>
-        © {new Date().getFullYear()} {LEGAL.service} · Hecho en Panamá
+        {t("© {year} {service} · Hecho en Panamá", {
+          year: new Date().getFullYear(),
+          service: LEGAL.service,
+        })}
       </p>
       <LegalLinks />
     </footer>

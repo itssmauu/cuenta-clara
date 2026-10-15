@@ -1,5 +1,9 @@
+"use client";
+
 import { Landmark, PiggyBank, TrendingUp, Wallet, type LucideIcon } from "lucide-react";
 
+import { useT } from "@/i18n/client";
+import { msg, type Translate } from "@/i18n/translate";
 import type { Account, AccountKind, AccountScope } from "@/lib/finance-api";
 import { ACCOUNT_KIND_LABELS } from "@/lib/finance-validation";
 
@@ -33,14 +37,14 @@ export function AccountIcon({ kind, size = "md" }: { kind: AccountKind; size?: "
 
 /** "Ahorro" · "Gastos del día" — the kind in words, never only as an icon or color. */
 export function kindLabel(account: Pick<Account, "kind" | "is_primary">): string {
-  return account.is_primary ? "Principal · gastos del día" : ACCOUNT_KIND_LABELS[account.kind];
+  return account.is_primary ? msg("Principal · gastos del día") : ACCOUNT_KIND_LABELS[account.kind];
 }
 
 /** Options for a "Cuenta" select: primary first (as the API returns them). */
-export function accountOptions(accounts: Account[]) {
+export function accountOptions(accounts: Account[], t: Translate) {
   return accounts.map((a) => ({
     value: a.id,
-    label: a.is_primary ? `${a.name} (principal)` : a.name,
+    label: a.is_primary ? t("{name} (principal)", { name: a.name }) : a.name,
   }));
 }
 
@@ -58,12 +62,13 @@ export function AccountPicker({
   value: AccountScope;
   onChange: (value: AccountScope) => void;
 }) {
+  const t = useT();
   // A single account needs no choice
   if (accounts.length < 2) return null;
   const primary = accounts.find((a) => a.is_primary);
   return (
     <label className="flex min-h-11 items-center gap-2 rounded-full bg-white py-1 pr-1 pl-4 text-sm font-bold">
-      Cuenta
+      {t("Cuenta")}
       <select
         value={value ?? primary?.id ?? ""}
         onChange={(event) =>
@@ -76,7 +81,7 @@ export function AccountPicker({
             {a.name}
           </option>
         ))}
-        <option value="all">Todas las cuentas</option>
+        <option value="all">{t("Todas las cuentas")}</option>
       </select>
     </label>
   );

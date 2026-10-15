@@ -1,3 +1,5 @@
+"use client";
+
 import {
   AlertTriangle,
   ArrowDownRight,
@@ -13,6 +15,8 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 
+import { useT } from "@/i18n/client";
+import type { Translate } from "@/i18n/translate";
 import type { Dashboard, UpcomingFixedExpense } from "@/lib/finance-api";
 import { formatDate, formatMoney, subtractMoney } from "@/lib/format";
 
@@ -35,13 +39,18 @@ function Comparison({
   currency,
   previousName,
 }: NonNullable<KpiProps["comparison"]>) {
+  const t = useT();
   const diff = subtractMoney(current, previous);
   const amount = Number(diff);
   const Icon = amount > 0 ? ArrowUpRight : amount < 0 ? ArrowDownRight : Minus;
+  const previous_ = t(previousName);
+  const difference = formatMoney(Math.abs(amount), currency);
   const text =
     amount === 0
-      ? `Igual que ${previousName}`
-      : `${formatMoney(Math.abs(amount), currency)} ${amount > 0 ? "más" : "menos"} que ${previousName}`;
+      ? t("Igual que {previous}", { previous: previous_ })
+      : amount > 0
+        ? t("{amount} más que {previous}", { amount: difference, previous: previous_ })
+        : t("{amount} menos que {previous}", { amount: difference, previous: previous_ });
   return (
     <span className="text-body flex items-center gap-1 text-xs font-bold">
       <Icon aria-hidden="true" className="size-4 shrink-0" />
@@ -89,6 +98,7 @@ function Kpi({
 }
 
 export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
+  const t = useT();
   const money = (value: string) => formatMoney(value, d.currency);
   const since = formatDate(d.balance_as_of, { day: "numeric", month: "short", year: "numeric" });
   const compare = (current: string, previous: string) => ({
@@ -99,37 +109,40 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
   });
   return (
     <section
-      aria-label="Resumen del periodo"
+      aria-label={t("Resumen del periodo")}
       className="grid grid-cols-[repeat(auto-fit,minmax(200px,1fr))] gap-4"
     >
       <Kpi
         tone="ink"
         icon={Wallet}
-        label="Saldo inicial"
+        label={t("Saldo inicial")}
         value={money(d.initial_balance)}
-        note={`Desde el ${since}`}
+        note={t("Desde el {date}", { date: since })}
       />
       <Kpi
         icon={ArrowUpCircle}
-        label="Ingresos del periodo"
+        label={t("Ingresos del periodo")}
         value={money(d.income)}
-        note={`Saldo al iniciar: ${money(d.opening_balance)}`}
+        note={t("Saldo al iniciar: {amount}", { amount: money(d.opening_balance) })}
         valueClass="text-mint-ink"
         comparison={compare(d.income, d.previous_income)}
       />
       <Kpi
         icon={ArrowDownCircle}
-        label="Gastado"
+        label={t("Gastado")}
         value={money(d.spent)}
-        note={`Fijos ${money(d.fixed_expenses)} · Variables ${money(d.variable_expenses)}`}
+        note={t("Fijos {fixed} · Variables {variable}", {
+          fixed: money(d.fixed_expenses),
+          variable: money(d.variable_expenses),
+        })}
         comparison={compare(d.spent, d.previous_spent)}
       />
       <Kpi
         tone="tint"
         icon={PiggyBank}
-        label="Saldo disponible"
+        label={t("Saldo disponible")}
         value={money(d.available_balance)}
-        note={transfersNote(d) ?? "Saldo al iniciar + ingresos − gastos"}
+        note={transfersNote(d, t) ?? t("Saldo al iniciar + ingresos − gastos")}
         valueClass="text-primary-hover"
       />
     </section>
@@ -137,22 +150,23 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
 }
 
 /** Money moved between accounts changes the balance without being income or spending. */
-function transfersNote(d: Dashboard): string | null {
+function transfersNote(d: Dashboard, t: Translate): string | null {
   const amount = Number(d.transfers);
   if (amount === 0) return null;
   const moved = formatMoney(Math.abs(amount), d.currency);
   return amount > 0
-    ? `Incluye ${moved} que llegaron de otras cuentas`
-    : `Incluye ${moved} que pasaste a otras cuentas`;
+    ? t("Incluye {amount} que llegaron de otras cuentas", { amount: moved })
+    : t("Incluye {amount} que pasaste a otras cuentas", { amount: moved });
 }
 
 /** "Dentro del límite · te quedan $X" / "Te pasaste por $X": icon + words, never color alone. */
 export function LimitChip({ dashboard: d }: { dashboard: Dashboard }) {
+  const t = useT();
   if (d.spending_limit === null || d.limit_remaining === null) {
     return (
       <span className="bg-canvas inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-bold">
         <Info aria-hidden="true" className="size-4" />
-        Sin límite de gasto
+        {t("Sin límite de gasto")}
       </span>
     );
   }
@@ -161,47 +175,51 @@ export function LimitChip({ dashboard: d }: { dashboard: Dashboard }) {
     return (
       <span className="bg-accent-tint text-ink inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-bold">
         <AlertTriangle aria-hidden="true" className="size-4" />
-        Te pasaste por {formatMoney(Math.abs(remaining), d.currency)}
+        {t("Te pasaste por {amount}", { amount: formatMoney(Math.abs(remaining), d.currency) })}
       </span>
     );
   }
   return (
     <span className="bg-mint-tint text-ink inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-[13px] font-bold">
       <CheckCircle2 aria-hidden="true" className="size-4" />
-      Dentro del límite · te quedan {formatMoney(remaining, d.currency)}
+      {t("Dentro del límite · te quedan {amount}", {
+        amount: formatMoney(remaining, d.currency),
+      })}
     </span>
   );
 }
 
 export function LimitMeter({ dashboard: d }: { dashboard: Dashboard }) {
+  const t = useT();
   const percent = d.limit_used_percent;
   // The spending limit belongs to the day-to-day account, not to savings or funds
   if (d.account && !d.account.is_primary) {
     return (
       <div className="bg-ink flex flex-col gap-3.5 rounded-[32px] p-7 text-white">
-        <span className="text-on-ink text-[13px] font-bold">Balance del periodo</span>
+        <span className="text-on-ink text-[13px] font-bold">{t("Balance del periodo")}</span>
         <p className="font-display text-[26px] leading-tight font-extrabold tracking-[-0.02em]">
-          {Number(d.spent) === 0 ? "Sin gastos en esta cuenta" : "Gastos de esta cuenta"}
+          {Number(d.spent) === 0 ? t("Sin gastos en esta cuenta") : t("Gastos de esta cuenta")}
         </p>
         <span className="text-on-ink text-[13px] font-semibold">
-          Tu límite de gasto se aplica a tu cuenta principal. Aquí ves cómo cambia el saldo de esta
-          cuenta.
+          {t(
+            "Tu límite de gasto se aplica a tu cuenta principal. Aquí ves cómo cambia el saldo de esta cuenta.",
+          )}
         </span>
       </div>
     );
   }
   const headline =
     percent === null
-      ? "Define un límite para medir tu ritmo"
+      ? t("Define un límite para medir tu ritmo")
       : d.over_limit
-        ? "Gastas más de lo planeado"
+        ? t("Gastas más de lo planeado")
         : percent >= 80
-          ? "Cerca de tu límite"
-          : "Vas en equilibrio";
+          ? t("Cerca de tu límite")
+          : t("Vas en equilibrio");
 
   return (
     <div className="bg-ink flex flex-col gap-3.5 rounded-[32px] p-7 text-white">
-      <span className="text-on-ink text-[13px] font-bold">Balance del periodo</span>
+      <span className="text-on-ink text-[13px] font-bold">{t("Balance del periodo")}</span>
       <p className="font-display text-[26px] leading-tight font-extrabold tracking-[-0.02em]">
         {headline}
       </p>
@@ -210,17 +228,17 @@ export function LimitMeter({ dashboard: d }: { dashboard: Dashboard }) {
           href="/ajustes"
           className="text-accent inline-flex min-h-11 items-center text-sm font-bold hover:underline"
         >
-          Definir límite de gasto
+          {t("Definir límite de gasto")}
         </Link>
       ) : (
         <>
           <div
             role="meter"
-            aria-label="Uso del límite de gasto"
+            aria-label={t("Uso del límite de gasto")}
             aria-valuemin={0}
             aria-valuemax={100}
             aria-valuenow={Math.min(percent, 100)}
-            aria-valuetext={`${percent}% del límite`}
+            aria-valuetext={t("{percent}% del límite", { percent })}
             className="bg-ink-2 h-3.5 overflow-hidden rounded-full"
           >
             {/* Rendered on the client only, so this style is applied through the CSSOM (CSP-safe) */}
@@ -232,7 +250,10 @@ export function LimitMeter({ dashboard: d }: { dashboard: Dashboard }) {
             />
           </div>
           <span className="text-on-ink text-[13px] font-semibold">
-            Has usado el {percent}% de tu límite {PERIOD_ADJECTIVE[d.period]}
+            {t("Has usado el {percent}% de tu límite {period}", {
+              percent,
+              period: t(PERIOD_ADJECTIVE[d.period]),
+            })}
           </span>
         </>
       )}
@@ -247,19 +268,20 @@ export function UpcomingExpenses({
   items: UpcomingFixedExpense[];
   currency: string;
 }) {
+  const t = useT();
   return (
     <section
       aria-labelledby="upcoming-title"
       className="bg-primary-tint flex flex-col gap-3 rounded-[32px] p-6"
     >
       <h2 id="upcoming-title" className="font-display text-base font-bold">
-        Próximos gastos fijos
+        {t("Próximos gastos fijos")}
       </h2>
       {items.length === 0 ? (
         <p className="text-on-tint text-sm">
-          No tienes gastos fijos activos.{" "}
+          {t("No tienes gastos fijos activos.")}{" "}
           <Link href="/gastos-fijos" className="text-primary font-bold hover:underline">
-            Agregar uno
+            {t("Agregar uno")}
           </Link>
         </p>
       ) : (
@@ -281,9 +303,10 @@ export function UpcomingExpenses({
 
 /** Alert once 80 % of the period's limit is used, and again when it is exceeded. */
 export function LimitAlert({ dashboard: d }: { dashboard: Dashboard }) {
+  const t = useT();
   if (d.limit_status !== "warning" && d.limit_status !== "over") return null;
   const remaining = d.limit_remaining ?? "0";
-  const adjective = PERIOD_ADJECTIVE[d.period];
+  const period = t(PERIOD_ADJECTIVE[d.period]);
   return (
     <p
       role="status"
@@ -291,8 +314,15 @@ export function LimitAlert({ dashboard: d }: { dashboard: Dashboard }) {
     >
       <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
       {d.limit_status === "over"
-        ? `Te pasaste de tu límite ${adjective} por ${formatMoney(Math.abs(Number(remaining)), d.currency)}. Revisa tus gastos de este periodo.`
-        : `Atención: llevas el ${d.limit_used_percent}% de tu límite ${adjective}. Te quedan ${formatMoney(remaining, d.currency)}.`}
+        ? t("Te pasaste de tu límite {period} por {amount}. Revisa tus gastos de este periodo.", {
+            period,
+            amount: formatMoney(Math.abs(Number(remaining)), d.currency),
+          })
+        : t("Atención: llevas el {percent}% de tu límite {period}. Te quedan {amount}.", {
+            percent: d.limit_used_percent ?? 0,
+            period,
+            amount: formatMoney(remaining, d.currency),
+          })}
     </p>
   );
 }

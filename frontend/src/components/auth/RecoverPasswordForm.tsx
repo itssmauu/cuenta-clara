@@ -12,6 +12,8 @@ import { PasswordChecklist } from "@/components/ui/PasswordChecklist";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg, rich } from "@/i18n/translate";
 import { ApiError, authApi } from "@/lib/api";
 import {
   forgotPasswordSchema,
@@ -47,6 +49,7 @@ export function RecoverPasswordForm() {
 }
 
 function EmailStep({ onSent }: { onSent: (email: string) => void }) {
+  const t = useT();
   const [serverError, setServerError] = useState<ServerError | null>(null);
   const {
     register,
@@ -64,39 +67,45 @@ function EmailStep({ onSent }: { onSent: (email: string) => void }) {
       await authApi.forgotPassword(email);
       onSent(email);
     } catch (error) {
-      setServerError(toServerError(error, "No pudimos enviar el código. Inténtalo de nuevo."));
+      setServerError(toServerError(error, msg("No pudimos enviar el código. Inténtalo de nuevo.")));
     }
   }
 
   return (
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-[18px]">
       <p className="text-body leading-relaxed">
-        Escribe el correo de tu cuenta y te enviaremos un código de 6 números para crear una
-        contraseña nueva.
+        {t(
+          "Escribe el correo de tu cuenta y te enviaremos un código de 6 números para crear una contraseña nueva.",
+        )}
       </p>
       {serverError ? <FormAlert title={serverError.title} /> : null}
       <TextField
         id="email"
-        label="Correo electrónico"
+        label={t("Correo electrónico")}
         type="email"
         autoComplete="email"
         inputMode="email"
-        placeholder="correo@ejemplo.com"
+        placeholder={t("correo@ejemplo.com")}
         error={errors.email?.message}
         {...register("email")}
       />
-      <SubmitButton busy={isSubmitting} label="Enviarme un código" busyLabel="Enviando…" />
+      <SubmitButton
+        busy={isSubmitting}
+        label={t("Enviarme un código")}
+        busyLabel={t("Enviando…")}
+      />
       <Link
         href="/login"
         className="text-primary inline-flex min-h-11 items-center self-center text-sm font-bold hover:underline"
       >
-        Volver a iniciar sesión
+        {t("Volver a iniciar sesión")}
       </Link>
     </form>
   );
 }
 
 function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () => void }) {
+  const t = useT();
   const router = useRouter();
   const [serverError, setServerError] = useState<ServerError | null>(null);
   // An end time, not a counter: background tabs slow timers down, the clock does not
@@ -133,7 +142,7 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
       setResent(true);
       setResendAt(Date.now() + RESEND_SECONDS * 1000);
     } catch (error) {
-      setServerError(toServerError(error, "No pudimos reenviar el código."));
+      setServerError(toServerError(error, msg("No pudimos reenviar el código.")));
     }
   }
 
@@ -142,7 +151,7 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
     try {
       await authApi.resetPassword({ email, code, new_password: password });
     } catch (error) {
-      setServerError(toServerError(error, "No pudimos cambiar tu contraseña."));
+      setServerError(toServerError(error, msg("No pudimos cambiar tu contraseña.")));
       return;
     }
     // Every other session was closed; this one starts fresh with the new password
@@ -160,14 +169,24 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
         <MailCheck aria-hidden="true" className="text-primary mt-0.5 size-5 shrink-0" />
         <div className="flex flex-col gap-1">
           <h2 ref={headingRef} tabIndex={-1} className="text-ink font-bold outline-none">
-            Revisa tu correo
+            {t("Revisa tu correo")}
           </h2>
           <p>
-            Si <strong className="text-ink break-all">{email}</strong> tiene una cuenta, te enviamos
-            un código de 6 números. Vence en 15 minutos. Si no lo ves, busca en spam.
+            {rich(
+              t(
+                "Si <email></email> tiene una cuenta, te enviamos un código de 6 números. Vence en 15 minutos. Si no lo ves, busca en spam.",
+              ),
+              {
+                email: () => (
+                  <strong key="email" className="text-ink break-all">
+                    {email}
+                  </strong>
+                ),
+              },
+            )}
           </p>
           {resent ? (
-            <p role="status">Te enviamos un código nuevo; el anterior ya no sirve.</p>
+            <p role="status">{t("Te enviamos un código nuevo; el anterior ya no sirve.")}</p>
           ) : null}
         </div>
       </div>
@@ -176,7 +195,7 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
 
       <TextField
         id="code"
-        label="Código de 6 números"
+        label={t("Código de 6 números")}
         inputMode="numeric"
         autoComplete="one-time-code"
         maxLength={7}
@@ -187,7 +206,7 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
       />
       <PasswordField
         id="password"
-        label="Contraseña nueva"
+        label={t("Contraseña nueva")}
         autoComplete="new-password"
         error={errors.password?.message}
         hint={<PasswordChecklist id="password-rules" password={password ?? ""} />}
@@ -195,13 +214,17 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
       />
       <PasswordField
         id="confirmPassword"
-        label="Confirmar contraseña nueva"
+        label={t("Confirmar contraseña nueva")}
         autoComplete="new-password"
         error={errors.confirmPassword?.message}
         {...register("confirmPassword")}
       />
 
-      <SubmitButton busy={isSubmitting} label="Cambiar contraseña" busyLabel="Cambiando…" />
+      <SubmitButton
+        busy={isSubmitting}
+        label={t("Cambiar contraseña")}
+        busyLabel={t("Cambiando…")}
+      />
 
       <div className="flex flex-wrap items-center justify-between gap-2 text-sm font-bold">
         <button
@@ -210,14 +233,16 @@ function CodeStep({ email, onChangeEmail }: { email: string; onChangeEmail: () =
           disabled={resendIn > 0}
           className="text-primary disabled:text-muted inline-flex min-h-11 cursor-pointer items-center hover:underline disabled:cursor-not-allowed disabled:no-underline"
         >
-          {resendIn > 0 ? `Reenviar código en ${resendIn} s` : "Reenviar código"}
+          {resendIn > 0
+            ? t("Reenviar código en {seconds} s", { seconds: resendIn })
+            : t("Reenviar código")}
         </button>
         <button
           type="button"
           onClick={onChangeEmail}
           className="text-body hover:text-ink inline-flex min-h-11 cursor-pointer items-center"
         >
-          Usar otro correo
+          {t("Usar otro correo")}
         </button>
       </div>
     </form>

@@ -20,6 +20,8 @@ import { niceScale } from "@/components/dashboard/SpendingChart";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
+import { useT } from "@/i18n/client";
+import { msg, rich } from "@/i18n/translate";
 import {
   financeApi,
   type AccountScope,
@@ -38,8 +40,8 @@ import { td, th } from "./RowActions";
 const HORIZONS = [4, 8, 12];
 
 const ESTIMATORS = [
-  { value: "average", label: "Promedio" },
-  { value: "trend", label: "Tendencia" },
+  { value: "average", label: msg("Promedio") },
+  { value: "trend", label: msg("Tendencia") },
 ] as const satisfies readonly { value: Estimator; label: string }[];
 
 const COLOR = {
@@ -65,18 +67,22 @@ function LineTooltip({
   active?: boolean;
   payload?: ReadonlyArray<{ payload?: unknown }>;
 }) {
+  const t = useT();
   const point = payload?.[0]?.payload as Point | undefined;
   if (!active || !point) return null;
   return (
     <div className="border-line rounded-xl border bg-white px-3 py-2 text-sm shadow-sm">
       <p className="font-display text-base font-extrabold tabular-nums">{point.closingText}</p>
-      <p className="text-muted font-semibold">Saldo al cierre · {point.range}</p>
-      {point.negative ? <p className="mt-1 font-semibold">Saldo negativo</p> : null}
+      <p className="text-muted font-semibold">
+        {t("Saldo al cierre · {range}", { range: point.range })}
+      </p>
+      {point.negative ? <p className="mt-1 font-semibold">{t("Saldo negativo")}</p> : null}
     </div>
   );
 }
 
 function ForecastChart({ forecast }: { forecast: Forecast }) {
+  const t = useT();
   const points: Point[] = forecast.periods.map((p) => ({
     tick: periodTick(forecast.period, p.period_start),
     range: periodRange(p.period_start, p.period_end),
@@ -118,7 +124,7 @@ function ForecastChart({ forecast }: { forecast: Forecast }) {
           <Line
             type="monotone"
             dataKey="closing"
-            name="Saldo al cierre"
+            name={t("Saldo al cierre")}
             stroke={COLOR.line}
             strokeWidth={2}
             isAnimationActive={false}
@@ -142,6 +148,7 @@ function ForecastChart({ forecast }: { forecast: Forecast }) {
 }
 
 export function ForecastPage() {
+  const t = useT();
   const { settings } = useSession();
   const [today] = useState(todayISO);
   const [horizon, setHorizon] = useState(4);
@@ -165,11 +172,13 @@ export function ForecastPage() {
   return (
     <>
       <PageHeader
-        title="Predicción"
+        title={t("Predicción")}
         subtitle={
           data
-            ? `Saldo proyectado de ${data.account?.name ?? "todas tus cuentas"}`
-            : "Tu saldo proyectado para los próximos periodos"
+            ? t("Saldo proyectado de {name}", {
+                name: data.account?.name ?? t("todas tus cuentas"),
+              })
+            : t("Tu saldo proyectado para los próximos periodos")
         }
         actions={
           <>
@@ -179,7 +188,7 @@ export function ForecastPage() {
               onChange={setAccount}
             />
             <SegmentedControl
-              label="Periodo"
+              label={t("Periodo")}
               options={PERIOD_OPTIONS.map((option) => ({
                 value: option,
                 label: FREQUENCY_LABELS[option],
@@ -191,14 +200,18 @@ export function ForecastPage() {
               optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
             />
             <SegmentedControl
-              label="Cuántos periodos"
-              options={HORIZONS.map((n) => ({ value: n, label: n, ariaLabel: `${n} periodos` }))}
+              label={t("Cuántos periodos")}
+              options={HORIZONS.map((n) => ({
+                value: n,
+                label: n,
+                ariaLabel: t("{n} periodos", { n }),
+              }))}
               value={horizon}
               onChange={setHorizon}
               optionClass="px-3 text-sm"
             />
             <SegmentedControl
-              label="Cómo estimar el gasto"
+              label={t("Cómo estimar el gasto")}
               options={ESTIMATORS}
               value={estimator}
               onChange={setEstimator}
@@ -209,13 +222,16 @@ export function ForecastPage() {
 
       {forecast.status === "error" && !data ? (
         <div className="flex flex-col items-start gap-3">
-          <FormAlert title="No pudimos calcular tu predicción." items={[forecast.error.message]} />
+          <FormAlert
+            title={t("No pudimos calcular tu predicción.")}
+            items={[forecast.error.message]}
+          />
           <button
             type="button"
             onClick={reload}
             className="text-primary min-h-11 font-bold hover:underline"
           >
-            Reintentar
+            {t("Reintentar")}
           </button>
         </div>
       ) : !data || !last ? (
@@ -229,28 +245,32 @@ export function ForecastPage() {
               className="bg-ink flex min-w-0 flex-[1_1_280px] flex-col gap-2 rounded-[32px] p-7 text-white"
             >
               <h2 id="forecast-headline" className="text-on-ink text-[13px] font-bold">
-                Saldo proyectado en {data.periods.length} periodos
+                {t("Saldo proyectado en {n} periodos", { n: data.periods.length })}
               </h2>
               <p className="font-display text-[40px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
                 {money(last.closing_balance)}
               </p>
               <p className="text-on-ink text-sm font-semibold">
-                Al {periodRange(last.period_end, last.period_end)} · periodo{" "}
-                {PERIOD_ADJECTIVE[data.period]}
+                {t("Al {date} · periodo {period}", {
+                  date: periodRange(last.period_end, last.period_end),
+                  period: t(PERIOD_ADJECTIVE[data.period]),
+                })}
               </p>
             </section>
             <section className="bg-primary-tint flex min-w-0 flex-[2_1_380px] flex-col gap-2 rounded-[32px] p-7">
-              <h2 className="font-display text-base font-bold">Cómo se calcula</h2>
+              <h2 className="font-display text-base font-bold">{t("Cómo se calcula")}</h2>
               <p className="text-on-tint text-sm leading-relaxed">
-                El periodo actual usa tus datos reales. Los siguientes suman tus ingresos
-                recurrentes y restan tus gastos fijos y un gasto variable estimado.
+                {t(
+                  "El periodo actual usa tus datos reales. Los siguientes suman tus ingresos recurrentes y restan tus gastos fijos y un gasto variable estimado.",
+                )}
               </p>
               <EstimatorExplanation forecast={data} requested={estimator} money={money} />
               {firstNegative ? (
                 <p className="text-ink mt-1 flex items-start gap-2 text-sm font-bold">
                   <AlertTriangle aria-hidden="true" className="mt-0.5 size-4 shrink-0" />
-                  Tu saldo quedaría en negativo a partir del periodo{" "}
-                  {periodRange(firstNegative.period_start, firstNegative.period_end)}.
+                  {t("Tu saldo quedaría en negativo a partir del periodo {range}.", {
+                    range: periodRange(firstNegative.period_start, firstNegative.period_end),
+                  })}
                 </p>
               ) : null}
             </section>
@@ -261,7 +281,7 @@ export function ForecastPage() {
             className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
           >
             <h2 id="forecast-chart-title" className="font-display text-xl font-bold">
-              Saldo al cierre de cada periodo
+              {t("Saldo al cierre de cada periodo")}
             </h2>
             <ForecastChart forecast={data} />
           </section>
@@ -271,29 +291,29 @@ export function ForecastPage() {
             className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
           >
             <h2 id="forecast-table-title" className="font-display text-xl font-bold">
-              Detalle por periodo
+              {t("Detalle por periodo")}
             </h2>
-            <ScrollRegion label="Tabla de predicción por periodo">
+            <ScrollRegion label={t("Tabla de predicción por periodo")}>
               <table className="w-full min-w-[760px] border-collapse text-sm">
                 <thead>
                   <tr>
                     <th scope="col" className={th}>
-                      PERIODO
+                      {t("PERIODO")}
                     </th>
                     <th scope="col" className={`${th} text-right`}>
-                      SALDO AL INICIAR
+                      {t("SALDO AL INICIAR")}
                     </th>
                     <th scope="col" className={`${th} text-right`}>
-                      INGRESOS
+                      {t("INGRESOS")}
                     </th>
                     <th scope="col" className={`${th} text-right`}>
-                      GASTOS FIJOS
+                      {t("GASTOS FIJOS")}
                     </th>
                     <th scope="col" className={`${th} text-right`}>
-                      GASTO VARIABLE
+                      {t("GASTO VARIABLE")}
                     </th>
                     <th scope="col" className={`${th} text-right`}>
-                      SALDO AL CIERRE
+                      {t("SALDO AL CIERRE")}
                     </th>
                   </tr>
                 </thead>
@@ -308,7 +328,7 @@ export function ForecastPage() {
                         <th scope="row" className={`${td} text-left font-bold whitespace-nowrap`}>
                           {periodRange(p.period_start, p.period_end)}
                           {p.is_current ? (
-                            <span className="text-primary ml-2 text-xs">Actual</span>
+                            <span className="text-primary ml-2 text-xs">{t("Actual")}</span>
                           ) : null}
                         </th>
                         <td className={`${td} text-right tabular-nums`}>
@@ -331,7 +351,7 @@ export function ForecastPage() {
                             <span className="inline-flex items-center gap-1.5">
                               <AlertTriangle aria-hidden="true" className="size-4" />
                               {money(p.closing_balance)}
-                              <span className="sr-only"> (saldo negativo)</span>
+                              <span className="sr-only">{t(" (saldo negativo)")}</span>
                             </span>
                           ) : (
                             money(p.closing_balance)
@@ -351,6 +371,12 @@ export function ForecastPage() {
 }
 
 /** Says which estimate was used and, for the trend, what the regression found. */
+const bold = (text: string) => (
+  <strong key={text} className="text-ink">
+    {text}
+  </strong>
+);
+
 function EstimatorExplanation({
   forecast,
   requested,
@@ -360,30 +386,47 @@ function EstimatorExplanation({
   requested: Estimator;
   money: (value: string) => string;
 }) {
+  const t = useT();
   if (forecast.estimator === "trend" && forecast.trend_per_period !== null) {
     const slope = Number(forecast.trend_per_period);
-    const direction = slope > 0 ? "sube" : slope < 0 ? "baja" : "se mantiene";
+    const sentence =
+      slope > 0
+        ? msg(
+            "<b>Tendencia:</b> una regresión lineal sobre tus últimos {n} periodos completos indica que tu gasto variable sube <b>{amount}</b> por periodo. Qué tan bien explica la línea tu historial (R²): <b>{r2}</b> de 1.",
+          )
+        : slope < 0
+          ? msg(
+              "<b>Tendencia:</b> una regresión lineal sobre tus últimos {n} periodos completos indica que tu gasto variable baja <b>{amount}</b> por periodo. Qué tan bien explica la línea tu historial (R²): <b>{r2}</b> de 1.",
+            )
+          : msg(
+              "<b>Tendencia:</b> una regresión lineal sobre tus últimos {n} periodos completos indica que tu gasto variable se mantiene. Qué tan bien explica la línea tu historial (R²): <b>{r2}</b> de 1.",
+            );
     return (
       <p className="text-on-tint text-sm leading-relaxed">
-        <strong className="text-ink">Tendencia:</strong> una regresión lineal sobre tus últimos{" "}
-        {forecast.history_points} periodos completos indica que tu gasto variable {direction}
-        {slope !== 0 ? (
-          <>
-            {" "}
-            <strong className="text-ink">{money(Math.abs(slope).toFixed(2))}</strong> por periodo
-          </>
-        ) : null}
-        . Qué tan bien explica la línea tu historial (R²):{" "}
-        <strong className="text-ink">{forecast.trend_r_squared}</strong> de 1.
+        {rich(
+          t(sentence, {
+            n: forecast.history_points,
+            amount: money(Math.abs(slope).toFixed(2)),
+            r2: forecast.trend_r_squared ?? "",
+          }),
+          { b: bold },
+        )}
       </p>
     );
   }
   return (
     <p className="text-on-tint text-sm leading-relaxed">
-      <strong className="text-ink">Promedio:</strong> gasto variable estimado de{" "}
-      <strong className="text-ink">{money(forecast.average_variable_spending)}</strong> por periodo.
+      {rich(
+        t("<b>Promedio:</b> gasto variable estimado de <b>{amount}</b> por periodo.", {
+          amount: money(forecast.average_variable_spending),
+        }),
+        { b: bold },
+      )}
       {requested === "trend"
-        ? ` Para estimar una tendencia hacen falta al menos 3 periodos completos (tienes ${forecast.history_points}), así que por ahora usamos el promedio.`
+        ? t(
+            " Para estimar una tendencia hacen falta al menos 3 periodos completos (tienes {history_points}), así que por ahora usamos el promedio.",
+            { history_points: forecast.history_points },
+          )
         : null}
     </p>
   );

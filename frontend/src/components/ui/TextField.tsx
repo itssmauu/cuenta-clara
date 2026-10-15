@@ -1,4 +1,8 @@
+"use client";
+
 import type { ComponentProps, ReactNode } from "react";
+
+import { useT } from "@/i18n/client";
 
 type TextFieldProps = ComponentProps<"input"> & {
   id: string;
@@ -11,7 +15,8 @@ type TextFieldProps = ComponentProps<"input"> & {
 
 /**
  * A labelled input whose error is announced and linked with aria-describedby,
- * so screen readers read it together with the field.
+ * so screen readers read it together with the field. Validation messages arrive in
+ * Spanish and are shown in the visitor's language.
  */
 export function TextField({
   id,
@@ -22,6 +27,7 @@ export function TextField({
   className = "",
   ...input
 }: TextFieldProps) {
+  const t = useT();
   const errorId = `${id}-error`;
   const hintId = `${id}-hint`;
   const describedBy = [hint ? hintId : null, error ? errorId : null].filter(Boolean).join(" ");
@@ -50,7 +56,7 @@ export function TextField({
       ) : null}
       {error ? (
         <p id={errorId} className="text-danger text-[13px] font-semibold">
-          {error}
+          {t(error)}
         </p>
       ) : null}
     </div>

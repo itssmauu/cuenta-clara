@@ -9,6 +9,7 @@ import { buttonClass } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, StatusPill, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
 import { ApiError } from "@/lib/api";
 import {
   financeApi,
@@ -27,6 +28,7 @@ import { accountName } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
 
 export function FixedExpensesPage() {
+  const t = useT();
   const { settings } = useSession();
   const [expenses, reload] = useResource("fixed-expenses", financeApi.listFixedExpenses);
   const [categoryList] = useResource("categories", financeApi.listCategories);
@@ -52,11 +54,15 @@ export function FixedExpensesPage() {
         item.id,
         fixedExpensePayload(item, { is_active: !item.is_active }),
       );
-      showNotice(item.is_active ? `«${item.name}» en pausa.` : `«${item.name}» activado.`);
+      showNotice(
+        item.is_active
+          ? t("«{name}» en pausa.", { name: item.name })
+          : t("«{name}» activado.", { name: item.name }),
+      );
       reload();
     } catch (caught) {
       setError(
-        caught instanceof ApiError ? caught.message : "No pudimos actualizar el gasto fijo.",
+        caught instanceof ApiError ? caught.message : t("No pudimos actualizar el gasto fijo."),
       );
     }
   }
@@ -67,10 +73,12 @@ export function FixedExpensesPage() {
     setError(null);
     try {
       await financeApi.deleteFixedExpense(deleting.id);
-      showNotice(`«${deleting.name}» eliminado.`);
+      showNotice(t("«{name}» eliminado.", { name: deleting.name }));
       reload();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "No pudimos eliminar el gasto fijo.");
+      setError(
+        caught instanceof ApiError ? caught.message : t("No pudimos eliminar el gasto fijo."),
+      );
     } finally {
       setDeleting(null);
       setBusy(false);
@@ -85,15 +93,17 @@ export function FixedExpensesPage() {
       className={buttonClass("accent", "md", "font-extrabold")}
     >
       <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-      Añadir gasto fijo
+      {t("Añadir gasto fijo")}
     </button>
   );
 
   return (
     <>
       <PageHeader
-        title="Gastos fijos"
-        subtitle="Lo que pagas cada periodo. El día que toca, te preguntamos si lo pagaste: solo entonces se descuenta"
+        title={t("Gastos fijos")}
+        subtitle={t(
+          "Lo que pagas cada periodo. El día que toca, te preguntamos si lo pagaste: solo entonces se descuenta",
+        )}
         actions={addButton}
       />
       <Notice message={notice} />
@@ -104,41 +114,46 @@ export function FixedExpensesPage() {
         className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
       >
         <h2 id="fixed-title" className="font-display text-xl font-bold">
-          Tus gastos fijos
+          {t("Tus gastos fijos")}
         </h2>
         {expenses.status === "error" && !items ? (
-          <FormAlert title="No pudimos cargar tus gastos fijos." items={[expenses.error.message]} />
+          <FormAlert
+            title={t("No pudimos cargar tus gastos fijos.")}
+            items={[expenses.error.message]}
+          />
         ) : !items ? (
           <TableSkeleton />
         ) : items.length === 0 ? (
           <EmptyState
             icon={Repeat}
-            title="Aún no registras gastos fijos"
-            text="Internet, datos móviles, pasaje, alquiler… Se descuentan solos de tu saldo en cada fecha y cuentan para tu límite."
+            title={t("Aún no registras gastos fijos")}
+            text={t(
+              "Internet, datos móviles, pasaje, alquiler… Se descuentan solos de tu saldo en cada fecha y cuentan para tu límite.",
+            )}
             action={addButton}
           />
         ) : (
-          <ScrollRegion label="Tabla de gastos fijos">
+          <ScrollRegion label={t("Tabla de gastos fijos")}>
             <table className="w-full min-w-[720px] border-collapse text-sm">
               <thead>
                 <tr>
                   <th scope="col" className={th}>
-                    NOMBRE
+                    {t("NOMBRE")}
                   </th>
                   <th scope="col" className={`${th} text-right`}>
-                    MONTO
+                    {t("MONTO")}
                   </th>
                   <th scope="col" className={th}>
-                    FRECUENCIA
+                    {t("FRECUENCIA")}
                   </th>
                   <th scope="col" className={th}>
-                    CATEGORÍA
+                    {t("CATEGORÍA")}
                   </th>
                   <th scope="col" className={th}>
-                    ESTADO
+                    {t("ESTADO")}
                   </th>
                   <th scope="col" className={`${th} text-right`}>
-                    <span className="sr-only">Acciones</span>
+                    <span className="sr-only">{t("Acciones")}</span>
                   </th>
                 </tr>
               </thead>
@@ -149,7 +164,9 @@ export function FixedExpensesPage() {
                       {item.name}
                       {multiAccount ? (
                         <span className="text-muted block text-xs font-semibold">
-                          Sale de {accountName(accounts, item.account_id)}
+                          {t("Sale de {account}", {
+                            account: accountName(accounts, item.account_id),
+                          })}
                         </span>
                       ) : null}
                     </th>
@@ -157,9 +174,11 @@ export function FixedExpensesPage() {
                       {formatMoney(item.amount, settings.currency)}
                     </td>
                     <td className={td}>
-                      {frequencyText(item)}
+                      {frequencyText(item, t)}
                       {item.due_day ? (
-                        <span className="text-muted"> · día {item.due_day}</span>
+                        <span className="text-muted">
+                          {t(" · día {day}", { day: item.due_day ?? "" })}
+                        </span>
                       ) : null}
                     </td>
                     <td className={td}>
@@ -200,9 +219,12 @@ export function FixedExpensesPage() {
       />
       <ConfirmDialog
         open={deleting !== null}
-        title="Eliminar gasto fijo"
-        message={`¿Eliminar «${deleting?.name ?? ""}»? Esta acción no se puede deshacer. Si solo lo dejarás de pagar un tiempo, mejor páusalo.`}
-        confirmLabel="Eliminar"
+        title={t("Eliminar gasto fijo")}
+        message={t(
+          "¿Eliminar «{name}»? Esta acción no se puede deshacer. Si solo lo dejarás de pagar un tiempo, mejor páusalo.",
+          { name: deleting?.name ?? "" },
+        )}
+        confirmLabel={t("Eliminar")}
         busy={busy}
         onConfirm={confirmDelete}
         onCancel={() => setDeleting(null)}

@@ -13,6 +13,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { useT } from "@/i18n/client";
 import type { Dashboard } from "@/lib/finance-api";
 import { formatMoney } from "@/lib/format";
 import { ScrollRegion } from "@/components/ui/ScrollRegion";
@@ -66,6 +67,7 @@ function buildPoints(dashboard: Dashboard): Point[] {
 type TooltipProps = { active?: boolean; payload?: ReadonlyArray<{ payload?: unknown }> };
 
 function ChartTooltip({ active, payload }: TooltipProps) {
+  const t = useT();
   const point = payload?.[0]?.payload as Point | undefined;
   if (!active || !point) return null;
   return (
@@ -73,13 +75,16 @@ function ChartTooltip({ active, payload }: TooltipProps) {
       <p className="font-display text-base font-extrabold tabular-nums">{point.spentText}</p>
       <p className="text-muted font-semibold">{point.range}</p>
       <p className="mt-1 font-semibold">
-        {point.overBy ? `Te pasaste por ${point.overBy}` : "Dentro del límite"}
+        {point.overBy
+          ? t("Te pasaste por {amount}", { amount: point.overBy })
+          : t("Dentro del límite")}
       </p>
     </div>
   );
 }
 
 export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
+  const t = useT();
   const points = buildPoints(dashboard);
   const limit = dashboard.spending_limit === null ? null : Number(dashboard.spending_limit);
   const limitText = dashboard.spending_limit
@@ -154,7 +159,7 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
                 strokeWidth={2}
                 ifOverflow="extendDomain"
                 label={{
-                  value: `Límite ${limitText}`,
+                  value: t("Límite {amount}", { amount: limitText ?? "" }),
                   position: "insideTopRight",
                   fill: COLOR.ink,
                   fontSize: 11,
@@ -166,19 +171,19 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
         </ResponsiveContainer>
       </div>
 
-      <ul className="text-body flex flex-wrap gap-5 text-xs font-bold" aria-label="Leyenda">
+      <ul className="text-body flex flex-wrap gap-5 text-xs font-bold" aria-label={t("Leyenda")}>
         <li className="flex items-center gap-2">
           <span aria-hidden="true" className="bg-primary-bar size-3.5 rounded" />
-          Dentro del límite
+          {t("Dentro del límite")}
         </li>
         <li className="flex items-center gap-2">
           <span aria-hidden="true" className="bg-accent size-3.5 rounded" />
-          Te pasaste
+          {t("Te pasaste")}
         </li>
         {limit !== null ? (
           <li className="flex items-center gap-2">
             <span aria-hidden="true" className="border-ink w-5 border-t-2 border-dashed" />
-            Límite
+            {t("Límite")}
           </li>
         ) : null}
       </ul>
@@ -186,21 +191,21 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
       {/* The same numbers as a table: reachable without hover, color or sight */}
       <details className="text-sm">
         <summary className="text-primary inline-flex min-h-11 cursor-pointer items-center font-bold">
-          Ver los datos como tabla
+          {t("Ver los datos como tabla")}
         </summary>
-        <ScrollRegion label="Tabla de gasto por periodo">
+        <ScrollRegion label={t("Tabla de gasto por periodo")}>
           <table className="w-full min-w-[360px] border-collapse">
-            <caption className="sr-only">Gasto por periodo comparado con el límite</caption>
+            <caption className="sr-only">{t("Gasto por periodo comparado con el límite")}</caption>
             <thead>
               <tr className="text-muted text-left text-xs tracking-[0.06em]">
                 <th scope="col" className="py-2 pr-4 font-bold">
-                  PERIODO
+                  {t("PERIODO")}
                 </th>
                 <th scope="col" className="py-2 pr-4 text-right font-bold">
-                  GASTADO
+                  {t("GASTADO")}
                 </th>
                 <th scope="col" className="py-2 font-bold">
-                  ESTADO
+                  {t("ESTADO")}
                 </th>
               </tr>
             </thead>
@@ -213,10 +218,10 @@ export function SpendingChart({ dashboard }: { dashboard: Dashboard }) {
                   <td className="py-2 pr-4 text-right font-bold tabular-nums">{point.spentText}</td>
                   <td className="py-2">
                     {point.overBy
-                      ? `Te pasaste por ${point.overBy}`
+                      ? t("Te pasaste por {amount}", { amount: point.overBy })
                       : limit === null
-                        ? "Sin límite"
-                        : "Dentro del límite"}
+                        ? t("Sin límite")
+                        : t("Dentro del límite")}
                   </td>
                 </tr>
               ))}

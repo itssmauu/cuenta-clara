@@ -3,6 +3,8 @@
 import { MoveRight } from "lucide-react";
 import { useEffect, useRef, useState, type ReactNode } from "react";
 
+import { useT } from "@/i18n/client";
+
 /**
  * A wide table that scrolls sideways on small screens.
  *
@@ -21,6 +23,7 @@ export function ScrollRegion({
   busy?: boolean;
   children: ReactNode;
 }) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   const [overflows, setOverflows] = useState(false);
 
@@ -48,7 +51,7 @@ export function ScrollRegion({
       </div>
       {overflows ? (
         <p className="text-muted flex items-center gap-1.5 text-xs font-semibold">
-          Desliza la tabla para ver todas las columnas
+          {t("Desliza la tabla para ver todas las columnas")}
           <MoveRight aria-hidden="true" className="size-4" />
         </p>
       ) : null}

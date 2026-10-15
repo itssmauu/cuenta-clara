@@ -2,9 +2,11 @@ import Link from "next/link";
 
 import { LegalLinks } from "@/components/legal/LegalFooter";
 import { buttonClass } from "@/components/ui/button";
+import { getT } from "@/i18n/server";
 import { LEGAL } from "@/lib/legal";
 
-export function FinalCta() {
+export async function FinalCta() {
+  const t = await getT();
   return (
     <section
       aria-labelledby="cta-title"
@@ -19,28 +21,32 @@ export function FinalCta() {
         id="cta-title"
         className="font-display min-w-0 flex-[1_1_420px] text-[32px] leading-[1.08] font-extrabold tracking-[-0.03em] text-balance sm:text-[44px]"
       >
-        Empieza hoy y ordena tu próxima semana.
+        {t("Empieza hoy y ordena tu próxima semana.")}
       </h2>
       <Link
         href="/register"
         className={buttonClass("accent", "lg", "text-[17px] font-extrabold hover:scale-[1.04]")}
       >
-        Crear mi cuenta
+        {t("Crear mi cuenta")}
       </Link>
     </section>
   );
 }
 
-export function SiteFooter() {
+export async function SiteFooter() {
+  const t = await getT();
   return (
     <footer className="text-muted flex flex-wrap items-center justify-between gap-x-6 gap-y-2 pb-10 text-sm font-semibold">
       <p>
-        © {new Date().getFullYear()} {LEGAL.service} · Hecho en Panamá
+        {t("© {year} {service} · Hecho en Panamá", {
+          year: new Date().getFullYear(),
+          service: LEGAL.service,
+        })}
       </p>
       <div className="flex flex-wrap items-center gap-x-5">
         <LegalLinks />
         <a href="#top" className="hover:text-ink inline-flex min-h-11 items-center">
-          Volver arriba
+          {t("Volver arriba")}
         </a>
       </div>
     </footer>

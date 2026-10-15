@@ -2,7 +2,10 @@
 
 import { Bar, BarChart, LabelList, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import type { CategorySpending } from "@/lib/finance-api";
+import { categoryName } from "@/lib/finance-validation";
 import { formatMoney } from "@/lib/format";
 
 /**
@@ -12,18 +15,19 @@ import { formatMoney } from "@/lib/format";
 export function CategoryBreakdown({
   items,
   currency,
-  emptyText = "Aún no hay gastos en este periodo.",
+  emptyText = msg("Aún no hay gastos en este periodo."),
 }: {
   items: CategorySpending[];
   currency: string;
   emptyText?: string;
 }) {
+  const t = useT();
   if (items.length === 0) {
-    return <p className="text-muted text-sm">{emptyText}</p>;
+    return <p className="text-muted text-sm">{t(emptyText)}</p>;
   }
 
   const data = items.map((item) => ({
-    name: item.name,
+    name: categoryName(item.name, t),
     amount: Number(item.amount),
     label: formatMoney(item.amount, currency),
   }));
@@ -77,17 +81,17 @@ export function CategoryBreakdown({
       </div>
       <details className="text-sm">
         <summary className="text-primary inline-flex min-h-11 cursor-pointer items-center font-bold">
-          Ver como tabla
+          {t("Ver como tabla")}
         </summary>
         <table className="w-full border-collapse">
-          <caption className="sr-only">Gasto por categoría</caption>
+          <caption className="sr-only">{t("Gasto por categoría")}</caption>
           <thead>
             <tr className="text-muted text-left text-xs tracking-[0.06em]">
               <th scope="col" className="py-2 font-bold">
-                CATEGORÍA
+                {t("CATEGORÍA")}
               </th>
               <th scope="col" className="py-2 text-right font-bold">
-                GASTADO
+                {t("GASTADO")}
               </th>
             </tr>
           </thead>
@@ -101,7 +105,7 @@ export function CategoryBreakdown({
                         <circle cx="5" cy="5" r="5" fill={item.color} />
                       </svg>
                     ) : null}
-                    {item.name}
+                    {categoryName(item.name, t)}
                   </span>
                 </th>
                 <td className="py-2 text-right font-bold tabular-nums">

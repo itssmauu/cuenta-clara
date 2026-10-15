@@ -9,6 +9,8 @@ import { Dialog } from "@/components/ui/Dialog";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import {
   financeApi,
@@ -18,13 +20,14 @@ import {
   type Income,
 } from "@/lib/finance-api";
 import {
-  FREQUENCIES,
-  FREQUENCY_LABELS,
+  categoryName,
   fixedExpenseFormSchema,
-  incomeSchema,
   type FixedExpenseFullForm,
   type FixedExpenseFullValues,
+  FREQUENCIES,
+  FREQUENCY_LABELS,
   type IncomeForm,
+  incomeSchema,
   type IncomeValues,
 } from "@/lib/finance-validation";
 import { todayISO } from "@/lib/format";
@@ -56,10 +59,11 @@ function FormFooter({
   onCancel: () => void;
   label: string;
 }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap justify-end gap-3">
       <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-        Cancelar
+        {t("Cancelar")}
       </button>
       <button
         type="submit"
@@ -67,7 +71,7 @@ function FormFooter({
         aria-busy={submitting}
         className={buttonClass("primary", "md", "font-extrabold")}
       >
-        {submitting ? "Guardando…" : label}
+        {submitting ? t("Guardando…") : label}
       </button>
     </div>
   );
@@ -80,8 +84,9 @@ function apiMessage(error: unknown, fallback: string) {
 // ── Incomes ─────────────────────────────────────────────
 
 export function IncomeDialog({ open, item, onClose, onSaved, accounts = [] }: DialogProps<Income>) {
+  const t = useT();
   return (
-    <Dialog open={open} onClose={onClose} title={item ? "Editar ingreso" : "Añadir ingreso"}>
+    <Dialog open={open} onClose={onClose} title={item ? t("Editar ingreso") : t("Añadir ingreso")}>
       <IncomeFormBody
         item={item}
         accounts={accounts}
@@ -106,6 +111,7 @@ function IncomeFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -131,13 +137,13 @@ function IncomeFormBody({
     try {
       if (item) {
         await financeApi.updateIncome(item.id, { ...values, is_active: item.is_active });
-        onSaved("Ingreso actualizado.");
+        onSaved(msg("Ingreso actualizado."));
       } else {
         await financeApi.createIncome(values);
-        onSaved("Ingreso guardado.");
+        onSaved(msg("Ingreso guardado."));
       }
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos guardar el ingreso."));
+      setServerError(apiMessage(error, msg("No pudimos guardar el ingreso.")));
     }
   }
 
@@ -147,14 +153,14 @@ function IncomeFormBody({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           id="income-label"
-          label="Concepto"
-          placeholder="Salario, beca…"
+          label={t("Concepto")}
+          placeholder={t("Salario, beca…")}
           error={errors.label?.message}
           {...register("label")}
         />
         <TextField
           id="income-amount"
-          label="Monto"
+          label={t("Monto")}
           inputMode="decimal"
           placeholder="160.00"
           autoComplete="off"
@@ -163,7 +169,7 @@ function IncomeFormBody({
         />
         <SelectField
           id="income-frequency"
-          label="Frecuencia"
+          label={t("Frecuencia")}
           options={frequencyOptions}
           error={errors.frequency?.message}
           {...register("frequency")}
@@ -171,7 +177,7 @@ function IncomeFormBody({
         {frequency === "custom" ? (
           <TextField
             id="income-days"
-            label="Cada cuántos días"
+            label={t("Cada cuántos días")}
             inputMode="numeric"
             placeholder="10"
             error={errors.custom_period_days?.message}
@@ -180,22 +186,24 @@ function IncomeFormBody({
         ) : null}
         <TextField
           id="income-start"
-          label="Fecha de referencia"
+          label={t("Fecha de referencia")}
           type="date"
-          hint="Un día en que lo recibiste o lo recibirás. Las repeticiones se cuentan desde ahí."
+          hint={t(
+            "Un día en que lo recibiste o lo recibirás. Las repeticiones se cuentan desde ahí.",
+          )}
           error={errors.start_date?.message}
           {...register("start_date")}
         />
         {accounts.length > 1 ? (
           <SelectField
             id="income-account"
-            label="¿A qué cuenta llega?"
-            options={accountOptions(accounts)}
+            label={t("¿A qué cuenta llega?")}
+            options={accountOptions(accounts, t)}
             {...register("account_id")}
           />
         ) : null}
       </div>
-      <FormFooter submitting={isSubmitting} onCancel={onCancel} label="Guardar ingreso" />
+      <FormFooter submitting={isSubmitting} onCancel={onCancel} label={t("Guardar ingreso")} />
     </form>
   );
 }
@@ -210,8 +218,13 @@ export function FixedExpenseDialog({
   categories,
   accounts = [],
 }: DialogProps<FixedExpense> & { categories: Category[] }) {
+  const t = useT();
   return (
-    <Dialog open={open} onClose={onClose} title={item ? "Editar gasto fijo" : "Añadir gasto fijo"}>
+    <Dialog
+      open={open}
+      onClose={onClose}
+      title={item ? t("Editar gasto fijo") : t("Añadir gasto fijo")}
+    >
       <FixedExpenseFormBody
         item={item}
         categories={categories}
@@ -239,6 +252,7 @@ function FixedExpenseFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -267,13 +281,13 @@ function FixedExpenseFormBody({
     try {
       if (item) {
         await financeApi.updateFixedExpense(item.id, { ...payload, is_active: item.is_active });
-        onSaved("Gasto fijo actualizado.");
+        onSaved(msg("Gasto fijo actualizado."));
       } else {
         await financeApi.createFixedExpense(payload);
-        onSaved("Gasto fijo guardado.");
+        onSaved(msg("Gasto fijo guardado."));
       }
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos guardar el gasto fijo."));
+      setServerError(apiMessage(error, msg("No pudimos guardar el gasto fijo.")));
     }
   }
 
@@ -283,14 +297,14 @@ function FixedExpenseFormBody({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           id="fixed-name"
-          label="Nombre"
-          placeholder="Internet, pasaje…"
+          label={t("Nombre")}
+          placeholder={t("Internet, pasaje…")}
           error={errors.name?.message}
           {...register("name")}
         />
         <TextField
           id="fixed-amount"
-          label="Monto"
+          label={t("Monto")}
           inputMode="decimal"
           placeholder="25.00"
           autoComplete="off"
@@ -299,7 +313,7 @@ function FixedExpenseFormBody({
         />
         <SelectField
           id="fixed-frequency"
-          label="Frecuencia"
+          label={t("Frecuencia")}
           options={frequencyOptions}
           error={errors.frequency?.message}
           {...register("frequency")}
@@ -307,7 +321,7 @@ function FixedExpenseFormBody({
         {frequency === "monthly" ? (
           <TextField
             id="fixed-due-day"
-            label="Día de pago (opcional)"
+            label={t("Día de pago (opcional)")}
             inputMode="numeric"
             placeholder="15"
             error={errors.due_day?.message}
@@ -317,7 +331,7 @@ function FixedExpenseFormBody({
         {frequency === "custom" ? (
           <TextField
             id="fixed-days"
-            label="Cada cuántos días"
+            label={t("Cada cuántos días")}
             inputMode="numeric"
             placeholder="10"
             error={errors.custom_period_days?.message}
@@ -326,16 +340,16 @@ function FixedExpenseFormBody({
         ) : null}
         <SelectField
           id="fixed-category"
-          label="Categoría"
+          label={t("Categoría")}
           options={[
-            { value: "", label: "Sin categoría" },
-            ...categories.map((c) => ({ value: c.id, label: c.name })),
+            { value: "", label: t("Sin categoría") },
+            ...categories.map((c) => ({ value: c.id, label: categoryName(c.name, t) })),
           ]}
           {...register("category_id")}
         />
         <TextField
           id="fixed-start"
-          label="Aplica desde"
+          label={t("Aplica desde")}
           type="date"
           error={errors.start_date?.message}
           {...register("start_date")}
@@ -343,13 +357,13 @@ function FixedExpenseFormBody({
         {accounts.length > 1 ? (
           <SelectField
             id="fixed-account"
-            label="¿De qué cuenta sale?"
-            options={accountOptions(accounts)}
+            label={t("¿De qué cuenta sale?")}
+            options={accountOptions(accounts, t)}
             {...register("account_id")}
           />
         ) : null}
       </div>
-      <FormFooter submitting={isSubmitting} onCancel={onCancel} label="Guardar gasto fijo" />
+      <FormFooter submitting={isSubmitting} onCancel={onCancel} label={t("Guardar gasto fijo")} />
     </form>
   );
 }

@@ -4,9 +4,13 @@ import type { ReactNode } from "react";
 import { AuthShowcase, LiveBars } from "@/components/auth/AuthShowcase";
 import { AuthTabs } from "@/components/auth/AuthTabs";
 import { LegalLinks } from "@/components/legal/LegalFooter";
+import { LanguageSwitcher } from "@/components/ui/LanguageSwitcher";
 import { Logo } from "@/components/ui/Logo";
+import { getT } from "@/i18n/server";
+import { rich } from "@/i18n/translate";
 
-export default function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
+export default async function AuthLayout({ children }: Readonly<{ children: ReactNode }>) {
+  const t = await getT();
   return (
     <div className="mx-auto flex min-h-dvh w-full max-w-[1360px] flex-wrap gap-6 px-4 py-5 sm:px-10">
       <aside className="bg-ink rounded-panel relative isolate flex min-w-0 flex-[1_1_420px] flex-col justify-between gap-10 overflow-hidden p-8 text-white sm:p-12">
@@ -18,19 +22,28 @@ export default function AuthLayout({ children }: Readonly<{ children: ReactNode 
         </div>
         <LiveBars />
 
-        <Logo tone="light" />
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <Logo tone="light" />
+          <LanguageSwitcher tone="light" />
+        </div>
         <div className="flex flex-col gap-5">
           <p className="font-display [animation:blur-up_900ms_var(--ease-out-strong)_both] text-[34px] leading-[1.05] font-extrabold tracking-[-0.03em] text-balance sm:text-[46px]">
-            Tu semana, <span className="text-accent">bajo control.</span>
+            {rich(t("Tu semana, <em>bajo control.</em>"), {
+              em: (text) => (
+                <span key="em" className="text-accent">
+                  {text}
+                </span>
+              ),
+            })}
           </p>
           <p className="text-on-ink animate-fade-up max-w-[420px] text-[17px] leading-relaxed [animation-delay:120ms]">
-            Entra para ver tu saldo, tus gastos fijos y la proyección de los próximos días.
+            {t("Entra para ver tu saldo, tus gastos fijos y la proyección de los próximos días.")}
           </p>
         </div>
         <AuthShowcase />
         <p className="text-on-ink-muted flex items-center gap-2 text-sm font-semibold">
           <LockKeyhole aria-hidden="true" className="size-4" />
-          Conexión cifrada · Contraseñas protegidas con hash
+          {t("Conexión cifrada · Contraseñas protegidas con hash")}
         </p>
       </aside>
 

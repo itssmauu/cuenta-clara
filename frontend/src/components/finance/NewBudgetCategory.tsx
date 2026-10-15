@@ -8,6 +8,7 @@ import { PERIOD_NOUN } from "@/components/dashboard/period-labels";
 import { buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
 import { ApiError } from "@/lib/api";
 import { financeApi, type Frequency } from "@/lib/finance-api";
 import {
@@ -32,8 +33,9 @@ export function NewBudgetCategoryForm({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
-  const per = PERIOD_NOUN[incomePeriod];
+  const per = t(PERIOD_NOUN[incomePeriod]);
   const {
     register,
     handleSubmit,
@@ -50,20 +52,27 @@ export function NewBudgetCategoryForm({
       created = await financeApi.createCategory({ name, color });
     } catch (error) {
       // e.g. 409 "Ya tienes una categoría con ese nombre."
-      setServerError(error instanceof ApiError ? error.message : "No pudimos crear la categoría.");
+      setServerError(
+        error instanceof ApiError ? error.message : t("No pudimos crear la categoría."),
+      );
       return;
     }
     if (!amount) {
-      onSaved(`Categoría «${created.name}» creada. Ya puedes usarla en tus gastos.`);
+      onSaved(
+        t("Categoría «{name}» creada. Ya puedes usarla en tus gastos.", { name: created.name }),
+      );
       return;
     }
     try {
       await financeApi.setBudget(created.id, amount);
-      onSaved(`Categoría «${created.name}» creada con su presupuesto.`);
+      onSaved(t("Categoría «{name}» creada con su presupuesto.", { name: created.name }));
     } catch {
       // The category exists either way: say so, and let the user set the amount in the list
       onSaved(
-        `Categoría «${created.name}» creada, pero no pudimos guardar su presupuesto. Ponlo desde la lista.`,
+        t(
+          "Categoría «{name}» creada, pero no pudimos guardar su presupuesto. Ponlo desde la lista.",
+          { name: created.name },
+        ),
       );
     }
   }
@@ -73,14 +82,14 @@ export function NewBudgetCategoryForm({
       {serverError ? <FormAlert title={serverError} /> : null}
       <TextField
         id="new-category-name"
-        label="Nombre de la categoría"
-        placeholder="Gimnasio, mascotas, universidad…"
+        label={t("Nombre de la categoría")}
+        placeholder={t("Gimnasio, mascotas, universidad…")}
         error={errors.name?.message}
         {...register("name")}
       />
       <div className="flex flex-col gap-2">
         <label htmlFor="new-category-color" className="text-sm font-bold">
-          Color
+          {t("Color")}
         </label>
         <input
           id="new-category-color"
@@ -91,17 +100,17 @@ export function NewBudgetCategoryForm({
       </div>
       <TextField
         id="new-category-amount"
-        label={`Presupuesto por ${per} (opcional)`}
+        label={t("Presupuesto por {per} (opcional)", { per })}
         inputMode="decimal"
         autoComplete="off"
         placeholder="25.00"
-        hint="Puedes dejarlo vacío y ponerlo después."
+        hint={t("Puedes dejarlo vacío y ponerlo después.")}
         error={errors.amount?.message}
         {...register("amount")}
       />
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -109,7 +118,7 @@ export function NewBudgetCategoryForm({
           aria-busy={isSubmitting}
           className={buttonClass("primary")}
         >
-          {isSubmitting ? "Creando…" : "Crear categoría"}
+          {isSubmitting ? t("Creando…") : t("Crear categoría")}
         </button>
       </div>
     </form>

@@ -3,10 +3,15 @@ import Link from "next/link";
 
 import { buttonClass } from "@/components/ui/button";
 import { Logo } from "@/components/ui/Logo";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Página no encontrada" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Página no encontrada") };
+}
 
-export default function NotFound() {
+export default async function NotFound() {
+  const t = await getT();
   return (
     <div className="mx-auto flex min-h-dvh max-w-[720px] flex-col gap-8 px-4 py-6 sm:px-10">
       <header>
@@ -19,17 +24,17 @@ export default function NotFound() {
       >
         <p className="text-primary font-display text-5xl font-extrabold">404</p>
         <h1 className="font-display text-[28px] font-extrabold tracking-[-0.02em]">
-          No encontramos esta página
+          {t("No encontramos esta página")}
         </h1>
         <p className="text-body leading-relaxed">
-          Puede que el enlace esté mal escrito o que la página ya no exista.
+          {t("Puede que el enlace esté mal escrito o que la página ya no exista.")}
         </p>
         <div className="flex flex-wrap gap-3">
           <Link href="/" className={buttonClass("primary")}>
-            Ir al inicio
+            {t("Ir al inicio")}
           </Link>
           <Link href="/dashboard" className={buttonClass("ghost")}>
-            Ir a mi dashboard
+            {t("Ir a mi dashboard")}
           </Link>
         </div>
       </main>

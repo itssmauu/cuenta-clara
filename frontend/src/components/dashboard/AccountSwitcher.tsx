@@ -4,6 +4,7 @@ import { Layers, Plus } from "lucide-react";
 import Link from "next/link";
 
 import { AccountIcon, kindLabel } from "@/components/finance/accounts-ui";
+import { useT } from "@/i18n/client";
 import type { Account, AccountScope } from "@/lib/finance-api";
 import { formatMoney } from "@/lib/format";
 
@@ -26,6 +27,7 @@ export function AccountSwitcher({
   onChange: (value: AccountScope) => void;
   currency: string;
 }) {
+  const t = useT();
   const primary = accounts.find((a) => a.is_primary);
   const selected = value ?? primary?.id;
   const total = (
@@ -35,7 +37,7 @@ export function AccountSwitcher({
   return (
     <div
       role="group"
-      aria-label="Cuenta"
+      aria-label={t("Cuenta")}
       className="relative -mx-1 flex [scrollbar-width:thin] gap-3 overflow-x-auto px-1 pt-1 pb-2"
     >
       {accounts.map((account) => {
@@ -59,7 +61,7 @@ export function AccountSwitcher({
                 <span
                   className={`truncate text-[11px] font-semibold ${active ? "text-on-ink" : "text-muted"}`}
                 >
-                  {kindLabel(account)}
+                  {t(kindLabel(account))}
                 </span>
               </span>
             </span>
@@ -89,11 +91,11 @@ export function AccountSwitcher({
               <Layers className="size-4" />
             </span>
             <span className="flex flex-col">
-              <span className="text-sm font-bold">Todas</span>
+              <span className="text-sm font-bold">{t("Todas")}</span>
               <span
                 className={`text-[11px] font-semibold ${selected === "all" ? "text-on-ink" : "text-muted"}`}
               >
-                Suma de tus cuentas
+                {t("Suma de tus cuentas")}
               </span>
             </span>
           </span>
@@ -109,7 +111,7 @@ export function AccountSwitcher({
         >
           <Plus aria-hidden="true" className="size-5" />
           <span className="text-sm leading-snug font-bold">
-            ¿Tienes otra cuenta para ahorro o fondos? Agrégala
+            {t("¿Tienes otra cuenta para ahorro o fondos? Agrégala")}
           </span>
         </Link>
       )}

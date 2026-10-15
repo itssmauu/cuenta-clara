@@ -6,6 +6,7 @@ import { Balbo } from "@/components/assistant/Balbo";
 import { CheckInPrompt } from "@/components/finance/CheckInPrompt";
 import { TermsGate } from "@/components/legal/TermsGate";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
 
 import { SessionProvider, useSessionLoader } from "./session";
 import { SessionBar } from "./SessionBar";
@@ -13,6 +14,7 @@ import { Sidebar } from "./Sidebar";
 
 /** Layout of every signed-in page: sidebar + content, rendered once the session is confirmed. */
 export function AppShell({ children }: { children: ReactNode }) {
+  const t = useT();
   const { state, setSettings, setUser, logout } = useSessionLoader("app");
 
   if (state.status === "error") {
@@ -26,7 +28,7 @@ export function AppShell({ children }: { children: ReactNode }) {
   if (state.status === "loading") {
     return (
       <div role="status" className="bg-canvas-dashboard grid min-h-dvh place-items-center">
-        <span className="text-muted font-semibold">Cargando tu cuenta…</span>
+        <span className="text-muted font-semibold">{t("Cargando tu cuenta…")}</span>
       </div>
     );
   }

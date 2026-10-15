@@ -13,6 +13,8 @@ import { EmptyState, Notice, TableSkeleton, useNotice } from "@/components/ui/Fe
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg, rich } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, type Account, type Frequency, type SavingsGoal } from "@/lib/finance-api";
 import {
@@ -28,12 +30,13 @@ import { useResource } from "@/lib/use-resource";
 import { accountName, accountOptions } from "./accounts-ui";
 import { RowActions } from "./RowActions";
 
-const PERIOD_NOUN: Record<Frequency, [string, string]> = {
-  daily: ["día", "días"],
-  weekly: ["semana", "semanas"],
-  biweekly: ["quincena", "quincenas"],
-  monthly: ["mes", "meses"],
-  custom: ["periodo", "periodos"],
+/** "por semana (3 semanas)", "por mes (este mes)" */
+const PERIOD_WORDS: Record<Frequency, { one: string; current: string; many: string }> = {
+  daily: { one: msg("día"), current: msg("hoy"), many: msg("{n} días") },
+  weekly: { one: msg("semana"), current: msg("esta semana"), many: msg("{n} semanas") },
+  biweekly: { one: msg("quincena"), current: msg("esta quincena"), many: msg("{n} quincenas") },
+  monthly: { one: msg("mes"), current: msg("este mes"), many: msg("{n} meses") },
+  custom: { one: msg("periodo"), current: msg("este periodo"), many: msg("{n} periodos") },
 };
 
 function apiMessage(error: unknown, fallback: string) {
@@ -41,6 +44,7 @@ function apiMessage(error: unknown, fallback: string) {
 }
 
 export function GoalsPage() {
+  const t = useT();
   const { settings } = useSession();
   const [today] = useState(todayISO);
   const [goals, reload] = useResource(`goals:${today}`, () => financeApi.listGoals(today));
@@ -59,10 +63,10 @@ export function GoalsPage() {
     setError(null);
     try {
       await financeApi.deleteGoal(deleting.id);
-      showNotice(`Meta «${deleting.name}» eliminada.`);
+      showNotice(t("Meta «{name}» eliminada.", { name: deleting.name }));
       reload();
     } catch (caught) {
-      setError(apiMessage(caught, "No pudimos eliminar la meta."));
+      setError(apiMessage(caught, msg("No pudimos eliminar la meta.")));
     } finally {
       setDeleting(null);
       setBusy(false);
@@ -77,22 +81,22 @@ export function GoalsPage() {
       className={buttonClass("accent", "md", "font-extrabold")}
     >
       <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-      Nueva meta
+      {t("Nueva meta")}
     </button>
   );
 
   return (
     <>
       <PageHeader
-        title="Metas de ahorro"
-        subtitle="Aparta dinero para lo que quieres"
+        title={t("Metas de ahorro")}
+        subtitle={t("Aparta dinero para lo que quieres")}
         actions={addButton}
       />
       <Notice message={notice} />
       {error ? <FormAlert title={error} /> : null}
 
       {goals.status === "error" && !items ? (
-        <FormAlert title="No pudimos cargar tus metas." items={[goals.error.message]} />
+        <FormAlert title={t("No pudimos cargar tus metas.")} items={[goals.error.message]} />
       ) : !items ? (
         <TableSkeleton rows={2} />
       ) : items.length === 0 ? (
@@ -100,13 +104,15 @@ export function GoalsPage() {
           <EmptyState
             headingLevel={2}
             icon={PiggyBank}
-            title="Aún no tienes metas de ahorro"
-            text="Crea una meta (una laptop, un viaje, un fondo de emergencia) y te diremos cuánto apartar cada periodo para llegar a tiempo."
+            title={t("Aún no tienes metas de ahorro")}
+            text={t(
+              "Crea una meta (una laptop, un viaje, un fondo de emergencia) y te diremos cuánto apartar cada periodo para llegar a tiempo.",
+            )}
             action={addButton}
           />
         </section>
       ) : (
-        <ul aria-label="Tus metas" className="grid gap-5 md:grid-cols-2">
+        <ul aria-label={t("Tus metas")} className="grid gap-5 md:grid-cols-2">
           {items.map((goal) => (
             <li key={goal.id}>
               <GoalCard
@@ -126,7 +132,7 @@ export function GoalsPage() {
       <Dialog
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing?.item ? "Editar meta" : "Nueva meta"}
+        title={editing?.item ? t("Editar meta") : t("Nueva meta")}
       >
         <GoalFormBody
           item={editing?.item ?? null}
@@ -142,8 +148,8 @@ export function GoalsPage() {
       <Dialog
         open={contributing !== null}
         onClose={() => setContributing(null)}
-        title={`Mover dinero · ${contributing?.name ?? ""}`}
-        description="Registra cuánto apartaste para esta meta, o cuánto sacaste de ella."
+        title={t("Mover dinero · {name}", { name: contributing?.name ?? "" })}
+        description={t("Registra cuánto apartaste para esta meta, o cuánto sacaste de ella.")}
       >
         {contributing ? (
           <ContributionFormBody
@@ -161,9 +167,12 @@ export function GoalsPage() {
       </Dialog>
       <ConfirmDialog
         open={deleting !== null}
-        title="Eliminar meta"
-        message={`¿Eliminar «${deleting?.name ?? ""}»? Se pierde el registro de lo ahorrado. Esta acción no se puede deshacer.`}
-        confirmLabel="Eliminar"
+        title={t("Eliminar meta")}
+        message={t(
+          "¿Eliminar «{name}»? Se pierde el registro de lo ahorrado. Esta acción no se puede deshacer.",
+          { name: deleting?.name ?? "" },
+        )}
+        confirmLabel={t("Eliminar")}
         busy={busy}
         onConfirm={confirmDelete}
         onCancel={() => setDeleting(null)}
@@ -190,23 +199,33 @@ function GoalCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   const money = (value: string) => formatMoney(value, currency);
   const percent = Math.min(goal.progress_percent, 100);
-  const [one, many] = PERIOD_NOUN[period];
+  const words = PERIOD_WORDS[period];
 
   let status: { icon: typeof CheckCircle2 | null; text: string };
   if (goal.completed) {
-    status = { icon: CheckCircle2, text: "¡Meta cumplida!" };
+    status = { icon: CheckCircle2, text: t("¡Meta cumplida!") };
   } else if (goal.overdue) {
-    status = { icon: AlertTriangle, text: `La fecha ya pasó. Te faltan ${money(goal.remaining)}.` };
+    status = {
+      icon: AlertTriangle,
+      text: t("La fecha ya pasó. Te faltan {amount}.", { amount: money(goal.remaining) }),
+    };
   } else if (goal.suggested_per_period && goal.periods_left && goal.due_date) {
-    const periods = goal.periods_left === 1 ? `esta ${one}` : `${goal.periods_left} ${many}`;
+    const periods =
+      goal.periods_left === 1 ? t(words.current) : t(words.many, { n: goal.periods_left });
     status = {
       icon: null,
-      text: `Aparta ${money(goal.suggested_per_period)} por ${one} (${periods}) para llegar el ${formatDate(goal.due_date, { day: "numeric", month: "long" })}.`,
+      text: t("Aparta {amount} por {one} ({periods}) para llegar el {date}.", {
+        amount: money(goal.suggested_per_period),
+        one: t(words.one),
+        periods,
+        date: formatDate(goal.due_date, { day: "numeric", month: "long" }),
+      }),
     };
   } else {
-    status = { icon: null, text: `Te faltan ${money(goal.remaining)}.` };
+    status = { icon: null, text: t("Te faltan {amount}.", { amount: money(goal.remaining) }) };
   }
   const StatusIcon = status.icon;
 
@@ -221,24 +240,39 @@ function GoalCard({
             {goal.name}
           </h2>
           {accountLabel ? (
-            <span className="text-muted text-[13px] font-semibold">Guardada en {accountLabel}</span>
+            <span className="text-muted text-[13px] font-semibold">
+              {t("Guardada en {account}", { account: accountLabel })}
+            </span>
           ) : null}
         </div>
-        <RowActions label={`la meta ${goal.name}`} onEdit={onEdit} onDelete={onDelete} />
+        <RowActions
+          label={t("la meta {name}", { name: goal.name })}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
       <p className="text-body text-sm">
-        <span className="font-display text-ink text-2xl font-extrabold tabular-nums">
-          {money(goal.saved_amount)}
-        </span>{" "}
-        de {money(goal.target_amount)}
+        {rich(
+          t("<b>{saved}</b> de {target}", {
+            saved: money(goal.saved_amount),
+            target: money(goal.target_amount),
+          }),
+          {
+            b: (text) => (
+              <span key="b" className="font-display text-ink text-2xl font-extrabold tabular-nums">
+                {text}
+              </span>
+            ),
+          },
+        )}
       </p>
       <div
         role="meter"
-        aria-label={`Progreso de ${goal.name}`}
+        aria-label={t("Progreso de {name}", { name: goal.name })}
         aria-valuemin={0}
         aria-valuemax={100}
         aria-valuenow={percent}
-        aria-valuetext={`${goal.progress_percent}% ahorrado`}
+        aria-valuetext={t("{percent}% ahorrado", { percent: goal.progress_percent })}
         className="bg-canvas h-3.5 overflow-hidden rounded-full"
       >
         <div
@@ -256,10 +290,10 @@ function GoalCard({
         type="button"
         onClick={onContribute}
         // Explicit name: an sr-only suffix loses its leading space in the computed name
-        aria-label={`Aportar o retirar en ${goal.name}`}
+        aria-label={t("Aportar o retirar en {name}", { name: goal.name })}
         className={buttonClass("ink", "md", "mt-auto self-start")}
       >
-        Aportar o retirar
+        {t("Aportar o retirar")}
       </button>
     </article>
   );
@@ -276,6 +310,7 @@ function GoalFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -302,13 +337,13 @@ function GoalFormBody({
     try {
       if (item) {
         await financeApi.updateGoal(item.id, values);
-        onSaved("Meta actualizada.");
+        onSaved(msg("Meta actualizada."));
       } else {
         await financeApi.createGoal(values);
-        onSaved("Meta creada.");
+        onSaved(msg("Meta creada."));
       }
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos guardar la meta."));
+      setServerError(apiMessage(error, msg("No pudimos guardar la meta.")));
     }
   }
 
@@ -318,14 +353,14 @@ function GoalFormBody({
       <div className="grid gap-4 sm:grid-cols-2">
         <TextField
           id="goal-name"
-          label="¿Para qué ahorras?"
-          placeholder="Laptop, viaje…"
+          label={t("¿Para qué ahorras?")}
+          placeholder={t("Laptop, viaje…")}
           error={errors.name?.message}
           {...register("name")}
         />
         <TextField
           id="goal-target"
-          label="Meta"
+          label={t("Meta")}
           inputMode="decimal"
           placeholder="600.00"
           autoComplete="off"
@@ -334,7 +369,7 @@ function GoalFormBody({
         />
         <TextField
           id="goal-saved"
-          label="Ya tengo ahorrado"
+          label={t("Ya tengo ahorrado")}
           inputMode="decimal"
           autoComplete="off"
           error={errors.saved_amount?.message}
@@ -342,7 +377,7 @@ function GoalFormBody({
         />
         <TextField
           id="goal-due"
-          label="Fecha objetivo (opcional)"
+          label={t("Fecha objetivo (opcional)")}
           type="date"
           error={errors.due_date?.message}
           {...register("due_date")}
@@ -350,15 +385,15 @@ function GoalFormBody({
         {accounts.length > 1 ? (
           <SelectField
             id="goal-account"
-            label="¿Dónde guardas este dinero?"
-            options={accountOptions(accounts)}
+            label={t("¿Dónde guardas este dinero?")}
+            options={accountOptions(accounts, t)}
             {...register("account_id")}
           />
         ) : null}
       </div>
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -366,7 +401,7 @@ function GoalFormBody({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Guardando…" : "Guardar meta"}
+          {isSubmitting ? t("Guardando…") : t("Guardar meta")}
         </button>
       </div>
     </form>
@@ -386,6 +421,7 @@ function ContributionFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   // Money can move only when the goal lives in an account and there is another one
   const sources = goal.account_id ? accounts.filter((a) => a.id !== goal.account_id) : [];
@@ -417,11 +453,14 @@ function ContributionFormBody({
       const updated = await financeApi.contribute(goal.id, amount, fromAccountId);
       onSaved(
         updated.completed
-          ? `¡Cumpliste la meta «${goal.name}»!`
-          : `Ahora tienes ${formatMoney(updated.saved_amount, currency)} en «${goal.name}».`,
+          ? t("¡Cumpliste la meta «{name}»!", { name: goal.name })
+          : t("Ahora tienes {amount} en «{name}».", {
+              amount: formatMoney(updated.saved_amount, currency),
+              name: goal.name,
+            }),
       );
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos registrar el movimiento."));
+      setServerError(apiMessage(error, msg("No pudimos registrar el movimiento.")));
     }
   }
 
@@ -429,7 +468,7 @@ function ContributionFormBody({
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {serverError ? <FormAlert title={serverError} /> : null}
       <fieldset className="flex flex-col gap-2">
-        <legend className="mb-2 text-sm font-bold">¿Qué quieres hacer?</legend>
+        <legend className="mb-2 text-sm font-bold">{t("¿Qué quieres hacer?")}</legend>
         <div className="bg-canvas grid grid-cols-2 gap-1.5 rounded-full p-[5px]">
           {(
             [
@@ -451,28 +490,31 @@ function ContributionFormBody({
       </fieldset>
       <TextField
         id="contribution-amount"
-        label="Monto"
+        label={t("Monto")}
         inputMode="decimal"
         placeholder="0.00"
         autoComplete="off"
-        hint={`Llevas ${formatMoney(goal.saved_amount, currency)} de ${formatMoney(goal.target_amount, currency)}.`}
+        hint={t("Llevas {amount} de {amount2}.", {
+          amount: formatMoney(goal.saved_amount, currency),
+          amount2: formatMoney(goal.target_amount, currency),
+        })}
         error={errors.amount?.message}
         {...register("amount")}
       />
       {sources.length > 0 ? (
         <SelectField
           id="contribution-source"
-          label={direction === "withdraw" ? "¿A qué cuenta vuelve?" : "¿De qué cuenta sale?"}
+          label={direction === "withdraw" ? t("¿A qué cuenta vuelve?") : t("¿De qué cuenta sale?")}
           options={[
-            ...accountOptions(sources),
-            { value: "", label: "Solo registrarlo, sin mover dinero" },
+            ...accountOptions(sources, t),
+            { value: "", label: t("Solo registrarlo, sin mover dinero") },
           ]}
           {...register("from_account_id")}
         />
       ) : null}
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -480,7 +522,7 @@ function ContributionFormBody({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Guardando…" : direction === "withdraw" ? "Retirar" : "Aportar"}
+          {isSubmitting ? t("Guardando…") : direction === "withdraw" ? t("Retirar") : t("Aportar")}
         </button>
       </div>
     </form>

@@ -3,12 +3,15 @@
 import { Pause, Play } from "lucide-react";
 import { useState, type ReactNode } from "react";
 
+import { useT } from "@/i18n/client";
+
 /**
  * A band that glides sideways. Moving content that lasts more than five seconds
  * needs a way to stop it (WCAG 2.2.2), so besides pausing under the pointer or
  * keyboard focus it has a real pause button. With reduced motion it never moves.
  */
 export function Marquee({ children }: { children: ReactNode }) {
+  const t = useT();
   const [paused, setPaused] = useState(false);
 
   return (
@@ -30,7 +33,7 @@ export function Marquee({ children }: { children: ReactNode }) {
         ) : (
           <Pause aria-hidden="true" className="size-3.5" />
         )}
-        {paused ? "Reanudar animación" : "Pausar animación"}
+        {paused ? t("Reanudar animación") : t("Pausar animación")}
       </button>
     </div>
   );

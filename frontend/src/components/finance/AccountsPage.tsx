@@ -21,6 +21,8 @@ import { EmptyState, Notice, TableSkeleton, useNotice } from "@/components/ui/Fe
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, type Account, type Transfer } from "@/lib/finance-api";
 import {
@@ -51,6 +53,7 @@ function sumMoney(values: string[]): string {
 }
 
 export function AccountsPage() {
+  const t = useT();
   const { settings } = useSession();
   const [today] = useState(todayISO);
   const [accounts, reloadAccounts] = useResource(`accounts:${today}`, () =>
@@ -76,10 +79,10 @@ export function AccountsPage() {
     setError(null);
     try {
       await financeApi.deleteAccount(deleting.id);
-      showNotice(`Cuenta «${deleting.name}» eliminada.`);
+      showNotice(t("Cuenta «{name}» eliminada.", { name: deleting.name }));
       reloadAccounts();
     } catch (caught) {
-      setError(apiMessage(caught, "No pudimos eliminar la cuenta."));
+      setError(apiMessage(caught, msg("No pudimos eliminar la cuenta.")));
     } finally {
       setDeleting(null);
       setBusy(false);
@@ -90,10 +93,10 @@ export function AccountsPage() {
     setError(null);
     try {
       await financeApi.deleteTransfer(transfer.id);
-      showNotice("Transferencia eliminada.");
+      showNotice(msg("Transferencia eliminada."));
       reloadAll();
     } catch (caught) {
-      setError(apiMessage(caught, "No pudimos eliminar la transferencia."));
+      setError(apiMessage(caught, msg("No pudimos eliminar la transferencia.")));
     }
   }
 
@@ -103,14 +106,14 @@ export function AccountsPage() {
   return (
     <>
       <PageHeader
-        title="Tus cuentas"
-        subtitle="Separa tu dinero como lo tienes en el banco: gastos, ahorro, fondos…"
+        title={t("Tus cuentas")}
+        subtitle={t("Separa tu dinero como lo tienes en el banco: gastos, ahorro, fondos…")}
         actions={
           <>
             {canMove ? (
               <button type="button" onClick={() => setMoving(true)} className={buttonClass("ink")}>
                 <ArrowRightLeft aria-hidden="true" className="size-4" />
-                Mover dinero
+                {t("Mover dinero")}
               </button>
             ) : null}
             <button
@@ -119,7 +122,7 @@ export function AccountsPage() {
               className={buttonClass("accent", "md", "font-extrabold")}
             >
               <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-              Nueva cuenta
+              {t("Nueva cuenta")}
             </button>
           </>
         }
@@ -128,29 +131,32 @@ export function AccountsPage() {
       {error ? <FormAlert title={error} /> : null}
 
       {accounts.status === "error" && !items ? (
-        <FormAlert title="No pudimos cargar tus cuentas." items={[accounts.error.message]} />
+        <FormAlert title={t("No pudimos cargar tus cuentas.")} items={[accounts.error.message]} />
       ) : !items ? (
         <TableSkeleton rows={2} />
       ) : (
         <div className="stagger-in flex flex-col gap-5">
           <section
-            aria-label="Total"
+            aria-label={t("Total")}
             className="bg-ink flex flex-wrap items-end justify-between gap-4 rounded-[32px] p-6 text-white sm:p-7"
           >
             <div className="flex flex-col gap-1">
-              <span className="text-on-ink text-[13px] font-semibold">Total en tus cuentas</span>
+              <span className="text-on-ink text-[13px] font-semibold">
+                {t("Total en tus cuentas")}
+              </span>
               <span className="font-display text-[34px] font-extrabold tracking-[-0.02em] tabular-nums">
                 {money(sumMoney(items.map((a) => a.balance)))}
               </span>
             </div>
             <p className="text-on-ink flex max-w-[420px] items-start gap-2 text-[13px] leading-relaxed font-semibold">
               <ShieldCheck aria-hidden="true" className="text-mint mt-0.5 size-4 shrink-0" />
-              Solo guardamos un nombre para reconocer cada cuenta. Nunca te pediremos números de
-              cuenta, tarjetas ni claves.
+              {t(
+                "Solo guardamos un nombre para reconocer cada cuenta. Nunca te pediremos números de cuenta, tarjetas ni claves.",
+              )}
             </p>
           </section>
 
-          <ul aria-label="Cuentas" className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
+          <ul aria-label={t("Cuentas")} className="grid gap-5 md:grid-cols-2 xl:grid-cols-3">
             {items.map((account) => (
               <li key={account.id}>
                 <AccountCard
@@ -169,15 +175,17 @@ export function AccountsPage() {
             className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
           >
             <h2 id="transfers-title" className="font-display text-xl font-bold">
-              Movimientos entre cuentas
+              {t("Movimientos entre cuentas")}
             </h2>
             {!transfers.data ? (
               <TableSkeleton rows={2} />
             ) : transfers.data.length === 0 ? (
               <EmptyState
                 icon={ArrowRightLeft}
-                title="Aún no has movido dinero entre cuentas"
-                text="Cuando pases dinero de tu cuenta de gastos a la de ahorro (o al revés), regístralo aquí: cambia el saldo de ambas sin contar como gasto ni ingreso."
+                title={t("Aún no has movido dinero entre cuentas")}
+                text={t(
+                  "Cuando pases dinero de tu cuenta de gastos a la de ahorro (o al revés), regístralo aquí: cambia el saldo de ambas sin contar como gasto ni ingreso.",
+                )}
                 action={
                   canMove ? (
                     <button
@@ -185,42 +193,44 @@ export function AccountsPage() {
                       onClick={() => setMoving(true)}
                       className={buttonClass("ink")}
                     >
-                      Mover dinero
+                      {t("Mover dinero")}
                     </button>
                   ) : undefined
                 }
               />
             ) : (
-              <ScrollRegion label="Tabla de transferencias">
+              <ScrollRegion label={t("Tabla de transferencias")}>
                 <table className="w-full min-w-[560px] border-collapse text-sm">
-                  <caption className="sr-only">Movimientos entre cuentas, del más reciente</caption>
+                  <caption className="sr-only">
+                    {t("Movimientos entre cuentas, del más reciente")}
+                  </caption>
                   <thead>
                     <tr className="border-line border-b">
                       <th scope="col" className={th}>
-                        FECHA
+                        {t("FECHA")}
                       </th>
                       <th scope="col" className={th}>
-                        DE → A
+                        {t("DE → A")}
                       </th>
                       <th scope="col" className={th}>
-                        NOTA
+                        {t("NOTA")}
                       </th>
                       <th scope="col" className={`${th} text-right`}>
-                        MONTO
+                        {t("MONTO")}
                       </th>
                       <th scope="col" className={th}>
-                        <span className="sr-only">Acciones</span>
+                        <span className="sr-only">{t("Acciones")}</span>
                       </th>
                     </tr>
                   </thead>
                   <tbody>
-                    {transfers.data.map((t) => {
-                      const from = accountName(items, t.from_account_id);
-                      const to = accountName(items, t.to_account_id);
+                    {transfers.data.map((tx) => {
+                      const from = accountName(items, tx.from_account_id);
+                      const to = accountName(items, tx.to_account_id);
                       return (
-                        <tr key={t.id} className="border-line border-b last:border-0">
+                        <tr key={tx.id} className="border-line border-b last:border-0">
                           <td className={`${td} text-body whitespace-nowrap`}>
-                            {formatDate(t.occurred_on, { day: "numeric", month: "short" })}
+                            {formatDate(tx.occurred_on, { day: "numeric", month: "short" })}
                           </td>
                           <td className={`${td} font-semibold`}>
                             <span className="inline-flex flex-wrap items-center gap-1.5">
@@ -230,15 +240,18 @@ export function AccountsPage() {
                               {to}
                             </span>
                           </td>
-                          <td className={`${td} text-body`}>{t.note ?? "—"}</td>
+                          <td className={`${td} text-body`}>{tx.note ?? "—"}</td>
                           <td className={`${td} text-right font-bold tabular-nums`}>
-                            {money(t.amount)}
+                            {money(tx.amount)}
                           </td>
                           <td className={`${td} text-right`}>
                             <button
                               type="button"
-                              onClick={() => removeTransfer(t)}
-                              aria-label={`Eliminar la transferencia de ${from} a ${to}`}
+                              onClick={() => removeTransfer(tx)}
+                              aria-label={t("Eliminar la transferencia de {from} a {to}", {
+                                from,
+                                to,
+                              })}
                               className="text-muted hover:bg-canvas hover:text-danger grid size-11 cursor-pointer place-items-center rounded-full transition-colors duration-200"
                             >
                               <Trash2 aria-hidden="true" className="size-5" />
@@ -258,8 +271,10 @@ export function AccountsPage() {
       <Dialog
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing?.item ? "Editar cuenta" : "Nueva cuenta"}
-        description="Solo un nombre para reconocerla. Nunca escribas números de cuenta ni claves."
+        title={editing?.item ? t("Editar cuenta") : t("Nueva cuenta")}
+        description={t(
+          "Solo un nombre para reconocerla. Nunca escribas números de cuenta ni claves.",
+        )}
       >
         <AccountFormBody
           item={editing?.item ?? null}
@@ -274,8 +289,8 @@ export function AccountsPage() {
       <Dialog
         open={moving}
         onClose={() => setMoving(false)}
-        title="Mover dinero entre cuentas"
-        description="No cuenta como gasto ni como ingreso: solo cambia dónde está tu dinero."
+        title={t("Mover dinero entre cuentas")}
+        description={t("No cuenta como gasto ni como ingreso: solo cambia dónde está tu dinero.")}
       >
         {items ? (
           <TransferFormBody
@@ -291,9 +306,11 @@ export function AccountsPage() {
       </Dialog>
       <ConfirmDialog
         open={deleting !== null}
-        title="Eliminar cuenta"
-        message={`¿Eliminar «${deleting?.name ?? ""}»? Solo se puede si no tiene movimientos.`}
-        confirmLabel="Eliminar"
+        title={t("Eliminar cuenta")}
+        message={t("¿Eliminar «{name}»? Solo se puede si no tiene movimientos.", {
+          name: deleting?.name ?? "",
+        })}
+        confirmLabel={t("Eliminar")}
         busy={busy}
         onConfirm={confirmDelete}
         onCancel={() => setDeleting(null)}
@@ -315,6 +332,7 @@ function AccountCard({
   onEdit: () => void;
   onDelete: () => void;
 }) {
+  const t = useT();
   return (
     <article
       aria-labelledby={`account-${account.id}`}
@@ -331,18 +349,24 @@ function AccountCard({
           >
             {account.name}
           </h2>
-          <span className="text-muted text-[13px] font-semibold">{kindLabel(account)}</span>
+          <span className="text-muted text-[13px] font-semibold">{t(kindLabel(account))}</span>
         </div>
-        <RowActions label={`la cuenta ${account.name}`} onEdit={onEdit} onDelete={onDelete} />
+        <RowActions
+          label={t("la cuenta {name}", { name: account.name })}
+          onEdit={onEdit}
+          onDelete={onDelete}
+        />
       </div>
       <div className="flex flex-col gap-1">
-        <span className="text-muted text-[13px] font-semibold">Saldo hoy</span>
+        <span className="text-muted text-[13px] font-semibold">{t("Saldo hoy")}</span>
         <span className="font-display animate-value-in text-[30px] font-extrabold tracking-[-0.02em] tabular-nums">
           {money(account.balance)}
         </span>
         <span className="text-muted text-xs font-semibold">
-          Empezó con {money(account.initial_balance)} el{" "}
-          {formatDate(since, { day: "numeric", month: "short" })}
+          {t("Empezó con {amount} el {date}", {
+            amount: money(account.initial_balance),
+            date: formatDate(since, { day: "numeric", month: "short" }),
+          })}
         </span>
       </div>
       <Link
@@ -350,7 +374,7 @@ function AccountCard({
         className="text-primary mt-auto inline-flex min-h-11 items-center gap-1.5 self-start text-sm font-bold hover:underline"
       >
         <LayoutDashboard aria-hidden="true" className="size-4" />
-        Ver en el dashboard
+        {t("Ver en el dashboard")}
       </Link>
     </article>
   );
@@ -365,6 +389,7 @@ function AccountFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -386,13 +411,13 @@ function AccountFormBody({
     try {
       if (item) {
         await financeApi.updateAccount(item.id, values);
-        onSaved("Cuenta actualizada.");
+        onSaved(msg("Cuenta actualizada."));
       } else {
         await financeApi.createAccount(values);
-        onSaved("Cuenta creada.");
+        onSaved(msg("Cuenta creada."));
       }
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos guardar la cuenta."));
+      setServerError(apiMessage(error, msg("No pudimos guardar la cuenta.")));
     }
   }
 
@@ -401,34 +426,35 @@ function AccountFormBody({
       {serverError ? <FormAlert title={serverError} /> : null}
       <TextField
         id="account-name"
-        label="Nombre"
-        placeholder="Ej. Ahorro, Gastos del día, Fondo de emergencia"
+        label={t("Nombre")}
+        placeholder={t("Ej. Ahorro, Gastos del día, Fondo de emergencia")}
         autoComplete="off"
         error={errors.name?.message}
         {...register("name")}
       />
       <SelectField
         id="account-kind"
-        label="¿Para qué la usas?"
+        label={t("¿Para qué la usas?")}
         options={ACCOUNT_KINDS.map((kind) => ({ value: kind, label: ACCOUNT_KIND_LABELS[kind] }))}
         error={errors.kind?.message}
         {...register("kind")}
       />
       <TextField
         id="account-balance"
-        label="¿Cuánto tenía al empezar a usar Cuenta Clara?"
+        label={t("¿Cuánto tenía al empezar a usar Cuenta Clara?")}
         inputMode="decimal"
         placeholder="0.00"
         autoComplete="off"
-        hint="Desde ahí sumamos y restamos sus movimientos para saber cuánto tiene hoy."
+        hint={t("Desde ahí sumamos y restamos sus movimientos para saber cuánto tiene hoy.")}
         error={errors.initial_balance?.message}
         {...register("initial_balance")}
       />
       {/* The primary role can only be handed to another account, never just removed */}
       {item?.is_primary ? (
         <p className="bg-primary-tint text-on-tint rounded-2xl p-4 text-sm font-semibold">
-          Es tu cuenta principal: el dashboard abre en ella y tu límite de gasto se aplica aquí.
-          Para cambiarla, marca otra cuenta como principal.
+          {t(
+            "Es tu cuenta principal: el dashboard abre en ella y tu límite de gasto se aplica aquí. Para cambiarla, marca otra cuenta como principal.",
+          )}
         </p>
       ) : (
         <label className="flex min-h-11 cursor-pointer items-start gap-3 text-sm font-semibold">
@@ -438,16 +464,16 @@ function AccountFormBody({
             {...register("is_primary")}
           />
           <span>
-            Es la cuenta de mis gastos del día (principal)
+            {t("Es la cuenta de mis gastos del día (principal)")}
             <span className="text-muted block text-[13px] font-medium">
-              El dashboard abrirá en ella y tu límite de gasto se aplicará aquí.
+              {t("El dashboard abrirá en ella y tu límite de gasto se aplicará aquí.")}
             </span>
           </span>
         </label>
       )}
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -455,7 +481,7 @@ function AccountFormBody({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Guardando…" : "Guardar cuenta"}
+          {isSubmitting ? t("Guardando…") : t("Guardar cuenta")}
         </button>
       </div>
     </form>
@@ -471,6 +497,7 @@ function TransferFormBody({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const primary = accounts.find((a) => a.is_primary) ?? accounts[0]!;
   const firstOther = accounts.find((a) => a.id !== primary.id) ?? primary;
@@ -494,27 +521,27 @@ function TransferFormBody({
     setServerError(null);
     try {
       await financeApi.createTransfer(values);
-      onSaved("Dinero movido entre tus cuentas.");
+      onSaved(msg("Dinero movido entre tus cuentas."));
     } catch (error) {
-      setServerError(apiMessage(error, "No pudimos mover el dinero."));
+      setServerError(apiMessage(error, msg("No pudimos mover el dinero.")));
     }
   }
 
-  const options = accountOptions(accounts);
+  const options = accountOptions(accounts, t);
   return (
     <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
       {serverError ? <FormAlert title={serverError} /> : null}
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           id="transfer-from"
-          label="Desde"
+          label={t("Desde")}
           options={options}
           error={errors.from_account_id?.message}
           {...register("from_account_id")}
         />
         <SelectField
           id="transfer-to"
-          label="Hacia"
+          label={t("Hacia")}
           options={options}
           error={errors.to_account_id?.message}
           {...register("to_account_id")}
@@ -522,7 +549,7 @@ function TransferFormBody({
       </div>
       <TextField
         id="transfer-amount"
-        label="Monto"
+        label={t("Monto")}
         inputMode="decimal"
         placeholder="0.00"
         autoComplete="off"
@@ -531,21 +558,21 @@ function TransferFormBody({
       />
       <TextField
         id="transfer-date"
-        label="Fecha"
+        label={t("Fecha")}
         type="date"
         error={errors.occurred_on?.message}
         {...register("occurred_on")}
       />
       <TextField
         id="transfer-note"
-        label="Nota (opcional)"
-        placeholder="Ej. ahorro de la quincena"
+        label={t("Nota (opcional)")}
+        placeholder={t("Ej. ahorro de la quincena")}
         error={errors.note?.message}
         {...register("note")}
       />
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -553,7 +580,7 @@ function TransferFormBody({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Moviendo…" : "Mover dinero"}
+          {isSubmitting ? t("Moviendo…") : t("Mover dinero")}
         </button>
       </div>
     </form>
