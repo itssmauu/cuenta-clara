@@ -600,3 +600,21 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 - **La exportación de datos** los incluye.
 
 **Sin dependencias nuevas.** Las peticiones `PUT`/`DELETE` siguen las reglas de los demás CRUD: sesión y CSRF, sin límite de frecuencia propio (solo login, registro, recuperación y borrado de cuenta lo tienen).
+
+## D-071 · La app en español y en inglés
+
+**Contexto.** Cuenta Clara solo hablaba español. Hace falta que quien prefiera otro idioma pueda usarla, sin perder lo que ya funciona ni añadir peso.
+
+**Decisión.**
+
+- **Sin dependencias nuevas.** El texto en español del código es la clave; `frontend/src/i18n/en.ts` tiene la versión en inglés de cada uno. Así el código sigue leyéndose en español y no hay identificadores inventados.
+  - En componentes de cliente se usa `useT()`; en los del servidor (landing, páginas legales, metadatos) `getT()`.
+  - Los textos guardados en constantes o que llegan de la validación se marcan con `msg("…")` y se traducen donde se muestran (`FormAlert`, `TextField`, `SelectField`, `SegmentedControl`, `Notice`).
+  - Las frases con enlaces o negritas usan `rich()` con etiquetas (`<link>…</link>`), para que el orden de las palabras pueda cambiar entre idiomas.
+  - Si falta una traducción se muestra el español: nunca una clave rota. Una prueba (`src/i18n/i18n.test.ts`) exige inglés para cada `t("…")`/`msg("…")` y que las `{variables}` y `<etiquetas>` coincidan.
+- **Cómo se elige el idioma:** el selector ES | EN (en la landing, el acceso, las páginas legales y la barra de sesión) guarda la elección en la cookie `cc-lang` por un año. Sin elección, se usa el idioma del navegador (`Accept-Language`) y, si no es español ni inglés, español. `<html lang>` siempre sigue al idioma, para los lectores de pantalla. Fechas y montos se formatean con `es-US` o `en-US`.
+- **La API sigue respondiendo sus errores en español**, mensajes estables para cualquier cliente, y la web los traduce al mostrarlos (con `EN_PATTERNS` para los que llevan valores). Lo que la API escribe con sus propias palabras sigue el idioma que la web envía en `Accept-Language`: los correos de recuperación y de contraseña cambiada, y las respuestas de Balbo.
+- **Los errores de validación de Pydantic** ya no se muestran tal cual (estaban en inglés técnico): los mensajes propios se muestran sin el prefijo `Value error, ` y los genéricos se cambian por un mensaje claro.
+- **Las categorías predeterminadas** (Comida, Transporte…) son datos en español; se traducen al mostrarlas. Las que crea el usuario conservan su nombre.
+- **Documentos legales:** hay una traducción al inglés de privacidad, términos y cookies, con un aviso de que **prevalece la versión en español**. La cookie `cc-lang` se añadió a la política de cookies; es una preferencia que el usuario pide, sin datos personales.
+- **Fuera de alcance por ahora:** los reportes CSV/PDF y la exportación de datos siguen en español.

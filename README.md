@@ -35,6 +35,7 @@ Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la s
 - **Predicción** de tu saldo para las próximas semanas o meses, con promedio o tendencia.
 - **Metas de ahorro** que te dicen cuánto apartar por periodo para llegar a tiempo.
 - **Presupuesto por categoría:** cuánto quieres gastar en comida, transporte u ocio, con una barra que te avisa cuando te acercas al tope o te pasas.
+- **En español o en inglés:** cambia de idioma en cualquier página; la app, los correos y Balbo te siguen.
 - **Alertas** al acercarte a tu límite y **comparación** con el periodo anterior.
 - **Reportes** descargables en **CSV o PDF**.
 - **Balbo, tu copiloto financiero:** un asistente con IA que conoce tus números y te dice si te conviene una compra o cómo ahorrar para una meta. Solo habla de tus finanzas.
