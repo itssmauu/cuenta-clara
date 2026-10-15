@@ -1,5 +1,6 @@
 /** Typed calls for settings, accounts, categories, money movements, goals and the dashboard. */
 import { request } from "./api";
+import { todayISO } from "./format";
 
 export type Frequency = "daily" | "weekly" | "biweekly" | "monthly" | "custom";
 export type DashboardPeriod = Exclude<Frequency, "custom">;
@@ -324,8 +325,12 @@ export const financeApi = {
   deleteIncome: (id: string) => request<void>(`/incomes/${id}`, { method: "DELETE" }),
 
   listFixedExpenses: () => request<FixedExpense[]>("/fixed-expenses"),
+  /** Sends the local date: payments are asked about from the user's own "today" on */
   createFixedExpense: (data: FixedExpenseInput) =>
-    request<FixedExpense>("/fixed-expenses", { method: "POST", body: data }),
+    request<FixedExpense>(`/fixed-expenses${query({ date: todayISO() })}`, {
+      method: "POST",
+      body: data,
+    }),
   updateFixedExpense: (id: string, data: FixedExpenseInput & { is_active: boolean }) =>
     request<FixedExpense>(`/fixed-expenses/${id}`, { method: "PUT", body: data }),
   deleteFixedExpense: (id: string) => request<void>(`/fixed-expenses/${id}`, { method: "DELETE" }),
