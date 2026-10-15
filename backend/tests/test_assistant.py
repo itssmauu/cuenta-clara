@@ -6,10 +6,12 @@ import pytest
 from fastapi.testclient import TestClient
 
 from app.api.assistant import get_assistant_model, get_rate_limiter
+from app.core.i18n import parse_language
 from app.main import app
 from app.services.assistant import (
     OFF_TOPIC_MARKER,
     REFUSAL,
+    REFUSAL_EN,
     AssistantUnavailableError,
     RateLimiter,
 )
@@ -226,3 +228,44 @@ def test_nothing_is_sent_without_explicit_consent(ana: TestClient) -> None:
     assert "Activa a Balbo primero" in response.text
     assert model.calls == []  # not a single byte reached the model
     assert ana.get(f"{API}/assistant").json()["consented"] is False
+
+
+def test_balbo_answers_in_english_when_the_app_is_in_english(ana: TestClient) -> None:
+    model = FakeModel("Better wait: you have $230.00 left.")
+    use_model(model)
+
+    response = ana.post(
+        CHAT,
+        json={"messages": [{"role": "user", "content": "Can I afford a PS5?"}]},
+        headers={"Accept-Language": "en-US,en;q=0.9"},
+    )
+
+    assert response.json()["reply"] == "Better wait: you have $230.00 left."
+    system, _ = model.calls[0]
+    assert "Responde SIEMPRE en inglés" in system
+
+    use_model(FakeModel(OFF_TOPIC_MARKER))
+    refusal = ana.post(
+        CHAT,
+        json={"messages": [{"role": "user", "content": "Write me a poem"}]},
+        headers={"Accept-Language": "en"},
+    )
+    assert refusal.json() == {"reply": REFUSAL_EN, "on_topic": False}
+
+
+def test_balbo_keeps_spanish_by_default(ana: TestClient) -> None:
+    model = FakeModel()
+    use_model(model)
+
+    ask(ana, "¿Cómo voy?")
+
+    system, _ = model.calls[0]
+    assert "Responde SIEMPRE en inglés" not in system
+
+
+@pytest.mark.parametrize(
+    ("header", "language"),
+    [(None, "es"), ("en", "en"), ("en-US,en;q=0.9", "en"), ("fr-FR,es;q=0.8", "es"), ("de", "es")],
+)
+def test_the_language_comes_from_accept_language(header: str | None, language: str) -> None:
+    assert parse_language(header) == language

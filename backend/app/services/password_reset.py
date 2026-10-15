@@ -23,6 +23,7 @@ from sqlalchemy import delete, select
 from sqlalchemy.orm import Session
 
 from app.core.config import get_settings
+from app.core.i18n import Language
 from app.core.password_policy import password_problems
 from app.core.security import burn_password_check, hash_password
 from app.models import PasswordResetCode, User
@@ -66,7 +67,7 @@ def _active_user(db: Session, email: str) -> User | None:
 # ── Step 1: send a code ─────────────────────────────────
 
 
-def request_code(db: Session, mailer: Mailer, *, email: str) -> None:
+def request_code(db: Session, mailer: Mailer, *, email: str, language: Language = "es") -> None:
     """Email a fresh code if the account exists. Silent either way."""
     user = _active_user(db, email)
     if user is None:
@@ -84,7 +85,7 @@ def request_code(db: Session, mailer: Mailer, *, email: str) -> None:
     )
     db.commit()
     try:
-        mailer.send(code_email(user.email, user.name, code, minutes))
+        mailer.send(code_email(user.email, user.name, code, minutes, language))
     except Exception as error:  # noqa: BLE001 - never tell the caller; log for the owner
         logger.error("Password reset email failed user_id=%s: %s", user.id, type(error).__name__)
 
@@ -93,7 +94,13 @@ def request_code(db: Session, mailer: Mailer, *, email: str) -> None:
 
 
 def reset_password(
-    db: Session, mailer: Mailer | None, *, email: str, code: str, new_password: str
+    db: Session,
+    mailer: Mailer | None,
+    *,
+    email: str,
+    code: str,
+    new_password: str,
+    language: Language = "es",
 ) -> None:
     user = _active_user(db, email)
     if user is None:
@@ -131,7 +138,7 @@ def reset_password(
 
     if mailer is not None:
         try:
-            mailer.send(changed_email(user.email, user.name))
+            mailer.send(changed_email(user.email, user.name, language))
         except Exception as error:  # noqa: BLE001 - the reset itself already succeeded
             logger.error(
                 "Password changed email failed user_id=%s: %s", user.id, type(error).__name__
@@ -152,8 +159,57 @@ CODE = (
     "margin:0 0 16px;padding:16px;font-size:34px;font-weight:bold;letter-spacing:8px;"
     "text-align:center;background:#e6e3ff;border-radius:14px;color:#14163a"
 )
-NOT_YOU = "Si no lo pediste tú, ignora este correo: tu contraseña sigue igual."
-NEVER_ASKED = "Nunca te pediremos este código por teléfono ni por chat."
+# The wording of both emails in each language. {placeholders} are filled with str.format.
+COPY: dict[Language, dict[str, str]] = {
+    "es": {
+        "not_you": "Si no lo pediste tú, ignora este correo: tu contraseña sigue igual.",
+        "never_asked": "Nunca te pediremos este código por teléfono ni por chat.",
+        "footer": "Este es un correo automático de Cuenta Clara. No respondas a este mensaje.",
+        "hello_text": "Hola, {first}:",
+        "hello": "Hola, {first}.",
+        "code_text": "Tu código para crear una nueva contraseña en Cuenta Clara es:",
+        "code_html": "Usa este código para crear una nueva contraseña:",
+        "expires_text": "Vence en {minutes} minutos y solo sirve una vez. Escríbelo en {page}",
+        "expires_html": "Vence en <strong>{minutes} minutos</strong> y solo sirve una vez.",
+        "code_subject": "{code} es tu código de Cuenta Clara",
+        "code_title": "Recupera tu contraseña",
+        "changed": (
+            "La contraseña de tu cuenta de Cuenta Clara acaba de cambiar y se cerraron todas "
+            "las sesiones abiertas."
+        ),
+        "advice": (
+            "Si fuiste tú, no tienes que hacer nada. Si no fuiste tú, recupera tu cuenta ya desde "
+            "«¿Olvidaste tu contraseña?» y revisa la seguridad de tu correo."
+        ),
+        "changed_subject": "Tu contraseña de Cuenta Clara cambió",
+        "changed_title": "Tu contraseña cambió",
+    },
+    "en": {
+        "not_you": "If you didn't ask for it, ignore this email: your password stays the same.",
+        "never_asked": "We will never ask you for this code by phone or chat.",
+        "footer": "This is an automatic email from Cuenta Clara. Please don't reply to it.",
+        "hello_text": "Hi {first},",
+        "hello": "Hi {first}.",
+        "code_text": "Your code to create a new password in Cuenta Clara is:",
+        "code_html": "Use this code to create a new password:",
+        "expires_text": "It expires in {minutes} minutes and works only once. Enter it at {page}",
+        "expires_html": "It expires in <strong>{minutes} minutes</strong> and works only once.",
+        "code_subject": "{code} is your Cuenta Clara code",
+        "code_title": "Recover your password",
+        "changed": (
+            "The password of your Cuenta Clara account has just changed and every open session "
+            "was closed."
+        ),
+        "advice": (
+            "If it was you, there's nothing to do. If it wasn't, recover your account right away "
+            "from “Forgot your password?” and check the security of your email."
+        ),
+        "changed_subject": "Your Cuenta Clara password changed",
+        "changed_title": "Your password changed",
+    },
+}
+NOT_YOU = COPY["es"]["not_you"]
+NEVER_ASKED = COPY["es"]["never_asked"]
 
 
 def _p(style: str, content: str) -> str:
@@ -161,13 +217,13 @@ def _p(style: str, content: str) -> str:
     return f'<p style="{style}">{content}</p>'
 
 
-def _layout(title: str, *paragraphs: str) -> str:
+def _layout(title: str, *paragraphs: str, language: Language = "es") -> str:
     return (
-        f'<!doctype html><html lang="es"><body style="{PAGE}"><div style="{CARD}">'
+        f'<!doctype html><html lang="{language}"><body style="{PAGE}"><div style="{CARD}">'
         + _p(BRAND, "Cuenta Clara")
         + f'<h1 style="{TITLE}">{title}</h1>'
         + "".join(paragraphs)
-        + _p(FOOTER, "Este es un correo automático de Cuenta Clara. No respondas a este mensaje.")
+        + _p(FOOTER, COPY[language]["footer"])
         + "</div></body></html>"
     )
 
@@ -177,49 +233,42 @@ def _first_name(name: str) -> str:
     return parts[0] if parts else ""
 
 
-def code_email(to: str, name: str, code: str, minutes: int) -> Email:
+def code_email(to: str, name: str, code: str, minutes: int, language: Language = "es") -> Email:
+    c = COPY[language]
     first = _first_name(name)
     page = f"{get_settings().frontend_origin}/recuperar-contrasena"
     text = (
-        f"Hola, {first}:\n\n"
-        f"Tu código para crear una nueva contraseña en Cuenta Clara es:\n\n    {code}\n\n"
-        f"Vence en {minutes} minutos y solo sirve una vez. Escríbelo en {page}\n\n"
-        f"{NOT_YOU}\n{NEVER_ASKED}"
+        f"{c['hello_text'].format(first=first)}\n\n"
+        f"{c['code_text']}\n\n    {code}\n\n"
+        f"{c['expires_text'].format(minutes=minutes, page=page)}\n\n"
+        f"{c['not_you']}\n{c['never_asked']}"
     )
     return Email(
         to=to,
-        subject=f"{code} es tu código de Cuenta Clara",
+        subject=c["code_subject"].format(code=code),
         text=text,
         html=_layout(
-            "Recupera tu contraseña",
-            _p(
-                TEXT,
-                f"Hola, {html.escape(first)}. Usa este código para crear una nueva contraseña:",
-            ),
+            c["code_title"],
+            _p(TEXT, f"{c['hello'].format(first=html.escape(first))} {c['code_html']}"),
             _p(CODE, code),
-            _p(TEXT, f"Vence en <strong>{minutes} minutos</strong> y solo sirve una vez."),
-            _p(SOFT, f"{NOT_YOU} {NEVER_ASKED}"),
+            _p(TEXT, c["expires_html"].format(minutes=minutes)),
+            _p(SOFT, f"{c['not_you']} {c['never_asked']}"),
+            language=language,
         ),
     )
 
 
-def changed_email(to: str, name: str) -> Email:
+def changed_email(to: str, name: str, language: Language = "es") -> Email:
+    c = COPY[language]
     first = _first_name(name)
-    changed = (
-        "La contraseña de tu cuenta de Cuenta Clara acaba de cambiar y se cerraron todas "
-        "las sesiones abiertas."
-    )
-    advice = (
-        "Si fuiste tú, no tienes que hacer nada. Si no fuiste tú, recupera tu cuenta ya desde "
-        "«¿Olvidaste tu contraseña?» y revisa la seguridad de tu correo."
-    )
     return Email(
         to=to,
-        subject="Tu contraseña de Cuenta Clara cambió",
-        text=f"Hola, {first}:\n\n{changed}\n\n{advice}",
+        subject=c["changed_subject"],
+        text=f"{c['hello_text'].format(first=first)}\n\n{c['changed']}\n\n{c['advice']}",
         html=_layout(
-            "Tu contraseña cambió",
-            _p(TEXT, f"Hola, {html.escape(first)}. {changed}"),
-            _p(SOFT, advice),
+            c["changed_title"],
+            _p(TEXT, f"{c['hello'].format(first=html.escape(first))} {c['changed']}"),
+            _p(SOFT, c["advice"]),
+            language=language,
         ),
     )
