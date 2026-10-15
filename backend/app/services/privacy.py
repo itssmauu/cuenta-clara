@@ -19,6 +19,7 @@ from app.core.security import verify_password
 from app.models import (
     Account,
     Category,
+    CategoryBudget,
     FixedExpense,
     FixedExpenseCheckIn,
     Income,
@@ -74,6 +75,7 @@ def export_user_data(db: Session, user: User) -> dict[str, Any]:
         "configuracion": _row(settings),
         "cuentas": _rows(db, Account, user),
         "categorias_propias": _rows(db, Category, user),
+        "presupuestos_por_categoria": _rows(db, CategoryBudget, user),
         "ingresos_fijos": _rows(db, Income, user),
         "gastos_fijos": _rows(db, FixedExpense, user),
         # "Did you pay it?" answers, one per occurrence of a fixed expense

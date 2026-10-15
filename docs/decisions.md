@@ -458,7 +458,7 @@ Las poses cambian con transiciones suaves. Con movimiento reducido el robot qued
   - Sin responder: no cuenta todavía.
 
   Los pagos futuros no se preguntan y la predicción los sigue esperando.
-- **Sin cambiar el pasado.** Cada gasto fijo tiene `confirm_from`. Los pagos anteriores a esa fecha cuentan solos, como antes. Para los gastos que ya existían, es el día de la migración; para los nuevos, el día en que se crean.
+- **Sin cambiar el pasado.** Cada gasto fijo tiene `confirm_from`. Los pagos anteriores a esa fecha cuentan solos, como antes. Para los gastos que ya existían, es el día de la migración; para los nuevos, el día en que se crean **según la fecha local del usuario** (`?date=`, aceptada dentro de ±1 día de UTC). Con la fecha UTC del servidor, un gasto creado después de las 7 p. m. en Panamá se saltaba la pregunta de ese día y se descontaba solo.
 - **Una sola regla para todo.** Las fechas que no cuentan se quitan en `Recurring.dates_in`, así que el saldo de las cuentas, el dashboard, la predicción, los reportes y Balbo dan las mismas cifras.
 - **"Más tarde"** cierra la pregunta y deja un aviso arriba de cada página con un botón "Revisar". Al día siguiente vuelve a preguntar.
 - **Seguridad.**
@@ -579,3 +579,24 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 - Un dominio y un solo lugar para las variables.
 - No hacen falta `API_INTERNAL_URL`, `PROXY_SECRET` ni `API_PROXY_SECRET`.
 - `vercel dev` arranca los dos servicios juntos para probar en local.
+
+## D-070 · Presupuesto por categoría
+
+**Contexto.** El límite de gasto es uno solo para todo el periodo. Hace falta poder decir «quiero gastar como mucho $40 a la semana en comida» y ver cómo se va.
+
+**Decisión.**
+
+- **Tabla `category_budgets`:** un monto por usuario y categoría (`UNIQUE`), `NUMERIC(12,2)` con `CHECK > 0` y borrado en cascada con el usuario o la categoría. Sirve para categorías predeterminadas y propias. La de otro usuario responde `404`.
+- **Se guarda por el periodo de ingreso**, como el límite, y se convierte al periodo mostrado con la misma regla de duración promedio. Para no duplicar lógica, `limit_for` y el presupuesto usan la misma función, `convert_amount`.
+- **«Gastado» es el desglose por categoría del dashboard** (`spending_by_category`): fijos + variables, sin ingresos ni transferencias, desde `balance_as_of` y dentro del alcance de cuenta. Así el presupuesto y el dashboard nunca dan cifras distintas.
+- **Estados:** `ok`, `warning` desde el 80 % (`WARNING_PERCENT`) y `over` solo al pasarse estrictamente, como el límite. Se comparan sin redondear, para que 79.99 % no aparezca como aviso.
+- **Contra el límite global:** se informa lo que queda sin asignar y se avisa si los presupuestos suman más que el límite. **No se cambia** el comportamiento del límite ni del dashboard.
+- **Sugerencias:** el promedio de los últimos 6 periodos completos por categoría. Es la misma ventana de la predicción (`complete_periods`, extraída de ella sin cambios).
+- **La interfaz** abre en semanal y permite cambiar de periodo y de cuenta.
+  - Cada barra es un `progressbar` con su `aria-valuetext`, y el estado también va escrito: el color nunca es la única señal.
+  - Cuando los presupuestos superan el límite aparece un aviso con `role="status"`.
+- **Balbo** recibe los presupuestos y su estado. Esa línea solo se agrega si hay alguno.
+- **«Añadir categoría» desde Presupuesto** crea una categoría propia normal (`POST /categories`) y, si se indica, su presupuesto. Queda en el sistema como cualquier otra: aparece al registrar gastos y gastos fijos y en Configuración, sin crearla dos veces. Un nombre repetido da `409`, y el monto se valida antes de crear nada.
+- **La exportación de datos** los incluye.
+
+**Sin dependencias nuevas.** Las peticiones `PUT`/`DELETE` siguen las reglas de los demás CRUD: sesión y CSRF, sin límite de frecuencia propio (solo login, registro, recuperación y borrado de cuenta lo tienen).

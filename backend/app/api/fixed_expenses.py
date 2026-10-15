@@ -26,9 +26,14 @@ def list_fixed_expenses(db: DbSession, user: CurrentUser) -> list[FixedExpenseOu
 
 
 @router.post("", response_model=FixedExpenseOut, status_code=status.HTTP_201_CREATED)
-def create_fixed_expense(body: FixedExpenseIn, db: DbSession, user: CurrentUser) -> FixedExpenseOut:
+def create_fixed_expense(
+    body: FixedExpenseIn, db: DbSession, user: CurrentUser, reference_date: DateParam = None
+) -> FixedExpenseOut:
     ensure_usable(db, user, body.category_id)
     data = with_account(db, user, body.model_dump(), creating=True)
+    # Payments from the user's own today on are asked about. With the server's (UTC) date,
+    # an expense created in the evening in Panama would skip today's question.
+    data["confirm_from"] = check_ins.local_today(reference_date)
     expense = ownership.create_owned(db, FixedExpense, user, data)
     return FixedExpenseOut.model_validate(expense)
 

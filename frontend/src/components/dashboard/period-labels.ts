@@ -42,3 +42,12 @@ export const PERIOD_ADJECTIVE: Record<Frequency, string> = {
   monthly: "mensual",
   custom: "del periodo",
 };
+
+/** "por semana", used where an amount belongs to one period */
+export const PERIOD_NOUN: Record<Frequency, string> = {
+  daily: "día",
+  weekly: "semana",
+  biweekly: "quincena",
+  monthly: "mes",
+  custom: "periodo",
+};

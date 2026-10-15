@@ -89,9 +89,11 @@ erDiagram
     users ||--o{ fixed_expenses : registra
     users ||--o{ transactions : registra
     users ||--o{ categories : crea
+    users ||--o{ category_budgets : presupuesta
     users ||--o{ refresh_tokens : "sesiones"
     categories |o--o{ fixed_expenses : clasifica
     categories |o--o{ transactions : clasifica
+    categories ||--o{ category_budgets : "tiene presupuesto"
 
     users { uuid id string email "único, minúsculas" string password_hash "Argon2id" int failed_login_attempts timestamptz locked_until }
     user_settings { numeric initial_balance date balance_as_of string currency string income_period numeric spending_limit bool onboarding_completed }
@@ -99,11 +101,24 @@ erDiagram
     fixed_expenses { string name numeric amount string frequency date start_date int due_day bool is_active }
     transactions { string type "income/expense" numeric amount date occurred_on string note }
     categories { uuid user_id "NULL = predeterminada" string name string color }
+    category_budgets { uuid user_id uuid category_id numeric amount "> 0, por periodo de ingreso" }
     refresh_tokens { string token_hash "SHA-256" timestamptz expires_at timestamptz revoked_at }
 ```
 
 - Todos los montos son `NUMERIC(12,2)`. Todas las tablas usan `id` UUID con `created_at` y `updated_at`.
-- Borrar un usuario borra sus datos en cascada. Borrar una categoría deja sus movimientos sin categoría (`ON DELETE SET NULL`).
+- Borrar un usuario borra sus datos en cascada. Borrar una categoría deja sus movimientos sin categoría (`ON DELETE SET NULL`) y borra su presupuesto (`ON DELETE CASCADE`).
+- `category_budgets` tiene un solo presupuesto por usuario y categoría (`UNIQUE (user_id, category_id)`). Puede apuntar a una categoría predeterminada o a una propia.
+
+## Endpoints de presupuesto
+
+| Método | Ruta | Qué hace |
+| --- | --- | --- |
+| `GET` | `/api/v1/budgets?period=&date=&account=` | Resumen del periodo: cada categoría con presupuesto, gastado, restante, % y estado; gasto sin presupuesto; totales; comparación con el límite |
+| `PUT` | `/api/v1/budgets/{category_id}` | Crea o cambia el presupuesto (`{"amount": "40.00"}`, por periodo de ingreso, > 0 y ≤ 1 000 000) |
+| `DELETE` | `/api/v1/budgets/{category_id}` | Quita el presupuesto (`204`) |
+| `GET` | `/api/v1/budgets/suggestions?period=&date=&account=` | Monto sugerido por categoría según el promedio reciente |
+
+La categoría de otro usuario responde `404` (anti-IDOR). Todos requieren sesión y, los que cambian datos, el token CSRF. La lista completa de endpoints está en `backend/README.md`.
 
 ## Infraestructura
 

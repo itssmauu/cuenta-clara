@@ -6,6 +6,7 @@ from datetime import date
 import pytest
 from fastapi.testclient import TestClient
 
+from app.services.check_ins import local_today
 from tests.auth_helpers import set_primary_balance
 
 API = "/api/v1"
@@ -249,3 +250,42 @@ def test_check_ins_require_a_session_and_csrf(ana: TestClient, client: TestClien
         },
     )
     assert response.status_code == 403
+
+
+def test_an_expense_created_in_the_evening_is_asked_about_on_the_users_own_today(
+    ana: TestClient, utc_today: Callable[[date], None]
+) -> None:
+    """8 p.m. Monday in Panama is already Tuesday in UTC: Monday must still be asked."""
+    utc_today(date(2026, 10, 6))
+    response = ana.post(
+        f"{API}/fixed-expenses",
+        params={"date": MONDAY.isoformat()},
+        json={
+            "name": "Pasaje",
+            "amount": "1.50",
+            "frequency": "daily",
+            "start_date": MONDAY.isoformat(),
+        },
+    )
+    response.raise_for_status()
+
+    assert pending(ana, MONDAY) == {"Pasaje": ["2026-10-05"]}
+    assert balance(ana, MONDAY) == "100.00"  # not deducted until confirmed
+
+
+@pytest.mark.parametrize(
+    ("client_day", "expected"),
+    [
+        (date(2026, 10, 5), date(2026, 10, 5)),  # a day behind UTC: trusted
+        (date(2026, 10, 7), date(2026, 10, 7)),  # a day ahead: trusted
+        (date(2026, 9, 1), date(2026, 10, 5)),  # nonsense: kept within a day
+        (date(2027, 1, 1), date(2026, 10, 7)),
+        (None, date(2026, 10, 6)),  # not sent: the server's date
+    ],
+)
+def test_the_local_date_is_trusted_only_within_a_day_of_utc(
+    utc_today: Callable[[date], None], client_day: date | None, expected: date
+) -> None:
+    utc_today(date(2026, 10, 6))
+
+    assert local_today(client_day) == expected

@@ -27,6 +27,14 @@ def list_categories(db: Session, user: User) -> Sequence[Category]:
     ).all()
 
 
+def get_visible(db: Session, user: User, category_id: uuid.UUID) -> Category:
+    """A default category or one of the user's own; anyone else's looks missing (404)."""
+    category = db.scalar(select(Category).where(Category.id == category_id, _visible_to(user)))
+    if category is None:
+        raise NotFoundError("La categoría no existe.")
+    return category
+
+
 def ensure_usable(db: Session, user: User, category_id: uuid.UUID | None) -> None:
     """A record may only point at a default category or one of the user's own."""
     if category_id is None:
