@@ -8,6 +8,7 @@ import { TermsGate } from "@/components/legal/TermsGate";
 import { FormAlert } from "@/components/ui/FormAlert";
 
 import { SessionProvider, useSessionLoader } from "./session";
+import { SessionBar } from "./SessionBar";
 import { Sidebar } from "./Sidebar";
 
 /** Layout of every signed-in page: sidebar + content, rendered once the session is confirmed. */
@@ -47,6 +48,8 @@ export function AppShell({ children }: { children: ReactNode }) {
             tabIndex={-1}
             className="flex min-w-0 flex-1 flex-col gap-5 outline-none"
           >
+            {/* Name, date, time and how long this session has lasted */}
+            <SessionBar />
             {/* "Did you pay it?" for fixed expenses due today or earlier */}
             <CheckInPrompt />
             {children}
