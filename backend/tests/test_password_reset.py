@@ -385,3 +385,31 @@ def test_mail_check_sends_a_test_email_without_printing_the_password(
     assert server.calls == ["starttls", "login:bot@gmail.com", "send", "quit"]
     output = capsys.readouterr().out
     assert "Enviado" in output and "abcd" not in output
+
+
+# ── In the user's language ──────────────────────────────
+
+
+def test_both_emails_follow_the_language_the_app_is_read_in(
+    ana: TestClient, outbox: Outbox
+) -> None:
+    english = {"Accept-Language": "en"}
+    assert (
+        ana.post(f"{API}/forgot", json={"email": "ana@example.com"}, headers=english).status_code
+        == 202
+    )
+    sent = outbox.sent[-1]
+    assert sent.subject.endswith("is your Cuenta Clara code")
+    assert "Use this code to create a new password" in sent.html
+    assert '<html lang="en">' in sent.html
+    code = re.search(r"\b(\d{6})\b", sent.text)
+    assert code
+
+    response = ana.post(
+        f"{API}/reset",
+        json={"email": "ana@example.com", "code": code.group(1), "new_password": NEW_PASSWORD},
+        headers=english,
+    )
+
+    assert response.status_code == 204
+    assert outbox.sent[-1].subject == "Your Cuenta Clara password changed"

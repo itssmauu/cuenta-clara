@@ -3,13 +3,17 @@
 import { AlertCircle } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { useT } from "@/i18n/client";
+
 type FormAlertProps = { title: string; items?: string[] };
 
 /**
  * Error summary shown after a failed submit. It takes focus so keyboard and
  * screen reader users land on it instead of having to search for what went wrong.
+ * Messages may come from validation or the API; they are shown in the visitor's language.
  */
 export function FormAlert({ title, items = [] }: FormAlertProps) {
+  const t = useT();
   const ref = useRef<HTMLDivElement>(null);
   // Compare by content: a new array with the same items (e.g. the `[]` default on every
   // render) must not pull focus away from a field the user is typing in
@@ -28,11 +32,11 @@ export function FormAlert({ title, items = [] }: FormAlertProps) {
     >
       <AlertCircle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
       <div className="flex flex-col gap-1.5">
-        <p>{title}</p>
+        <p>{t(title)}</p>
         {items.length > 0 ? (
           <ul className="list-disc pl-4 font-medium">
             {items.map((item) => (
-              <li key={item}>{item}</li>
+              <li key={item}>{t(item)}</li>
             ))}
           </ul>
         ) : null}

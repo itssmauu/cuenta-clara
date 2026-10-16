@@ -3,9 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
+
 const tabs = [
-  { href: "/login", label: "Iniciar sesión" },
-  { href: "/register", label: "Registrarme" },
+  { href: "/login", label: msg("Iniciar sesión") },
+  { href: "/register", label: msg("Registrarme") },
 ] as const;
 
 // The active pill as a clip of the overlay: half the bar minus the 5px padding and 6px gap
@@ -21,11 +24,12 @@ const CLIP = {
  * tabs styled as active and clipped to one half: hidden from screen readers and clicks.
  */
 export function AuthTabs() {
+  const t = useT();
   const pathname = usePathname();
   if (pathname !== "/login" && pathname !== "/register") return null;
 
   return (
-    <nav aria-label="Acceso" className="bg-canvas relative flex gap-1.5 rounded-full p-[5px]">
+    <nav aria-label={t("Acceso")} className="bg-canvas relative flex gap-1.5 rounded-full p-[5px]">
       {tabs.map((tab) => {
         const current = tab.href === pathname;
         return (
@@ -37,7 +41,7 @@ export function AuthTabs() {
               current ? "" : "text-ink hover:bg-ink/5"
             }`}
           >
-            {tab.label}
+            {t(tab.label)}
           </Link>
         );
       })}
@@ -50,7 +54,7 @@ export function AuthTabs() {
             key={tab.href}
             className="flex min-h-11 flex-1 items-center justify-center text-[15px] font-bold"
           >
-            {tab.label}
+            {t(tab.label)}
           </span>
         ))}
       </div>

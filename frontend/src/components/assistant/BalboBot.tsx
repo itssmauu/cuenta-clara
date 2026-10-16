@@ -1,3 +1,6 @@
+"use client";
+
+import { useT } from "@/i18n/client";
 /**
  * Balbo's robot: a little astronaut-style bot drawn in SVG, so it stays sharp at any
  * size and needs no image file. What it does depends on the chat:
@@ -29,6 +32,7 @@ export function BalboBot({
   /** Accessible name; without it the robot is decorative */
   label?: string;
 }) {
+  const t = useT();
   return (
     <svg
       viewBox="0 0 120 150"
@@ -102,7 +106,7 @@ export function BalboBot({
           fill={INK}
           fontFamily="var(--font-display), sans-serif"
         >
-          BALBO
+          {t("BALBO")}
         </text>
         <circle cx="40" cy="94" r="5" fill={GOLD} stroke={INK} strokeWidth="2" />
         <circle cx="80" cy="94" r="5" fill={GOLD} stroke={INK} strokeWidth="2" />

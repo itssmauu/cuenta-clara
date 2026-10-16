@@ -1,10 +1,12 @@
 import Link from "next/link";
 
 import { buttonClass } from "@/components/ui/button";
+import { getT } from "@/i18n/server";
 
 import { HeroTilt } from "./HeroTilt";
 
-export function Hero() {
+export async function Hero() {
+  const t = await getT();
   return (
     <section
       aria-labelledby="hero-title"
@@ -19,30 +21,31 @@ export function Hero() {
 
       <div className="flex min-w-0 flex-[1_1_440px] flex-col gap-7">
         <p className="bg-ink-2 animate-fade-up self-start rounded-full px-4 py-2 text-sm font-semibold">
-          Finanzas personales, semana a semana
+          {t("Finanzas personales, semana a semana")}
         </p>
         <h1
           id="hero-title"
           className="font-display [animation:blur-up_900ms_var(--ease-out-strong)_80ms_both] text-[40px] leading-[1.04] font-extrabold tracking-[-0.03em] text-balance sm:text-[56px] lg:text-[68px]"
         >
-          Sabe cuánto te queda <span className="text-accent">antes de gastarlo.</span>
+          {t("Sabe cuánto te queda")} <span className="text-accent">{t("antes de gastarlo.")}</span>
         </h1>
         <p className="text-on-ink animate-fade-up max-w-[520px] text-lg leading-relaxed [animation-delay:160ms]">
-          Registra tu monto inicial, tus gastos fijos y tus ingresos. Cuenta Clara proyecta tu
-          semana y te muestra a dónde va cada dólar.
+          {t(
+            "Registra tu monto inicial, tus gastos fijos y tus ingresos. Cuenta Clara proyecta tu semana y te muestra a dónde va cada dólar.",
+          )}
         </p>
         <div className="animate-fade-up flex flex-wrap items-center gap-3.5 [animation-delay:240ms]">
           <Link
             href="/register"
             className={buttonClass("accent", "lg", "font-extrabold hover:scale-[1.04]")}
           >
-            Empezar gratis
+            {t("Empezar gratis")}
           </Link>
           <a
             href="#como-funciona"
             className={buttonClass("outline-on-ink", "lg", "hover:scale-[1.04]")}
           >
-            Ver cómo funciona
+            {t("Ver cómo funciona")}
           </a>
         </div>
       </div>
@@ -60,32 +63,37 @@ export function Hero() {
 }
 
 /** Illustrative app preview. Every figure is the worked example, labelled as such. */
-function PhoneMockup() {
+async function PhoneMockup() {
+  const t = await getT();
   return (
     <figure
-      aria-label="Vista previa de la app con un ejemplo: monto inicial de 100 dólares, gastos de 30 e ingreso de 160 dan un saldo de 230."
+      aria-label={t(
+        "Vista previa de la app con un ejemplo: monto inicial de 100 dólares, gastos de 30 e ingreso de 160 dan un saldo de 230.",
+      )}
       className="bg-ink-deep border-ink-2 flex w-[290px] flex-col gap-3.5 rounded-[44px] border-[3px] p-[18px] shadow-[0_40px_80px_-24px_rgb(0_0_0/0.6)]"
     >
       <div aria-hidden="true" className="text-on-ink flex items-center justify-between text-[13px]">
-        <span>Hola, [Nombre]</span>
+        <span>{t("Hola, [Nombre]")}</span>
         <span className="bg-ink-2 size-7 rounded-full" />
       </div>
       <div
         aria-hidden="true"
         className="text-ink flex flex-col gap-1 rounded-3xl bg-white p-[18px]"
       >
-        <span className="text-muted text-xs font-semibold">Saldo disponible (ejemplo)</span>
+        <span className="text-muted text-xs font-semibold">{t("Saldo disponible (ejemplo)")}</span>
         <span className="font-display text-4xl font-extrabold tracking-[-0.02em]">$230.00</span>
-        <span className="text-mint-ink text-xs font-bold">+$160 esta semana</span>
+        <span className="text-mint-ink text-xs font-bold">{t("+$160 esta semana")}</span>
       </div>
       <div aria-hidden="true" className="bg-ink-3 flex gap-1.5 rounded-full p-1 text-xs font-bold">
-        <span className="text-ink flex-1 rounded-full bg-white py-2 text-center">Ingresos</span>
-        <span className="text-on-ink flex-1 py-2 text-center">Gastos</span>
+        <span className="text-ink flex-1 rounded-full bg-white py-2 text-center">
+          {t("Ingresos")}
+        </span>
+        <span className="text-on-ink flex-1 py-2 text-center">{t("Gastos")}</span>
       </div>
       <dl aria-hidden="true" className="flex flex-col gap-2.5 text-[13px]">
-        <MockRow label="Monto inicial" value="$100" />
-        <MockRow label="Gastos de la semana" value="−$30" valueClass="text-accent" />
-        <MockRow label="Ingreso semanal" value="+$160" valueClass="text-mint" />
+        <MockRow label={t("Monto inicial")} value="$100" />
+        <MockRow label={t("Gastos de la semana")} value="−$30" valueClass="text-accent" />
+        <MockRow label={t("Ingreso semanal")} value="+$160" valueClass="text-mint" />
       </dl>
     </figure>
   );

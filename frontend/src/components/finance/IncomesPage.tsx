@@ -9,23 +9,27 @@ import { buttonClass } from "@/components/ui/button";
 import { ConfirmDialog } from "@/components/ui/Dialog";
 import { EmptyState, Notice, StatusPill, TableSkeleton, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
+import type { Translate } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, incomePayload, type Income } from "@/lib/finance-api";
 import { FREQUENCY_LABELS } from "@/lib/finance-validation";
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
 import { IncomeDialog } from "./RecurringDialogs";
 import { accountName } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
 
-function frequencyText(item: Pick<Income, "frequency" | "custom_period_days">) {
+function frequencyText(item: Pick<Income, "frequency" | "custom_period_days">, t: Translate) {
   return item.frequency === "custom"
-    ? `Cada ${item.custom_period_days} días`
-    : FREQUENCY_LABELS[item.frequency];
+    ? t("Cada {days} días", { days: item.custom_period_days ?? 0 })
+    : t(FREQUENCY_LABELS[item.frequency]);
 }
 
 export function IncomesPage() {
+  const t = useT();
   const { settings } = useSession();
   const [incomes, reload] = useResource("incomes", financeApi.listIncomes);
   const [today] = useState(todayISO);
@@ -44,10 +48,16 @@ export function IncomesPage() {
     setError(null);
     try {
       await financeApi.updateIncome(item.id, incomePayload(item, { is_active: !item.is_active }));
-      showNotice(item.is_active ? `«${item.label}» en pausa.` : `«${item.label}» activado.`);
+      showNotice(
+        item.is_active
+          ? t("«{label}» en pausa.", { label: item.label })
+          : t("«{label}» activado.", { label: item.label }),
+      );
       reload();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "No pudimos actualizar el ingreso.");
+      setError(
+        caught instanceof ApiError ? caught.message : t("No pudimos actualizar el ingreso."),
+      );
     }
   }
 
@@ -57,11 +67,11 @@ export function IncomesPage() {
     setError(null);
     try {
       await financeApi.deleteIncome(deleting.id);
-      showNotice(`«${deleting.label}» eliminado.`);
+      showNotice(t("«{label}» eliminado.", { label: deleting.label }));
       setDeleting(null);
       reload();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "No pudimos eliminar el ingreso.");
+      setError(caught instanceof ApiError ? caught.message : t("No pudimos eliminar el ingreso."));
       setDeleting(null);
     } finally {
       setBusy(false);
@@ -76,15 +86,15 @@ export function IncomesPage() {
       className={buttonClass("accent", "md", "font-extrabold")}
     >
       <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-      Añadir ingreso
+      {t("Añadir ingreso")}
     </button>
   );
 
   return (
     <>
       <PageHeader
-        title="Ingresos"
-        subtitle="Lo que recibes de forma recurrente"
+        title={t("Ingresos")}
+        subtitle={t("Lo que recibes de forma recurrente")}
         actions={addButton}
       />
       <Notice message={notice} />
@@ -95,41 +105,43 @@ export function IncomesPage() {
         className="flex flex-col gap-4 rounded-[32px] bg-white p-6 sm:p-7"
       >
         <h2 id="incomes-title" className="font-display text-xl font-bold">
-          Tus ingresos recurrentes
+          {t("Tus ingresos recurrentes")}
         </h2>
         {incomes.status === "error" && !items ? (
-          <FormAlert title="No pudimos cargar tus ingresos." items={[incomes.error.message]} />
+          <FormAlert title={t("No pudimos cargar tus ingresos.")} items={[incomes.error.message]} />
         ) : !items ? (
           <TableSkeleton />
         ) : items.length === 0 ? (
           <EmptyState
             icon={Wallet}
-            title="Aún no registras ingresos"
-            text="Agrega tu salario, beca o cualquier dinero que recibas de forma regular. Se sumará solo a tu saldo en cada fecha."
+            title={t("Aún no registras ingresos")}
+            text={t(
+              "Agrega tu salario, beca o cualquier dinero que recibas de forma regular. Se sumará solo a tu saldo en cada fecha.",
+            )}
             action={addButton}
           />
         ) : (
-          <div className="overflow-x-auto">
+          <ScrollRegion label={t("Tabla de ingresos")}>
             <table className="w-full min-w-[640px] border-collapse text-sm">
               <thead>
                 <tr>
                   <th scope="col" className={th}>
-                    CONCEPTO
+                    {t("CONCEPTO")}
                   </th>
                   <th scope="col" className={`${th} text-right`}>
-                    MONTO
+                    {t("MONTO")}
                   </th>
                   <th scope="col" className={th}>
-                    FRECUENCIA
+                    {t("FRECUENCIA")}
                   </th>
                   <th scope="col" className={th}>
-                    DESDE
+                    {t("DESDE")}
                   </th>
                   <th scope="col" className={th}>
-                    ESTADO
+                    {t("ESTADO")}
                   </th>
                   <th scope="col" className={`${th} text-right`}>
-                    <span className="sr-only">Acciones</span>
+                    <span className="sr-only">{t("Acciones")}</span>
                   </th>
                 </tr>
               </thead>
@@ -140,14 +152,16 @@ export function IncomesPage() {
                       {item.label}
                       {multiAccount ? (
                         <span className="text-muted block text-xs font-semibold">
-                          Llega a {accountName(accounts, item.account_id)}
+                          {t("Llega a {account}", {
+                            account: accountName(accounts, item.account_id),
+                          })}
                         </span>
                       ) : null}
                     </th>
                     <td className={`${td} text-mint-ink text-right font-extrabold tabular-nums`}>
                       {money(item.amount)}
                     </td>
-                    <td className={td}>{frequencyText(item)}</td>
+                    <td className={td}>{frequencyText(item, t)}</td>
                     <td className={`${td} text-muted`}>
                       {formatDate(item.start_date, {
                         day: "numeric",
@@ -171,10 +185,12 @@ export function IncomesPage() {
                 ))}
               </tbody>
             </table>
-          </div>
+          </ScrollRegion>
         )}
         <p className="text-muted text-[13px]">
-          Pausar un ingreso lo excluye de los cálculos (también de periodos pasados) sin borrarlo.
+          {t(
+            "Pausar un ingreso lo excluye de los cálculos (también de periodos pasados) sin borrarlo.",
+          )}
         </p>
       </section>
 
@@ -190,9 +206,12 @@ export function IncomesPage() {
       />
       <ConfirmDialog
         open={deleting !== null}
-        title="Eliminar ingreso"
-        message={`¿Eliminar «${deleting?.label ?? ""}»? Esta acción no se puede deshacer. Si solo dejará de llegar por un tiempo, mejor páusalo.`}
-        confirmLabel="Eliminar"
+        title={t("Eliminar ingreso")}
+        message={t(
+          "¿Eliminar «{label}»? Esta acción no se puede deshacer. Si solo dejará de llegar por un tiempo, mejor páusalo.",
+          { label: deleting?.label ?? "" },
+        )}
+        confirmLabel={t("Eliminar")}
         busy={busy}
         onConfirm={confirmDelete}
         onCancel={() => setDeleting(null)}

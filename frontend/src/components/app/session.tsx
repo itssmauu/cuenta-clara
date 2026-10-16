@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
+import { msg } from "@/i18n/translate";
 import { ApiError, authApi, type User } from "@/lib/api";
 import { financeApi, type Settings } from "@/lib/finance-api";
 
@@ -40,7 +41,10 @@ export function useSessionLoader(area: "app" | "onboarding") {
       .catch((error: unknown) => {
         if (cancelled) return;
         if (error instanceof ApiError && error.status === 401) return router.replace("/login");
-        setState({ status: "error", message: "No pudimos cargar tu cuenta. Recarga la página." });
+        setState({
+          status: "error",
+          message: msg("No pudimos cargar tu cuenta. Recarga la página."),
+        });
       });
     return () => {
       cancelled = true;

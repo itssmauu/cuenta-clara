@@ -24,6 +24,7 @@ from limits.storage import MemoryStorage, Storage
 from limits.strategies import MovingWindowRateLimiter
 from sqlalchemy.orm import Session
 
+from app.core.i18n import Language
 from app.models import SavingsGoal, User
 from app.services import projections
 from app.services.budget_store import load_budgets
@@ -44,6 +45,21 @@ REFUSAL = (
     "tu saldo, tus gastos, tus metas, cómo ahorrar o si te conviene una compra. "
     "¿Qué quieres saber de tu dinero?"
 )
+REFUSAL_EN = (
+    "That's outside what I do 🙂. I can only help you with your finances in Cuenta Clara: "
+    "your balance, your spending, your goals, how to save or whether a purchase makes sense. "
+    "What would you like to know about your money?"
+)
+
+# Added to the instructions when the user reads the app in English. The data stays in
+# Spanish (it is the app's own summary); only the reply changes language.
+ENGLISH_REPLY = """
+IDIOMA DE LA RESPUESTA: el usuario usa la app en inglés. Responde SIEMPRE en inglés, aunque
+los DATOS estén en español. Traduce los nombres de periodos y categorías predeterminadas;
+deja los nombres que escribió el usuario tal cual. Los veredictos de compra son
+"Yes, you can", "Better wait" o "Not a good idea right now". Si es fuera de tema, responde
+igual EXACTAMENTE y solo con: {marker}
+"""
 
 SYSTEM_INSTRUCTION = f"""\
 Eres {NAME}, el copiloto financiero de Cuenta Clara, una app de finanzas personales.
@@ -324,13 +340,19 @@ def compose_prompt(context: str, messages: list[tuple[str, str]]) -> str:
 
 
 def answer(
-    model: AssistantModel, context: str, messages: list[tuple[str, str]]
+    model: AssistantModel,
+    context: str,
+    messages: list[tuple[str, str]],
+    language: Language = "es",
 ) -> tuple[str, bool]:
     """Balbo's reply and whether the question was about the user's finances."""
-    text = model.generate(system=SYSTEM_INSTRUCTION, prompt=compose_prompt(context, messages))
+    system = SYSTEM_INSTRUCTION
+    if language == "en":
+        system += ENGLISH_REPLY.format(marker=OFF_TOPIC_MARKER)
+    text = model.generate(system=system, prompt=compose_prompt(context, messages))
     text = text.strip()
     if not text:
         raise AssistantUnavailableError
     if OFF_TOPIC_MARKER in text:
-        return REFUSAL, False
+        return (REFUSAL_EN if language == "en" else REFUSAL), False
     return text, True

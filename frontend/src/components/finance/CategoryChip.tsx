@@ -1,9 +1,14 @@
+"use client";
+
+import { useT } from "@/i18n/client";
 import type { Category } from "@/lib/finance-api";
+import { categoryName } from "@/lib/finance-validation";
 
 /** Category name with its color as a small dot (the name carries the meaning, not the color). */
 export function CategoryChip({ category }: { category: Category | undefined }) {
+  const t = useT();
   if (!category) {
-    return <span className="text-muted text-xs font-semibold">Sin categoría</span>;
+    return <span className="text-muted text-xs font-semibold">{t("Sin categoría")}</span>;
   }
   return (
     <span className="bg-canvas inline-flex items-center gap-2 rounded-full px-3 py-1.5 text-xs font-bold whitespace-nowrap">
@@ -11,7 +16,7 @@ export function CategoryChip({ category }: { category: Category | undefined }) {
       <svg aria-hidden="true" viewBox="0 0 10 10" className="size-2.5 shrink-0">
         <circle cx="5" cy="5" r="5" fill={category.color} />
       </svg>
-      {category.name}
+      {categoryName(category.name, t)}
     </span>
   );
 }

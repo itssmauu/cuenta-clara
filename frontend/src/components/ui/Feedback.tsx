@@ -3,6 +3,8 @@
 import { CheckCircle2, type LucideIcon } from "lucide-react";
 import { useCallback, useEffect, useState, type ReactNode } from "react";
 
+import { useT } from "@/i18n/client";
+
 const LEAVE_MS = 200;
 
 /** Each confirmation gets its own id, so saving twice in a row shows (and times) it twice. */
@@ -28,6 +30,7 @@ export function useNotice(timeoutMs = 4000) {
  * so it cannot get in the way of what is underneath.
  */
 export function Notice({ message }: { message: NoticeMessage }) {
+  const t = useT();
   // Keep the last message on screen while it animates out
   const [shown, setShown] = useState(message);
   if (message && message !== shown) setShown(message);
@@ -53,7 +56,7 @@ export function Notice({ message }: { message: NoticeMessage }) {
           className="toast bg-ink flex items-center gap-2.5 rounded-full py-3 pr-5 pl-3.5 text-sm font-bold text-white shadow-[0_12px_32px_-8px_rgb(21_25_61/0.45)]"
         >
           <CheckCircle2 aria-hidden="true" className="text-mint size-5 shrink-0" />
-          {shown.text}
+          {t(shown.text)}
         </p>
       ) : null}
     </div>
@@ -65,16 +68,20 @@ export function EmptyState({
   title,
   text,
   action,
+  headingLevel = 3,
 }: {
   icon: LucideIcon;
   title: string;
   text: string;
   action?: ReactNode;
+  /** 2 when it sits right under the page title, so heading levels never skip */
+  headingLevel?: 2 | 3;
 }) {
+  const Heading = headingLevel === 2 ? "h2" : "h3";
   return (
     <div className="bg-canvas flex flex-col items-start gap-3 rounded-3xl p-6 sm:p-8">
       <Icon aria-hidden="true" className="text-primary size-9" />
-      <h3 className="font-display text-lg font-bold">{title}</h3>
+      <Heading className="font-display text-lg font-bold">{title}</Heading>
       <p className="text-body max-w-prose text-sm leading-relaxed">{text}</p>
       {action}
     </div>
@@ -82,9 +89,10 @@ export function EmptyState({
 }
 
 export function TableSkeleton({ rows = 3 }: { rows?: number }) {
+  const t = useT();
   return (
     <div role="status" className="flex flex-col gap-2">
-      <span className="sr-only">Cargando…</span>
+      <span className="sr-only">{t("Cargando…")}</span>
       {Array.from({ length: rows }, (_, i) => (
         <span key={i} aria-hidden="true" className="bg-canvas h-12 animate-pulse rounded-2xl" />
       ))}
@@ -94,6 +102,7 @@ export function TableSkeleton({ rows = 3 }: { rows?: number }) {
 
 /** Active / paused label with an icon dot plus words (never color alone). */
 export function StatusPill({ active }: { active: boolean }) {
+  const t = useT();
   return (
     <span
       className={`inline-flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-bold ${
@@ -104,7 +113,7 @@ export function StatusPill({ active }: { active: boolean }) {
         aria-hidden="true"
         className={`size-2 rounded-full ${active ? "bg-mint-ink" : "bg-muted"}`}
       />
-      {active ? "Activo" : "Pausado"}
+      {active ? t("Activo") : t("Pausado")}
     </span>
   );
 }

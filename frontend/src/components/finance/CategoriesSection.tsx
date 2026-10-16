@@ -10,6 +10,8 @@ import { ConfirmDialog, Dialog } from "@/components/ui/Dialog";
 import { TableSkeleton } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi, type Category } from "@/lib/finance-api";
 import { categorySchema, type CategoryValues } from "@/lib/finance-validation";
@@ -21,6 +23,7 @@ import { RowActions } from "./RowActions";
 const DEFAULT_COLOR = "#5B4BDB";
 
 export function CategoriesSection({ onNotice }: { onNotice: (message: string) => void }) {
+  const t = useT();
   const [categories, reload] = useResource("categories", financeApi.listCategories);
   const [editing, setEditing] = useState<{ item: Category | null } | null>(null);
   const [deleting, setDeleting] = useState<Category | null>(null);
@@ -33,10 +36,12 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
     setError(null);
     try {
       await financeApi.deleteCategory(deleting.id);
-      onNotice(`Categoría «${deleting.name}» eliminada.`);
+      onNotice(t("Categoría «{name}» eliminada.", { name: deleting.name }));
       reload();
     } catch (caught) {
-      setError(caught instanceof ApiError ? caught.message : "No pudimos eliminar la categoría.");
+      setError(
+        caught instanceof ApiError ? caught.message : t("No pudimos eliminar la categoría."),
+      );
     } finally {
       setDeleting(null);
       setBusy(false);
@@ -54,14 +59,14 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
     >
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h2 id="categories-title" className="font-display text-xl font-bold">
-          Categorías
+          {t("Categorías")}
         </h2>
         <button
           type="button"
           onClick={() => setEditing({ item: null })}
           className={buttonClass("ink")}
         >
-          Nueva categoría
+          {t("Nueva categoría")}
         </button>
       </div>
       {error ? <FormAlert title={error} /> : null}
@@ -73,7 +78,7 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
           <div className="flex flex-col gap-2">
             <h3 className="text-muted flex items-center gap-1.5 text-sm font-bold">
               <Lock aria-hidden="true" className="size-4" />
-              Predeterminadas (no se pueden editar)
+              {t("Predeterminadas (no se pueden editar)")}
             </h3>
             <ul className="flex flex-wrap gap-2">
               {defaults.map((c) => (
@@ -84,9 +89,9 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
             </ul>
           </div>
           <div className="flex flex-col gap-2">
-            <h3 className="text-muted text-sm font-bold">Tus categorías</h3>
+            <h3 className="text-muted text-sm font-bold">{t("Tus categorías")}</h3>
             {own.length === 0 ? (
-              <p className="text-body text-sm">Aún no creas categorías propias.</p>
+              <p className="text-body text-sm">{t("Aún no creas categorías propias.")}</p>
             ) : (
               <ul className="flex flex-col">
                 {own.map((c) => (
@@ -96,7 +101,7 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
                   >
                     <CategoryChip category={c} />
                     <RowActions
-                      label={`la categoría ${c.name}`}
+                      label={t("la categoría {name}", { name: c.name })}
                       onEdit={() => setEditing({ item: c })}
                       onDelete={() => setDeleting(c)}
                     />
@@ -111,7 +116,7 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
       <Dialog
         open={editing !== null}
         onClose={() => setEditing(null)}
-        title={editing?.item ? "Editar categoría" : "Nueva categoría"}
+        title={editing?.item ? t("Editar categoría") : t("Nueva categoría")}
       >
         <CategoryForm
           item={editing?.item ?? null}
@@ -125,9 +130,12 @@ export function CategoriesSection({ onNotice }: { onNotice: (message: string) =>
       </Dialog>
       <ConfirmDialog
         open={deleting !== null}
-        title="Eliminar categoría"
-        message={`¿Eliminar «${deleting?.name ?? ""}»? Los movimientos y gastos fijos que la usan se conservan, pero quedarán sin categoría.`}
-        confirmLabel="Eliminar"
+        title={t("Eliminar categoría")}
+        message={t(
+          "¿Eliminar «{name}»? Los movimientos y gastos fijos que la usan se conservan, pero quedarán sin categoría.",
+          { name: deleting?.name ?? "" },
+        )}
+        confirmLabel={t("Eliminar")}
         busy={busy}
         onConfirm={confirmDelete}
         onCancel={() => setDeleting(null)}
@@ -145,6 +153,7 @@ function CategoryForm({
   onCancel: () => void;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
     register,
@@ -160,15 +169,15 @@ function CategoryForm({
     try {
       if (item) {
         await financeApi.updateCategory(item.id, values);
-        onSaved("Categoría actualizada.");
+        onSaved(msg("Categoría actualizada."));
       } else {
         await financeApi.createCategory(values);
-        onSaved("Categoría creada.");
+        onSaved(msg("Categoría creada."));
       }
     } catch (error) {
       // e.g. 409 "Ya tienes una categoría con ese nombre."
       setServerError(
-        error instanceof ApiError ? error.message : "No pudimos guardar la categoría.",
+        error instanceof ApiError ? error.message : t("No pudimos guardar la categoría."),
       );
     }
   }
@@ -178,14 +187,14 @@ function CategoryForm({
       {serverError ? <FormAlert title={serverError} /> : null}
       <TextField
         id="category-name"
-        label="Nombre"
-        placeholder="Gimnasio, mascotas…"
+        label={t("Nombre")}
+        placeholder={t("Gimnasio, mascotas…")}
         error={errors.name?.message}
         {...register("name")}
       />
       <div className="flex flex-col gap-2">
         <label htmlFor="category-color" className="text-sm font-bold">
-          Color
+          {t("Color")}
         </label>
         <input
           id="category-color"
@@ -196,7 +205,7 @@ function CategoryForm({
       </div>
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="submit"
@@ -204,7 +213,7 @@ function CategoryForm({
           aria-busy={isSubmitting}
           className={buttonClass("primary", "md", "font-extrabold")}
         >
-          {isSubmitting ? "Guardando…" : "Guardar categoría"}
+          {isSubmitting ? t("Guardando…") : t("Guardar categoría")}
         </button>
       </div>
     </form>

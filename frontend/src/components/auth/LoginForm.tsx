@@ -10,10 +10,13 @@ import { FormAlert } from "@/components/ui/FormAlert";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError, authApi } from "@/lib/api";
 import { loginSchema, type LoginValues } from "@/lib/validation";
 
 export function LoginForm() {
+  const t = useT();
   const router = useRouter();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -33,7 +36,7 @@ export function LoginForm() {
       router.push("/dashboard");
     } catch (error) {
       // The API already words these generically (it never says whether the email exists)
-      setServerError(error instanceof ApiError ? error.message : "No pudimos iniciar sesión.");
+      setServerError(error instanceof ApiError ? error.message : msg("No pudimos iniciar sesión."));
     }
   }
 
@@ -52,17 +55,17 @@ export function LoginForm() {
 
       <TextField
         id="email"
-        label="Correo electrónico"
+        label={t("Correo electrónico")}
         type="email"
         autoComplete="email"
         inputMode="email"
-        placeholder="correo@ejemplo.com"
+        placeholder={t("correo@ejemplo.com")}
         error={errors.email?.message}
         {...register("email")}
       />
       <PasswordField
         id="password"
-        label="Contraseña"
+        label={t("Contraseña")}
         autoComplete="current-password"
         error={errors.password?.message}
         {...register("password")}
@@ -71,10 +74,10 @@ export function LoginForm() {
         href="/recuperar-contrasena"
         className="text-primary inline-flex min-h-11 items-center self-start text-sm font-bold hover:underline"
       >
-        ¿Olvidaste tu contraseña?
+        {t("¿Olvidaste tu contraseña?")}
       </Link>
 
-      <SubmitButton busy={isSubmitting} label="Entrar" busyLabel="Entrando…" />
+      <SubmitButton busy={isSubmitting} label={t("Entrar")} busyLabel={t("Entrando…")} />
     </form>
   );
 }

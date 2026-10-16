@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 
 import { SettingsPage } from "@/components/finance/SettingsPage";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Configuración" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Configuración") };
+}
 
 export default function Page() {
   return <SettingsPage />;

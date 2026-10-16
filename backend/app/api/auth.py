@@ -7,6 +7,7 @@ from fastapi.responses import JSONResponse
 from app.api.cookies import REFRESH_COOKIE, clear_session_cookies, set_session_cookies
 from app.api.deps import CurrentUser, DbSession
 from app.core.config import get_settings
+from app.core.i18n import RequestLanguage
 from app.core.rate_limit import check_email_rate_limit, limiter
 from app.schemas.auth import (
     ForgotPasswordRequest,
@@ -122,7 +123,11 @@ def logout(
 )
 @limiter.limit(lambda: get_settings().password_reset_rate_limit)
 def forgot_password(
-    request: Request, body: ForgotPasswordRequest, db: DbSession, mailer: MailerDep
+    request: Request,
+    body: ForgotPasswordRequest,
+    db: DbSession,
+    mailer: MailerDep,
+    language: RequestLanguage,
 ) -> MessageResponse:
     """Email a 6-digit code. The answer, and how long it takes, never reveal who has an account."""
     if mailer is None:
@@ -130,7 +135,7 @@ def forgot_password(
     settings = get_settings()
     check_email_rate_limit("password-reset", body.email, settings.password_reset_email_rate_limit)
     started = time.monotonic()
-    password_reset.request_code(db, mailer, email=body.email)
+    password_reset.request_code(db, mailer, email=body.email, language=language)
     remaining = settings.password_reset_min_seconds - (time.monotonic() - started)
     if remaining > 0:
         time.sleep(remaining)
@@ -149,13 +154,22 @@ def forgot_password(
 )
 @limiter.limit(lambda: get_settings().login_rate_limit)
 def reset_password(
-    request: Request, body: ResetPasswordRequest, db: DbSession, mailer: MailerDep
+    request: Request,
+    body: ResetPasswordRequest,
+    db: DbSession,
+    mailer: MailerDep,
+    language: RequestLanguage,
 ) -> JSONResponse | None:
     """Set a new password with the emailed code; every open session is closed."""
     check_email_rate_limit("password-reset-code", body.email, get_settings().email_rate_limit)
     try:
         password_reset.reset_password(
-            db, mailer, email=body.email, code=body.code, new_password=body.new_password
+            db,
+            mailer,
+            email=body.email,
+            code=body.code,
+            new_password=body.new_password,
+            language=language,
         )
     except auth_service.WeakPasswordError as exc:
         return JSONResponse(

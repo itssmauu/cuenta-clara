@@ -10,6 +10,8 @@ import { buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import {
   ACCOUNT_KIND_LABELS,
   ACCOUNT_KINDS,
@@ -28,11 +30,12 @@ import { formatMoney } from "@/lib/format";
 const frequencyOptions = FREQUENCIES.map((value) => ({ value, label: FREQUENCY_LABELS[value] }));
 
 function StepActions({ onBack, children }: { onBack?: () => void; children: ReactNode }) {
+  const t = useT();
   return (
     <div className="flex flex-wrap justify-between gap-3 pt-2">
       {onBack ? (
         <button type="button" onClick={onBack} className={buttonClass("ghost")}>
-          Atrás
+          {t("Atrás")}
         </button>
       ) : (
         <span />
@@ -50,8 +53,8 @@ const accountsStepSchema = z
   .object({
     accounts: z
       .array(accountSchema.omit({ is_primary: true }))
-      .min(1, { error: "Agrega al menos una cuenta." })
-      .max(MAX_ACCOUNTS, { error: `Hasta ${MAX_ACCOUNTS} cuentas.` }),
+      .min(1, { error: msg("Agrega al menos una cuenta.") })
+      .max(MAX_ACCOUNTS, { error: msg("Hasta 10 cuentas.") }),
     // Index (as text, from a radio) of the day-to-day account
     primary: z.string(),
   })
@@ -63,7 +66,7 @@ const accountsStepSchema = z
         ctx.addIssue({
           code: "custom",
           path: ["accounts", index, "name"],
-          message: "Ya usaste ese nombre en otra cuenta.",
+          message: msg("Ya usaste ese nombre en otra cuenta."),
         });
       }
       seen.add(key);
@@ -74,7 +77,7 @@ export type AccountsStepForm = z.input<typeof accountsStepSchema>;
 export type AccountsStepValues = z.output<typeof accountsStepSchema>;
 
 export const FIRST_ACCOUNT: AccountsStepForm["accounts"][number] = {
-  name: "Gastos del día",
+  name: msg("Gastos del día"),
   kind: "spending",
   initial_balance: "",
 };
@@ -91,6 +94,7 @@ export function AccountsStep({
   initial: AccountsStepForm;
   onNext: (values: AccountsStepValues) => void;
 }) {
+  const t = useT();
   const {
     register,
     handleSubmit,
@@ -107,8 +111,9 @@ export function AccountsStep({
     <form noValidate onSubmit={handleSubmit(onNext)} className="flex flex-col gap-5">
       <p className="bg-mint-tint text-ink flex items-start gap-2.5 rounded-2xl p-4 text-sm font-semibold">
         <ShieldCheck aria-hidden="true" className="text-mint-ink mt-0.5 size-5 shrink-0" />
-        Solo un nombre para reconocer cada cuenta. Nunca te pediremos números de cuenta, tarjetas ni
-        claves.
+        {t(
+          "Solo un nombre para reconocer cada cuenta. Nunca te pediremos números de cuenta, tarjetas ni claves.",
+        )}
       </p>
 
       <ul className="flex flex-col gap-4">
@@ -122,25 +127,27 @@ export function AccountsStep({
                   isPrimary ? "border-primary bg-primary-tint/40" : "border-line"
                 }`}
               >
-                <legend className="px-1 text-sm font-bold">Cuenta {index + 1}</legend>
+                <legend className="px-1 text-sm font-bold">
+                  {t("Cuenta {n}", { n: index + 1 })}
+                </legend>
                 <div className="grid gap-4 sm:grid-cols-[1.4fr_1fr_1fr]">
                   <TextField
                     id={`account-${index}-name`}
-                    label="Nombre"
-                    placeholder="Ej. Ahorro, Gastos del día"
+                    label={t("Nombre")}
+                    placeholder={t("Ej. Ahorro, Gastos del día")}
                     autoComplete="off"
                     error={rowErrors?.name?.message}
                     {...register(`accounts.${index}.name`)}
                   />
                   <SelectField
                     id={`account-${index}-kind`}
-                    label="La uso para"
+                    label={t("La uso para")}
                     options={kindOptions}
                     {...register(`accounts.${index}.kind`)}
                   />
                   <TextField
                     id={`account-${index}-balance`}
-                    label="¿Cuánto tiene hoy?"
+                    label={t("¿Cuánto tiene hoy?")}
                     inputMode="decimal"
                     placeholder="0.00"
                     autoComplete="off"
@@ -156,7 +163,7 @@ export function AccountsStep({
                       className="accent-primary size-5 cursor-pointer"
                       {...register("primary")}
                     />
-                    Aquí van mis gastos del día
+                    {t("Aquí van mis gastos del día")}
                   </label>
                   {fields.length > 1 ? (
                     <button
@@ -183,16 +190,17 @@ export function AccountsStep({
           className={buttonClass("ghost", "md", "border-line self-start border-2 border-dashed")}
         >
           <Plus aria-hidden="true" className="size-4" strokeWidth={3} />
-          Agregar otra cuenta
+          {t("Agregar otra cuenta")}
         </button>
       ) : null}
       <p className="text-muted text-sm">
-        Tu cuenta de gastos del día es la principal: el dashboard abre en ella y tu límite de gasto
-        se mide ahí. Puedes cambiar todo después en Cuentas.
+        {t(
+          "Tu cuenta de gastos del día es la principal: el dashboard abre en ella y tu límite de gasto se mide ahí. Puedes cambiar todo después en Cuentas.",
+        )}
       </p>
       <StepActions>
         <button type="submit" className={buttonClass("primary", "lg")}>
-          Continuar
+          {t("Continuar")}
         </button>
       </StepActions>
     </form>
@@ -222,6 +230,7 @@ export function FixedExpensesStep({
   onBack: () => void;
   onNext: () => void;
 }) {
+  const t = useT();
   const {
     register,
     handleSubmit,
@@ -249,14 +258,14 @@ export function FixedExpensesStep({
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             id="fx-name"
-            label="Nombre"
-            placeholder="Internet, pasaje…"
+            label={t("Nombre")}
+            placeholder={t("Internet, pasaje…")}
             error={errors.name?.message}
             {...register("name")}
           />
           <TextField
             id="fx-amount"
-            label="Monto"
+            label={t("Monto")}
             inputMode="decimal"
             placeholder="25.00"
             autoComplete="off"
@@ -265,7 +274,7 @@ export function FixedExpensesStep({
           />
           <SelectField
             id="fx-frequency"
-            label="Frecuencia"
+            label={t("Frecuencia")}
             options={frequencyOptions}
             error={errors.frequency?.message}
             {...register("frequency")}
@@ -273,7 +282,7 @@ export function FixedExpensesStep({
           {frequency === "monthly" ? (
             <TextField
               id="fx-due-day"
-              label="Día de pago (opcional)"
+              label={t("Día de pago (opcional)")}
               inputMode="numeric"
               placeholder="15"
               error={errors.due_day?.message}
@@ -283,7 +292,7 @@ export function FixedExpensesStep({
           {frequency === "custom" ? (
             <TextField
               id="fx-days"
-              label="Cada cuántos días"
+              label={t("Cada cuántos días")}
               inputMode="numeric"
               placeholder="10"
               error={errors.custom_period_days?.message}
@@ -292,12 +301,12 @@ export function FixedExpensesStep({
           ) : null}
         </div>
         <button type="submit" className={buttonClass("ink", "md", "self-start")}>
-          Agregar gasto fijo
+          {t("Agregar gasto fijo")}
         </button>
       </form>
 
       {items.length > 0 ? (
-        <ul aria-label="Gastos fijos agregados" className="flex flex-col gap-2">
+        <ul aria-label={t("Gastos fijos agregados")} className="flex flex-col gap-2">
           {items.map((item, index) => (
             <li
               key={`${item.name}-${index}`}
@@ -306,9 +315,13 @@ export function FixedExpensesStep({
               <span className="min-w-0">
                 <span className="block truncate font-bold">{item.name}</span>
                 <span className="text-muted text-sm font-semibold">
-                  {formatMoney(item.amount)} · {FREQUENCY_LABELS[item.frequency]}
-                  {item.due_day ? ` · día ${item.due_day}` : ""}
-                  {item.custom_period_days ? ` · cada ${item.custom_period_days} días` : ""}
+                  {formatMoney(item.amount)} · {t(FREQUENCY_LABELS[item.frequency])}
+                  {item.due_day ? t(" · día {due_day}", { due_day: item.due_day }) : ""}
+                  {item.custom_period_days
+                    ? t(" · cada {custom_period_days} días", {
+                        custom_period_days: item.custom_period_days,
+                      })
+                    : ""}
                 </span>
               </span>
               <button
@@ -324,13 +337,13 @@ export function FixedExpensesStep({
         </ul>
       ) : (
         <p className="text-muted text-sm">
-          Aún no agregas gastos fijos. Si no tienes, puedes continuar.
+          {t("Aún no agregas gastos fijos. Si no tienes, puedes continuar.")}
         </p>
       )}
 
       <StepActions onBack={onBack}>
         <button type="button" onClick={onNext} className={buttonClass("primary", "lg")}>
-          {items.length > 0 ? "Continuar" : "Continuar sin gastos fijos"}
+          {items.length > 0 ? t("Continuar") : t("Continuar sin gastos fijos")}
         </button>
       </StepActions>
     </div>
@@ -353,11 +366,13 @@ const incomeStepSchema = z
           z.literal(""),
           z
             .string()
-            .regex(/^\d{1,10}(\.\d{1,2})?$/, { error: "Usa solo números, con hasta 2 decimales." })
-            .refine((v) => Number(v) > 0, { error: "El monto debe ser mayor que 0." }),
+            .regex(/^\d{1,10}(\.\d{1,2})?$/, {
+              error: msg("Usa solo números, con hasta 2 decimales."),
+            })
+            .refine((v) => Number(v) > 0, { error: msg("El monto debe ser mayor que 0.") }),
         ]),
       ),
-    start_date: z.iso.date({ error: "Elige una fecha válida." }),
+    start_date: z.iso.date({ error: msg("Elige una fecha válida.") }),
     // Index (as text) of the onboarding account the income arrives in
     account_index: z.string(),
   })
@@ -368,7 +383,7 @@ const incomeStepSchema = z
       ctx.addIssue({
         code: "custom",
         path: ["custom_period_days"],
-        message: "Entre 1 y 366 días.",
+        message: msg("Entre 1 y 366 días."),
       });
     }
   });
@@ -388,6 +403,7 @@ export function IncomeStep({
   onBack: () => void;
   onNext: (values: IncomeStepValues) => void;
 }) {
+  const t = useT();
   const {
     register,
     handleSubmit,
@@ -404,7 +420,7 @@ export function IncomeStep({
       <div className="grid gap-4 sm:grid-cols-2">
         <SelectField
           id="inc-frequency"
-          label="¿Cada cuánto recibes dinero?"
+          label={t("¿Cada cuánto recibes dinero?")}
           options={frequencyOptions}
           error={errors.frequency?.message}
           {...register("frequency")}
@@ -412,7 +428,7 @@ export function IncomeStep({
         {frequency === "custom" ? (
           <TextField
             id="inc-days"
-            label="Cada cuántos días"
+            label={t("Cada cuántos días")}
             inputMode="numeric"
             placeholder="10"
             error={errors.custom_period_days?.message}
@@ -421,24 +437,24 @@ export function IncomeStep({
         ) : null}
         <TextField
           id="inc-amount"
-          label="¿Cuánto recibes cada vez? (opcional)"
+          label={t("¿Cuánto recibes cada vez? (opcional)")}
           inputMode="decimal"
           placeholder="160.00"
           autoComplete="off"
-          hint="Déjalo vacío si no tienes un ingreso fijo."
+          hint={t("Déjalo vacío si no tienes un ingreso fijo.")}
           error={errors.amount?.message}
           {...register("amount")}
         />
         <TextField
           id="inc-label"
-          label="¿De dónde viene?"
-          placeholder="Salario, beca, mesada…"
+          label={t("¿De dónde viene?")}
+          placeholder={t("Salario, beca, mesada…")}
           error={errors.label?.message}
           {...register("label")}
         />
         <TextField
           id="inc-date"
-          label="¿Cuándo lo recibes? (última o próxima vez)"
+          label={t("¿Cuándo lo recibes? (última o próxima vez)")}
           type="date"
           error={errors.start_date?.message}
           {...register("start_date")}
@@ -446,18 +462,18 @@ export function IncomeStep({
         {accountNames.length > 1 ? (
           <SelectField
             id="inc-account"
-            label="¿A qué cuenta te llega?"
+            label={t("¿A qué cuenta te llega?")}
             options={accountNames.map((name, index) => ({ value: String(index), label: name }))}
             {...register("account_index")}
           />
         ) : null}
       </div>
       <p className="text-muted text-sm">
-        Esta frecuencia será tu periodo: el dashboard y tu límite de gasto se miden con ella.
+        {t("Esta frecuencia será tu periodo: el dashboard y tu límite de gasto se miden con ella.")}
       </p>
       <StepActions onBack={onBack}>
         <button type="submit" className={buttonClass("primary", "lg")}>
-          Continuar
+          {t("Continuar")}
         </button>
       </StepActions>
     </form>
@@ -481,6 +497,7 @@ export function LimitStep({
   onBack: () => void;
   onFinish: (limit: string) => void;
 }) {
+  const t = useT();
   const {
     register,
     handleSubmit,
@@ -499,11 +516,15 @@ export function LimitStep({
       {error ? <FormAlert title={error} /> : null}
       <TextField
         id="limit"
-        label={`¿Cuánto quieres gastar como máximo por periodo ${periodLabel}? (opcional)`}
+        label={t("¿Cuánto quieres gastar como máximo por periodo {periodLabel}? (opcional)", {
+          periodLabel,
+        })}
         inputMode="decimal"
         placeholder="40.00"
         autoComplete="off"
-        hint="Incluye tus gastos fijos. Te avisaremos cuando te pases. Déjalo vacío para no usar límite."
+        hint={t(
+          "Incluye tus gastos fijos. Te avisaremos cuando te pases. Déjalo vacío para no usar límite.",
+        )}
         error={errors.spending_limit?.message}
         {...register("spending_limit")}
       />
@@ -514,7 +535,7 @@ export function LimitStep({
           aria-busy={submitting}
           className={buttonClass("accent", "lg", "font-extrabold")}
         >
-          {submitting ? "Guardando…" : "Ver mi dashboard"}
+          {submitting ? t("Guardando…") : t("Ver mi dashboard")}
         </button>
       </StepActions>
     </form>

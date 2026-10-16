@@ -5,13 +5,14 @@
 import { z } from "zod";
 
 import type { AccountKind, DashboardPeriod, Frequency } from "./finance-api";
+import { msg } from "@/i18n/translate";
 
 export const FREQUENCY_LABELS: Record<Frequency, string> = {
-  daily: "Diario",
-  weekly: "Semanal",
-  biweekly: "Quincenal",
-  monthly: "Mensual",
-  custom: "Personalizado",
+  daily: msg("Diario"),
+  weekly: msg("Semanal"),
+  biweekly: msg("Quincenal"),
+  monthly: msg("Mensual"),
+  custom: msg("Personalizado"),
 };
 
 export const PERIOD_OPTIONS: DashboardPeriod[] = ["daily", "weekly", "biweekly", "monthly"];
@@ -31,16 +32,18 @@ function money({ allowZero }: { allowZero: boolean }) {
     .pipe(
       z
         .string()
-        .min(1, { error: "Escribe un monto." })
-        .regex(MONEY_PATTERN, { error: "Usa solo números, con hasta 2 decimales (ej. 25.50)." })
+        .min(1, { error: msg("Escribe un monto.") })
+        .regex(MONEY_PATTERN, {
+          error: msg("Usa solo números, con hasta 2 decimales (ej. 25.50)."),
+        })
         .refine((value) => allowZero || Number(value) > 0, {
-          error: "El monto debe ser mayor que 0.",
+          error: msg("El monto debe ser mayor que 0."),
         }),
     );
 }
 
 const frequency = z.enum(FREQUENCIES as [Frequency, ...Frequency[]], {
-  error: "Elige una frecuencia.",
+  error: msg("Elige una frecuencia."),
 });
 
 const optionalDays = z
@@ -49,10 +52,10 @@ const optionalDays = z
   .transform((value) => (value ? Number(value) : null))
   .pipe(
     z
-      .number({ error: "Escribe un número de días." })
-      .int({ error: "Usa un número entero de días." })
-      .min(1, { error: "Mínimo 1 día." })
-      .max(366, { error: "Máximo 366 días." })
+      .number({ error: msg("Escribe un número de días.") })
+      .int({ error: msg("Usa un número entero de días.") })
+      .min(1, { error: msg("Mínimo 1 día.") })
+      .max(366, { error: msg("Máximo 366 días.") })
       .nullable(),
   );
 
@@ -62,21 +65,21 @@ function requireDaysWhenCustom<
   if (data.frequency === "custom" && data.custom_period_days === null) {
     ctx.addIssue({
       code: "custom",
-      message: "Indica cada cuántos días.",
+      message: msg("Indica cada cuántos días."),
       path: ["custom_period_days"],
     });
   }
 }
 
-const isoDate = z.iso.date({ error: "Elige una fecha válida." });
+const isoDate = z.iso.date({ error: msg("Elige una fecha válida.") });
 
 // ── Accounts ───────────────────────────────────────────
 
 export const ACCOUNT_KIND_LABELS: Record<AccountKind, string> = {
-  spending: "Gastos del día",
-  savings: "Ahorro",
-  investment: "Fondos o inversión",
-  other: "Otro",
+  spending: msg("Gastos del día"),
+  savings: msg("Ahorro"),
+  investment: msg("Fondos o inversión"),
+  other: msg("Otro"),
 };
 export const ACCOUNT_KINDS = Object.keys(ACCOUNT_KIND_LABELS) as AccountKind[];
 
@@ -86,34 +89,35 @@ const MAX_DIGITS_IN_ACCOUNT_NAME = 5;
 export const accountNameField = z
   .string()
   .trim()
-  .min(1, { error: "Escribe un nombre para reconocerla." })
-  .max(50, { error: "Máximo 50 caracteres." })
+  .min(1, { error: msg("Escribe un nombre para reconocerla.") })
+  .max(50, { error: msg("Máximo 50 caracteres.") })
   .refine((name) => (name.match(/\d/g) ?? []).length <= MAX_DIGITS_IN_ACCOUNT_NAME, {
-    error:
+    error: msg(
       "Por tu seguridad, no escribas números de cuenta o tarjeta: usa un nombre como «Ahorro».",
+    ),
   });
 
 export const accountSchema = z.object({
   name: accountNameField,
-  kind: z.enum(ACCOUNT_KINDS as [AccountKind, ...AccountKind[]], { error: "Elige un tipo." }),
+  kind: z.enum(ACCOUNT_KINDS as [AccountKind, ...AccountKind[]], { error: msg("Elige un tipo.") }),
   initial_balance: money({ allowZero: true }),
   is_primary: z.boolean(),
 });
 
 export const transferSchema = z
   .object({
-    from_account_id: z.string().min(1, { error: "Elige de qué cuenta sale." }),
-    to_account_id: z.string().min(1, { error: "Elige a qué cuenta llega." }),
+    from_account_id: z.string().min(1, { error: msg("Elige de qué cuenta sale.") }),
+    to_account_id: z.string().min(1, { error: msg("Elige a qué cuenta llega.") }),
     amount: money({ allowZero: false }),
     occurred_on: isoDate,
     note: z
       .string()
       .trim()
-      .max(255, { error: "Máximo 255 caracteres." })
+      .max(255, { error: msg("Máximo 255 caracteres.") })
       .transform((value) => value || null),
   })
   .refine((data) => data.from_account_id !== data.to_account_id, {
-    error: "Elige dos cuentas distintas.",
+    error: msg("Elige dos cuentas distintas."),
     path: ["to_account_id"],
   });
 
@@ -123,7 +127,11 @@ export type TransferForm = z.input<typeof transferSchema>;
 export type TransferValues = z.output<typeof transferSchema>;
 
 const fixedExpenseFields = z.object({
-  name: z.string().trim().min(1, { error: "Escribe un nombre." }).max(100),
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: msg("Escribe un nombre.") })
+    .max(100),
   amount: money({ allowZero: false }),
   frequency,
   custom_period_days: optionalDays,
@@ -135,8 +143,8 @@ const fixedExpenseFields = z.object({
       z
         .number()
         .int()
-        .min(1, { error: "Entre 1 y 31." })
-        .max(31, { error: "Entre 1 y 31." })
+        .min(1, { error: msg("Entre 1 y 31.") })
+        .max(31, { error: msg("Entre 1 y 31.") })
         .nullable(),
     ),
 });
@@ -147,7 +155,7 @@ export const fixedExpenseSchema = fixedExpenseFields.superRefine(requireDaysWhen
 /** Full create/edit form on the "Gastos fijos" page. */
 export const fixedExpenseFormSchema = fixedExpenseFields
   .extend({
-    start_date: z.iso.date({ error: "Elige una fecha válida." }),
+    start_date: z.iso.date({ error: msg("Elige una fecha válida.") }),
     category_id: z.string().transform((value) => value || null),
     account_id: z.string().transform((value) => value || null),
   })
@@ -155,7 +163,11 @@ export const fixedExpenseFormSchema = fixedExpenseFields
 
 export const incomeSchema = z
   .object({
-    label: z.string().trim().min(1, { error: "Escribe de dónde viene el ingreso." }).max(100),
+    label: z
+      .string()
+      .trim()
+      .min(1, { error: msg("Escribe de dónde viene el ingreso.") })
+      .max(100),
     amount: money({ allowZero: false }),
     frequency,
     custom_period_days: optionalDays,
@@ -175,7 +187,7 @@ export const spendingLimitSchema = z.object({
     .pipe(
       z.union([
         z.literal(""),
-        z.string().regex(MONEY_PATTERN, { error: "Usa solo números, con hasta 2 decimales." }),
+        z.string().regex(MONEY_PATTERN, { error: msg("Usa solo números, con hasta 2 decimales.") }),
       ]),
     ),
 });
@@ -188,7 +200,7 @@ export const transactionSchema = z.object({
   note: z
     .string()
     .trim()
-    .max(255, { error: "Máximo 255 caracteres." })
+    .max(255, { error: msg("Máximo 255 caracteres.") })
     .transform((value) => value || null),
   // Empty or missing = the primary account
   account_id: z
@@ -200,7 +212,7 @@ export const transactionSchema = z.object({
 export const settingsSchema = z
   .object({
     balance_as_of: isoDate,
-    currency: z.string().regex(/^[A-Z]{3}$/, { error: "Elige una moneda." }),
+    currency: z.string().regex(/^[A-Z]{3}$/, { error: msg("Elige una moneda.") }),
     income_period: frequency,
     custom_period_days: optionalDays,
   })
@@ -213,9 +225,9 @@ export const categorySchema = z.object({
   name: z
     .string()
     .trim()
-    .min(1, { error: "Escribe un nombre." })
-    .max(50, { error: "Máximo 50 caracteres." }),
-  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, { error: "Elige un color." }),
+    .min(1, { error: msg("Escribe un nombre.") })
+    .max(50, { error: msg("Máximo 50 caracteres.") }),
+  color: z.string().regex(/^#[0-9A-Fa-f]{6}$/, { error: msg("Elige un color.") }),
 });
 
 export type FixedExpenseForm = z.input<typeof fixedExpenseSchema>;
@@ -231,7 +243,11 @@ export type TransactionForm = z.input<typeof transactionSchema>;
 export type TransactionValues = z.output<typeof transactionSchema>;
 
 export const goalSchema = z.object({
-  name: z.string().trim().min(1, { error: "Escribe un nombre para la meta." }).max(100),
+  name: z
+    .string()
+    .trim()
+    .min(1, { error: msg("Escribe un nombre para la meta.") })
+    .max(100),
   target_amount: money({ allowZero: false }),
   saved_amount: money({ allowZero: true }),
   // Empty = no deadline
@@ -262,7 +278,7 @@ export const MAX_BUDGET = 1_000_000;
 
 export const budgetSchema = z.object({
   amount: money({ allowZero: false }).refine((value) => Number(value) <= MAX_BUDGET, {
-    error: "El presupuesto puede ser de hasta $1,000,000.",
+    error: msg("El presupuesto puede ser de hasta $1,000,000."),
   }),
 });
 
@@ -277,3 +293,23 @@ export const budgetCategorySchema = categorySchema.extend({
 
 export type BudgetCategoryForm = z.input<typeof budgetCategorySchema>;
 export type BudgetCategoryValues = z.output<typeof budgetCategorySchema>;
+
+// ── Default categories ──────────────────────────────────
+
+/**
+ * The categories everyone has (seeded by the API) and the "no category" bucket. Their
+ * names are Spanish data, shown in the visitor's language; a user's own categories keep
+ * the name they wrote (the API never lets one share a default's name).
+ */
+const DEFAULT_CATEGORY_NAMES = new Set([
+  msg("Transporte"),
+  msg("Servicios"),
+  msg("Comida"),
+  msg("Ocio"),
+  msg("Otros"),
+  msg("Sin categoría"),
+]);
+
+export function categoryName(name: string, t: (text: string) => string): string {
+  return DEFAULT_CATEGORY_NAMES.has(name) ? t(name) : name;
+}

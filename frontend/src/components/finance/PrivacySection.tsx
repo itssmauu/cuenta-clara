@@ -6,6 +6,8 @@ import { useEffect, useState, type ReactNode } from "react";
 import { DeleteAccountButton, ExportDataButton } from "@/components/legal/PrivacyControls";
 import { buttonClass } from "@/components/ui/button";
 import { FormAlert } from "@/components/ui/FormAlert";
+import { useT } from "@/i18n/client";
+import { rich } from "@/i18n/translate";
 import { assistantApi } from "@/lib/assistant-api";
 import { privacyApi } from "@/lib/privacy-api";
 
@@ -14,6 +16,7 @@ import { privacyApi } from "@/lib/privacy-api";
  * off, and deleting the account. Each one works on its own, without writing to anyone.
  */
 export function PrivacySection({ onNotice }: { onNotice: (message: string) => void }) {
+  const t = useT();
   const [error, setError] = useState<string | null>(null);
 
   return (
@@ -23,21 +26,34 @@ export function PrivacySection({ onNotice }: { onNotice: (message: string) => vo
     >
       <div className="flex flex-col gap-1">
         <h2 id="privacy-title" className="font-display text-xl font-bold">
-          Privacidad y datos
+          {t("Privacidad y datos")}
         </h2>
         <p className="text-muted text-sm">
-          Tus datos son tuyos. Lee cómo los tratamos en la{" "}
-          <Link href="/legal/privacidad" className="text-primary font-bold hover:underline">
-            Política de privacidad
-          </Link>
-          .
+          {rich(
+            t(
+              "Tus datos son tuyos. Lee cómo los tratamos en la <link>Política de privacidad</link>.",
+            ),
+            {
+              link: (text) => (
+                <Link
+                  key="link"
+                  href="/legal/privacidad"
+                  className="text-primary font-bold hover:underline"
+                >
+                  {text}
+                </Link>
+              ),
+            },
+          )}
         </p>
       </div>
       {error ? <FormAlert title={error} /> : null}
 
       <PrivacyRow
-        title="Descargar mis datos"
-        text="Un archivo JSON con todo lo que guardamos de ti: cuenta, configuración, cuentas, movimientos, metas y sesiones."
+        title={t("Descargar mis datos")}
+        text={t(
+          "Un archivo JSON con todo lo que guardamos de ti: cuenta, configuración, cuentas, movimientos, metas y sesiones.",
+        )}
       >
         <ExportDataButton onError={setError} />
       </PrivacyRow>
@@ -45,8 +61,8 @@ export function PrivacySection({ onNotice }: { onNotice: (message: string) => vo
       <AssistantConsentRow onNotice={onNotice} onError={setError} />
 
       <PrivacyRow
-        title="Eliminar mi cuenta"
-        text="Borra tu cuenta y todos tus datos de forma inmediata y definitiva."
+        title={t("Eliminar mi cuenta")}
+        text={t("Borra tu cuenta y todos tus datos de forma inmediata y definitiva.")}
       >
         <DeleteAccountButton />
       </PrivacyRow>
@@ -81,6 +97,7 @@ function AssistantConsentRow({
   onNotice: (message: string) => void;
   onError: (message: string) => void;
 }) {
+  const t = useT();
   const [consented, setConsented] = useState<boolean | null>(null);
   const [failed, setFailed] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -102,9 +119,11 @@ function AssistantConsentRow({
     try {
       await (next ? privacyApi.grantAssistant() : privacyApi.revokeAssistant());
       setConsented(next);
-      onNotice(next ? "Balbo está activado." : "Balbo está desactivado. Ya no se envía nada.");
+      onNotice(
+        next ? t("Balbo está activado.") : t("Balbo está desactivado. Ya no se envía nada."),
+      );
     } catch {
-      onError("No pudimos cambiar el estado de Balbo. Inténtalo de nuevo.");
+      onError(t("No pudimos cambiar el estado de Balbo. Inténtalo de nuevo."));
     } finally {
       setBusy(false);
     }
@@ -112,11 +131,13 @@ function AssistantConsentRow({
 
   return (
     <PrivacyRow
-      title="Balbo, el asistente con IA"
+      title={t("Balbo, el asistente con IA")}
       text={
         consented
-          ? "Activado: al preguntarle, se envía a Gemini (Google) tu pregunta y un resumen de tus finanzas. Desactívalo y no se enviará nada más."
-          : "Desactivado: no se envía nada a Google. Puedes activarlo aquí o desde el chat."
+          ? t(
+              "Activado: al preguntarle, se envía a Gemini (Google) tu pregunta y un resumen de tus finanzas. Desactívalo y no se enviará nada más.",
+            )
+          : t("Desactivado: no se envía nada a Google. Puedes activarlo aquí o desde el chat.")
       }
     >
       <button
@@ -126,12 +147,12 @@ function AssistantConsentRow({
         className={buttonClass(consented ? "ghost" : "primary", "md", "border-line border-2")}
       >
         {failed
-          ? "No disponible ahora"
+          ? t("No disponible ahora")
           : consented === null
-            ? "Cargando…"
+            ? t("Cargando…")
             : consented
-              ? "Desactivar Balbo"
-              : "Activar Balbo"}
+              ? t("Desactivar Balbo")
+              : t("Activar Balbo")}
       </button>
     </PrivacyRow>
   );

@@ -13,6 +13,8 @@ import { Notice, useNotice } from "@/components/ui/Feedback";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SelectField } from "@/components/ui/SelectField";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { financeApi } from "@/lib/finance-api";
 import {
@@ -27,30 +29,31 @@ import { CategoriesSection } from "./CategoriesSection";
 import { PrivacySection } from "./PrivacySection";
 
 const CURRENCIES = [
-  { value: "USD", label: "Dólar estadounidense (USD)" },
-  { value: "PAB", label: "Balboa panameño (PAB)" },
-  { value: "EUR", label: "Euro (EUR)" },
-  { value: "MXN", label: "Peso mexicano (MXN)" },
-  { value: "COP", label: "Peso colombiano (COP)" },
-  { value: "CRC", label: "Colón costarricense (CRC)" },
+  { value: "USD", label: msg("Dólar estadounidense (USD)") },
+  { value: "PAB", label: msg("Balboa panameño (PAB)") },
+  { value: "EUR", label: msg("Euro (EUR)") },
+  { value: "MXN", label: msg("Peso mexicano (MXN)") },
+  { value: "COP", label: msg("Peso colombiano (COP)") },
+  { value: "CRC", label: msg("Colón costarricense (CRC)") },
 ];
 
 export function SettingsPage() {
+  const t = useT();
   const { user, settings, setSettings } = useSession();
   const [notice, showNotice] = useNotice();
 
   return (
     <>
       <PageHeader
-        title="Configuración"
-        subtitle="Tu punto de partida, tu periodo y tus categorías"
+        title={t("Configuración")}
+        subtitle={t("Tu punto de partida, tu periodo y tus categorías")}
       />
       <Notice message={notice} />
       <FinanceSettings
         key={JSON.stringify(settings)}
         onSaved={(updated) => {
           setSettings(updated);
-          showNotice("Configuración guardada.");
+          showNotice(msg("Configuración guardada."));
         }}
       />
       <CategoriesSection onNotice={showNotice} />
@@ -59,15 +62,15 @@ export function SettingsPage() {
         className="flex flex-col gap-3 rounded-[32px] bg-white p-6 sm:p-7"
       >
         <h2 id="account-title" className="font-display text-xl font-bold">
-          Tu cuenta
+          {t("Tu cuenta")}
         </h2>
         <dl className="grid gap-3 text-sm sm:grid-cols-2">
           <div>
-            <dt className="text-muted font-semibold">Nombre</dt>
+            <dt className="text-muted font-semibold">{t("Nombre")}</dt>
             <dd className="font-bold">{user.name}</dd>
           </div>
           <div>
-            <dt className="text-muted font-semibold">Correo</dt>
+            <dt className="text-muted font-semibold">{t("Correo")}</dt>
             <dd className="font-bold break-all">{user.email}</dd>
           </div>
         </dl>
@@ -82,6 +85,7 @@ function FinanceSettings({
 }: {
   onSaved: (settings: Awaited<ReturnType<typeof financeApi.saveSettings>>) => void;
 }) {
+  const t = useT();
   const { settings } = useSession();
   const [serverError, setServerError] = useState<string | null>(null);
   const {
@@ -114,7 +118,7 @@ function FinanceSettings({
       onSaved(updated);
     } catch (error) {
       setServerError(
-        error instanceof ApiError ? error.message : "No pudimos guardar la configuración.",
+        error instanceof ApiError ? error.message : t("No pudimos guardar la configuración."),
       );
     }
   }
@@ -125,37 +129,42 @@ function FinanceSettings({
       className="flex flex-col gap-5 rounded-[32px] bg-white p-6 sm:p-7"
     >
       <h2 id="finance-settings-title" className="font-display text-xl font-bold">
-        Tus finanzas
+        {t("Tus finanzas")}
       </h2>
       <form noValidate onSubmit={handleSubmit(onSubmit)} className="flex flex-col gap-5">
         {serverError ? <FormAlert title={serverError} /> : null}
         {/* Each account has its own starting balance now */}
         <p className="bg-canvas text-body flex flex-wrap items-center gap-2 rounded-2xl p-4 text-sm font-semibold">
           <Landmark aria-hidden="true" className="text-primary size-5 shrink-0" />
-          El saldo inicial de cada cuenta se cambia en
-          <Link href="/cuentas" className="text-primary font-bold hover:underline">
-            Cuentas
+          {t("El saldo inicial de cada cuenta se cambia en")}
+          <Link
+            href="/cuentas"
+            className="text-primary inline-flex min-h-6 items-center font-bold hover:underline"
+          >
+            {t("Cuentas")}
           </Link>
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField
             id="settings-as-of"
-            label="¿Desde qué fecha llevas tus cuentas?"
+            label={t("¿Desde qué fecha llevas tus cuentas?")}
             type="date"
-            hint="Los movimientos anteriores a esta fecha no cuentan: ya están en los saldos iniciales."
+            hint={t(
+              "Los movimientos anteriores a esta fecha no cuentan: ya están en los saldos iniciales.",
+            )}
             error={errors.balance_as_of?.message}
             {...register("balance_as_of")}
           />
           <SelectField
             id="settings-currency"
-            label="Moneda"
+            label={t("Moneda")}
             options={CURRENCIES}
             error={errors.currency?.message}
             {...register("currency")}
           />
           <SelectField
             id="settings-period"
-            label="Tu periodo"
+            label={t("Tu periodo")}
             options={FREQUENCIES.map((value) => ({ value, label: FREQUENCY_LABELS[value] }))}
             error={errors.income_period?.message}
             {...register("income_period")}
@@ -163,7 +172,7 @@ function FinanceSettings({
           {period === "custom" ? (
             <TextField
               id="settings-days"
-              label="Cada cuántos días"
+              label={t("Cada cuántos días")}
               inputMode="numeric"
               error={errors.custom_period_days?.message}
               {...register("custom_period_days")}
@@ -171,11 +180,11 @@ function FinanceSettings({
           ) : null}
           <TextField
             id="settings-limit"
-            label="Límite de gasto por periodo (opcional)"
+            label={t("Límite de gasto por periodo (opcional)")}
             inputMode="decimal"
             autoComplete="off"
-            placeholder="Sin límite"
-            hint="Incluye tus gastos fijos. Déjalo vacío para no usar límite."
+            placeholder={t("Sin límite")}
+            hint={t("Incluye tus gastos fijos. Déjalo vacío para no usar límite.")}
             error={errors.spending_limit?.message}
             {...register("spending_limit")}
           />
@@ -187,7 +196,7 @@ function FinanceSettings({
             aria-busy={isSubmitting}
             className={buttonClass("primary", "md", "font-extrabold")}
           >
-            {isSubmitting ? "Guardando…" : "Guardar cambios"}
+            {isSubmitting ? t("Guardando…") : t("Guardar cambios")}
           </button>
         </div>
       </form>

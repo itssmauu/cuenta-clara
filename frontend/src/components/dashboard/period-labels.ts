@@ -1,5 +1,6 @@
 import type { DashboardPeriod, Frequency } from "@/lib/finance-api";
 import { formatDate } from "@/lib/format";
+import { msg } from "@/i18n/translate";
 
 /** Short x-axis label for a period, e.g. "mié 7", "5 oct", "oct". */
 export function periodTick(period: Frequency, start: string): string {
@@ -20,34 +21,34 @@ export function periodRange(start: string, end: string): string {
 }
 
 export const CURRENT_PERIOD_NAME: Record<DashboardPeriod, string> = {
-  daily: "hoy",
-  weekly: "esta semana",
-  biweekly: "esta quincena",
-  monthly: "este mes",
+  daily: msg("hoy"),
+  weekly: msg("esta semana"),
+  biweekly: msg("esta quincena"),
+  monthly: msg("este mes"),
 };
 
 /** "la semana anterior", used in comparisons */
 export const PREVIOUS_PERIOD_NAME: Record<Frequency, string> = {
-  daily: "ayer",
-  weekly: "la semana anterior",
-  biweekly: "la quincena anterior",
-  monthly: "el mes anterior",
-  custom: "el periodo anterior",
+  daily: msg("ayer"),
+  weekly: msg("la semana anterior"),
+  biweekly: msg("la quincena anterior"),
+  monthly: msg("el mes anterior"),
+  custom: msg("el periodo anterior"),
 };
 
 export const PERIOD_ADJECTIVE: Record<Frequency, string> = {
-  daily: "diario",
-  weekly: "semanal",
-  biweekly: "quincenal",
-  monthly: "mensual",
-  custom: "del periodo",
+  daily: msg("diario"),
+  weekly: msg("semanal"),
+  biweekly: msg("quincenal"),
+  monthly: msg("mensual"),
+  custom: msg("del periodo"),
 };
 
 /** "por semana", used where an amount belongs to one period */
 export const PERIOD_NOUN: Record<Frequency, string> = {
-  daily: "día",
-  weekly: "semana",
-  biweekly: "quincena",
-  monthly: "mes",
-  custom: "periodo",
+  daily: msg("día"),
+  weekly: msg("semana"),
+  biweekly: msg("quincena"),
+  monthly: msg("mes"),
+  custom: msg("periodo"),
 };

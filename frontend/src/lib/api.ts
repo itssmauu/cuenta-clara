@@ -37,11 +37,24 @@ export class ApiError extends Error {
 
 const GENERIC_ERROR = "Algo salió mal. Inténtalo de nuevo en un momento.";
 const NETWORK_ERROR = "No pudimos conectar con el servidor. Revisa tu conexión.";
+const INVALID_EMAIL = "Escribe un correo válido, por ejemplo ana@correo.com.";
+const INVALID_DATA = "Revisa los datos del formulario e inténtalo de nuevo.";
+const VALUE_ERROR = "Value error, ";
 
 export function readCookie(name: string): string | null {
   const prefix = `${name}=`;
   const match = document.cookie.split("; ").find((part) => part.startsWith(prefix));
   return match ? decodeURIComponent(match.slice(prefix.length)) : null;
+}
+
+/**
+ * Our own validators speak Spanish ("Value error, Debes aceptar…"); Pydantic's built-in
+ * checks answer in technical English ("value is not a valid email address…"). Show ours
+ * without the prefix and replace the others with a plain message.
+ */
+function validationMessage({ msg, loc }: { msg: string; loc?: unknown[] }): string {
+  if (msg.startsWith(VALUE_ERROR)) return msg.slice(VALUE_ERROR.length);
+  return loc?.at(-1) === "email" ? INVALID_EMAIL : INVALID_DATA;
 }
 
 async function toApiError(response: Response): Promise<ApiError> {
@@ -52,12 +65,12 @@ async function toApiError(response: Response): Promise<ApiError> {
     return new ApiError(response.status, GENERIC_ERROR);
   }
   const { detail, problems } = (body ?? {}) as { detail?: unknown; problems?: unknown };
-  // FastAPI validation errors arrive as a list of { msg }; ours as a plain string
+  // FastAPI validation errors arrive as a list of { msg, loc }; ours as a plain string
   const message =
     typeof detail === "string"
       ? detail
       : Array.isArray(detail) && typeof detail[0]?.msg === "string"
-        ? String(detail[0].msg)
+        ? validationMessage(detail[0] as { msg: string; loc?: unknown[] })
         : GENERIC_ERROR;
   const problemList = Array.isArray(problems) ? problems.map(String) : [];
   return new ApiError(response.status, message, problemList);
@@ -65,8 +78,14 @@ async function toApiError(response: Response): Promise<ApiError> {
 
 type RequestOptions = { method?: string; body?: unknown };
 
+/** "en" when the page is shown in English (the language switcher sets <html lang>). */
+function pageLanguage(): string {
+  return typeof document !== "undefined" && document.documentElement.lang === "en" ? "en" : "es";
+}
+
 async function send(path: string, { method = "GET", body }: RequestOptions): Promise<Response> {
-  const headers = new Headers({ Accept: "application/json" });
+  // The API writes emails and Balbo's replies in the language the app is read in
+  const headers = new Headers({ Accept: "application/json", "Accept-Language": pageLanguage() });
   if (body !== undefined) headers.set("Content-Type", "application/json");
   if (!SAFE_METHODS.has(method)) {
     const csrf = readCookie(CSRF_COOKIE);

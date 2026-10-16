@@ -1,3 +1,5 @@
+import { translator, type Translate } from "@/i18n/translate";
+
 /**
  * When the current session started, kept in this browser only (nothing is sent anywhere).
  *
@@ -47,12 +49,12 @@ export function formatSessionTime(milliseconds: number): string {
 }
 
 /** The same duration in words, for screen readers: "1 hora y 5 minutos". */
-export function describeSessionTime(milliseconds: number): string {
+export function describeSessionTime(milliseconds: number, t: Translate = translator("es")): string {
   const minutes = Math.floor(Math.max(0, milliseconds) / 60_000);
   const hours = Math.floor(minutes / 60);
   const rest = minutes % 60;
-  const h = hours === 1 ? "1 hora" : `${hours} horas`;
-  const m = rest === 1 ? "1 minuto" : `${rest} minutos`;
-  if (hours === 0) return minutes === 0 ? "menos de un minuto" : m;
-  return rest === 0 ? h : `${h} y ${m}`;
+  const h = hours === 1 ? t("1 hora") : t("{n} horas", { n: hours });
+  const m = rest === 1 ? t("1 minuto") : t("{n} minutos", { n: rest });
+  if (hours === 0) return minutes === 0 ? t("menos de un minuto") : m;
+  return rest === 0 ? h : t("{hours} y {minutes}", { hours: h, minutes: m });
 }

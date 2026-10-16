@@ -1,5 +1,8 @@
 import { ArrowUpRight, Sparkles } from "lucide-react";
 
+import { getT } from "@/i18n/server";
+import { msg } from "@/i18n/translate";
+
 /*
  * Illustrative projection for the sign-in panel. Every figure is the product's worked
  * example (100 − 30 + 160 = 230, then +130 a week), labelled "Ejemplo": nothing here
@@ -17,11 +20,11 @@ const BAND =
   "L340 67.6 C300 67.6 300 40.8 260 40.8 S220 68.5 180 68.5 S140 96.3 100 96.3 S60 124 20 124 Z";
 const AREA = `${LINE} L340 150 L20 150 Z`;
 const TICKS = [
-  { x: 20, label: "Hoy" },
-  { x: 100, label: "Sem 1" },
-  { x: 180, label: "Sem 2" },
-  { x: 260, label: "Sem 3" },
-  { x: 340, label: "Sem 4" },
+  { x: 20, label: msg("Hoy") },
+  { x: 100, label: msg("Sem 1") },
+  { x: 180, label: msg("Sem 2") },
+  { x: 260, label: msg("Sem 3") },
+  { x: 340, label: msg("Sem 4") },
 ];
 
 // Background "live data" bars: static heights (the CSP blocks inline styles)
@@ -54,7 +57,8 @@ export function LiveBars() {
   );
 }
 
-export function AuthShowcase() {
+export async function AuthShowcase() {
+  const t = await getT();
   return (
     <div aria-hidden="true" className="relative mx-auto hidden w-full max-w-[440px] md:block">
       <div className="rounded-[28px] border border-white/10 bg-white/[0.06] p-5 pb-12 shadow-[0_30px_60px_-20px_rgb(0_0_0/0.55)] backdrop-blur-md">
@@ -62,14 +66,14 @@ export function AuthShowcase() {
           <div className="flex flex-col gap-1">
             <span className="text-on-ink flex items-center gap-1.5 text-xs font-bold">
               <Sparkles className="text-accent size-3.5" />
-              Saldo proyectado · semana 3
+              {t("Saldo proyectado · semana 3")}
             </span>
             <span className="font-display text-[40px] leading-none font-extrabold tracking-[-0.02em] tabular-nums">
               $<span className="count-up [--to:490]" />
             </span>
           </div>
           <span className="text-on-ink rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold">
-            Ejemplo
+            {t("Ejemplo")}
           </span>
         </div>
 
@@ -134,7 +138,7 @@ export function AuthShowcase() {
                 textAnchor="middle"
                 className="fill-on-ink-muted text-[11px] font-bold"
               >
-                {tick.label}
+                {t(tick.label)}
               </text>
             ))}
           </svg>
@@ -147,7 +151,7 @@ export function AuthShowcase() {
           <ArrowUpRight className="size-4" strokeWidth={3} />
         </span>
         <span className="flex flex-col leading-tight">
-          <span className="text-muted text-[11px] font-bold">Ingreso semanal</span>
+          <span className="text-muted text-[11px] font-bold">{t("Ingreso semanal")}</span>
           <span className="text-ink text-sm font-extrabold tabular-nums">
             +$
             <span className="count-up [--to:160]" />
@@ -157,7 +161,7 @@ export function AuthShowcase() {
 
       <div className="float-slower absolute -bottom-9 -left-5 flex w-[190px] flex-col gap-2 rounded-2xl bg-white px-3.5 py-3 shadow-[0_18px_40px_-16px_rgb(0_0_0/0.6)]">
         <span className="flex items-center justify-between text-[11px] font-bold">
-          <span className="text-muted">Límite usado</span>
+          <span className="text-muted">{t("Límite usado")}</span>
           <span className="text-ink tabular-nums">
             <span className="count-up [--to:72]" />%
           </span>

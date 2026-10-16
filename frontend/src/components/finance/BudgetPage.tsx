@@ -17,6 +17,8 @@ import { EmptyState, Notice, TableSkeleton, useNotice } from "@/components/ui/Fe
 import { FormAlert } from "@/components/ui/FormAlert";
 import { SegmentedControl } from "@/components/ui/SegmentedControl";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import {
   financeApi,
@@ -28,7 +30,12 @@ import {
   type Frequency,
   type Money,
 } from "@/lib/finance-api";
-import { budgetSchema, FREQUENCY_LABELS, PERIOD_OPTIONS } from "@/lib/finance-validation";
+import {
+  budgetSchema,
+  categoryName,
+  FREQUENCY_LABELS,
+  PERIOD_OPTIONS,
+} from "@/lib/finance-validation";
 import { formatMoney, todayISO } from "@/lib/format";
 import { notifyDataChanged, useResource } from "@/lib/use-resource";
 
@@ -37,10 +44,10 @@ import { NewBudgetCategoryForm } from "./NewBudgetCategory";
 
 /** Status in words: the bar's color is never the only signal */
 export const STATUS_TEXT: Record<BudgetStatus, string> = {
-  none: "Sin presupuesto",
-  ok: "Vas bien",
-  warning: "Cerca del tope",
-  over: "Te pasaste",
+  none: msg("Sin presupuesto"),
+  ok: msg("Vas bien"),
+  warning: msg("Cerca del tope"),
+  over: msg("Te pasaste"),
 };
 
 const BAR_COLOR: Record<BudgetStatus, string> = {
@@ -60,6 +67,7 @@ const PILL: Record<BudgetStatus, string> = {
 type Suggestions = Record<string, Money>;
 
 export function BudgetPage() {
+  const t = useT();
   const { settings } = useSession();
   const [today] = useState(todayISO);
   const [period, setPeriod] = useState<DashboardPeriod>("weekly");
@@ -85,10 +93,10 @@ export function BudgetPage() {
       const result = await financeApi.getBudgetSuggestions(today, account);
       setSuggestions(Object.fromEntries(result.suggestions.map((s) => [s.category_id, s.amount])));
       if (result.suggestions.length === 0) {
-        showNotice("Aún no hay gastos con categoría para sugerir un monto.");
+        showNotice(msg("Aún no hay gastos con categoría para sugerir un monto."));
       }
     } catch {
-      setSuggestError("No pudimos calcular las sugerencias. Inténtalo de nuevo.");
+      setSuggestError(t("No pudimos calcular las sugerencias. Inténtalo de nuevo."));
     } finally {
       setSuggesting(false);
     }
@@ -102,8 +110,8 @@ export function BudgetPage() {
   return (
     <>
       <PageHeader
-        title="Presupuesto"
-        subtitle="Cuánto quieres gastar en cada categoría, y cómo vas"
+        title={t("Presupuesto")}
+        subtitle={t("Cuánto quieres gastar en cada categoría, y cómo vas")}
         actions={
           <>
             <AccountPicker
@@ -112,14 +120,14 @@ export function BudgetPage() {
               onChange={setAccount}
             />
             <SegmentedControl
-              label="Periodo"
+              label={t("Periodo")}
               options={PERIOD_OPTIONS.map((option) => ({
                 value: option,
                 label: FREQUENCY_LABELS[option],
               }))}
               value={period}
               onChange={setPeriod}
-              layoutClass="grid w-full grid-cols-4 sm:flex sm:w-auto"
+              layoutClass="grid w-full grid-cols-2 max-[399px]:rounded-[26px] min-[400px]:grid-cols-4 sm:flex sm:w-auto"
               optionClass="px-1 text-[13px] sm:px-4 sm:text-sm"
             />
           </>
@@ -129,13 +137,16 @@ export function BudgetPage() {
 
       {summary.status === "error" && !data ? (
         <div className="flex flex-col items-start gap-3">
-          <FormAlert title="No pudimos cargar tus presupuestos." items={[summary.error.message]} />
+          <FormAlert
+            title={t("No pudimos cargar tus presupuestos.")}
+            items={[summary.error.message]}
+          />
           <button
             type="button"
             onClick={reload}
             className="text-primary min-h-11 font-bold hover:underline"
           >
-            Reintentar
+            {t("Reintentar")}
           </button>
         </div>
       ) : !data ? (
@@ -150,9 +161,14 @@ export function BudgetPage() {
               className="bg-accent-tint text-ink flex items-start gap-3 rounded-3xl px-5 py-4 text-sm font-bold"
             >
               <AlertTriangle aria-hidden="true" className="mt-0.5 size-5 shrink-0" />
-              Tus presupuestos suman {money(data.totals.budgeted)}, más que tu límite de gasto de{" "}
-              {money(data.spending_limit ?? "0")} {CURRENT_PERIOD_NAME[period]}. Ajusta alguno para
-              no pasarte.
+              {t(
+                "Tus presupuestos suman {budgeted}, más que tu límite de gasto de {limit} {period}. Ajusta alguno para no pasarte.",
+                {
+                  budgeted: money(data.totals.budgeted),
+                  limit: money(data.spending_limit ?? "0"),
+                  period: t(CURRENT_PERIOD_NAME[period]),
+                },
+              )}
             </p>
           ) : null}
 
@@ -163,15 +179,22 @@ export function BudgetPage() {
             <div className="flex flex-wrap items-start justify-between gap-3">
               <div className="flex flex-col gap-1">
                 <h2 id="budget-list-title" className="font-display text-xl font-bold">
-                  Por categoría
+                  {t("Por categoría")}
                 </h2>
                 <p className="text-muted text-sm">
-                  {periodRange(data.period.start, data.period.end)} · los montos se guardan por{" "}
-                  {PERIOD_NOUN[data.income_period]}
-                  {data.period.type !== data.income_period
-                    ? ` y aquí se muestran como periodo ${PERIOD_ADJECTIVE[data.period.type]}`
-                    : ""}
-                  .
+                  {data.period.type === data.income_period
+                    ? t("{range} · los montos se guardan por {noun}.", {
+                        range: periodRange(data.period.start, data.period.end),
+                        noun: t(PERIOD_NOUN[data.income_period]),
+                      })
+                    : t(
+                        "{range} · los montos se guardan por {noun} y aquí se muestran como periodo {period}.",
+                        {
+                          range: periodRange(data.period.start, data.period.end),
+                          noun: t(PERIOD_NOUN[data.income_period]),
+                          period: t(PERIOD_ADJECTIVE[data.period.type]),
+                        },
+                      )}
                 </p>
               </div>
               <div className="flex flex-wrap gap-2">
@@ -181,7 +204,7 @@ export function BudgetPage() {
                   className={buttonClass("ink")}
                 >
                   <Plus aria-hidden="true" className="size-4" />
-                  Añadir categoría
+                  {t("Añadir categoría")}
                 </button>
                 <button
                   type="button"
@@ -191,7 +214,7 @@ export function BudgetPage() {
                   className={buttonClass("ghost", "md", "border-line border-2")}
                 >
                   <Sparkles aria-hidden="true" className="size-4" />
-                  {suggesting ? "Calculando…" : "Sugerir según mi promedio"}
+                  {suggesting ? t("Calculando…") : t("Sugerir según mi promedio")}
                 </button>
               </div>
             </div>
@@ -200,8 +223,11 @@ export function BudgetPage() {
             {data.totals.budgeted === "0.00" ? (
               <EmptyState
                 icon={PiggyBank}
-                title="Aún no tienes presupuestos"
-                text={`Elige cuánto quieres gastar por ${PERIOD_NOUN[data.income_period]} en una categoría con «Poner presupuesto», crea una nueva con «Añadir categoría» o pide una sugerencia basada en lo que sueles gastar.`}
+                title={t("Aún no tienes presupuestos")}
+                text={t(
+                  "Elige cuánto quieres gastar por {period} en una categoría con «Poner presupuesto», crea una nueva con «Añadir categoría» o pide una sugerencia basada en lo que sueles gastar.",
+                  { period: t(PERIOD_NOUN[data.income_period]) },
+                )}
               />
             ) : null}
 
@@ -221,8 +247,10 @@ export function BudgetPage() {
             <Dialog
               open={adding}
               onClose={() => setAdding(false)}
-              title="Nueva categoría"
-              description="Queda guardada en tus categorías: podrás elegirla al registrar cualquier gasto."
+              title={t("Nueva categoría")}
+              description={t(
+                "Queda guardada en tus categorías: podrás elegirla al registrar cualquier gasto.",
+              )}
             >
               <NewBudgetCategoryForm
                 incomePeriod={data.income_period}
@@ -235,7 +263,9 @@ export function BudgetPage() {
             </Dialog>
 
             <p className="border-line text-body flex flex-wrap justify-between gap-2 border-t pt-4 text-sm">
-              <span className="font-bold">Gasto sin presupuesto (incluye «Sin categoría»)</span>
+              <span className="font-bold">
+                {t("Gasto sin presupuesto (incluye «Sin categoría»)")}
+              </span>
               <span className="font-bold tabular-nums">{money(data.unbudgeted_spent)}</span>
             </p>
           </section>
@@ -254,21 +284,26 @@ function SummaryCard({
   period: DashboardPeriod;
   money: (value: Money) => string;
 }) {
+  const t = useT();
   const remaining = Number(data.totals.remaining);
   const stats = [
-    { label: "Presupuestado", value: money(data.totals.budgeted) },
-    { label: "Gastado", value: money(data.totals.spent), hint: "en categorías con presupuesto" },
+    { label: t("Presupuestado"), value: money(data.totals.budgeted) },
     {
-      label: remaining < 0 ? "Te pasaste" : "Te queda",
+      label: t("Gastado"),
+      value: money(data.totals.spent),
+      hint: t("en categorías con presupuesto"),
+    },
+    {
+      label: remaining < 0 ? t("Te pasaste") : t("Te queda"),
       value: money(String(Math.abs(remaining).toFixed(2))),
     },
     {
-      label: "Sin asignar",
+      label: t("Sin asignar"),
       value: data.unassigned === null ? "—" : money(data.unassigned),
       hint:
         data.spending_limit === null
-          ? "sin límite de gasto"
-          : `de tu límite de ${money(data.spending_limit)}`,
+          ? t("sin límite de gasto")
+          : t("de tu límite de {amount}", { amount: money(data.spending_limit) }),
     },
   ];
   return (
@@ -277,7 +312,10 @@ function SummaryCard({
       className="bg-ink flex flex-col gap-4 rounded-[32px] p-6 text-white sm:p-7"
     >
       <h2 id="budget-summary-title" className="text-on-ink text-[13px] font-bold">
-        Resumen {CURRENT_PERIOD_NAME[period]} · {data.account?.name ?? "todas tus cuentas"}
+        {t("Resumen {period} · {account}", {
+          period: t(CURRENT_PERIOD_NAME[period]),
+          account: data.account?.name ?? t("todas tus cuentas"),
+        })}
       </h2>
       <dl className="grid grid-cols-2 gap-5 lg:grid-cols-4">
         {stats.map((stat) => (
@@ -307,12 +345,14 @@ function BudgetItem({
   money: (value: Money) => string;
   onSaved: (message: string) => void;
 }) {
+  const t = useT();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(row.amount ?? suggestion ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const inputId = `budget-${row.category_id}`;
-  const per = PERIOD_NOUN[incomePeriod];
+  const per = t(PERIOD_NOUN[incomePeriod]);
+  const name = categoryName(row.name, t);
 
   function startEditing(initial: string) {
     setDraft(initial);
@@ -324,7 +364,7 @@ function BudgetItem({
     event?.preventDefault();
     const parsed = budgetSchema.safeParse({ amount: amountOverride ?? draft });
     if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Revisa el monto.");
+      setError(parsed.error.issues[0]?.message ?? t("Revisa el monto."));
       return;
     }
     setBusy(true);
@@ -332,9 +372,9 @@ function BudgetItem({
     try {
       await financeApi.setBudget(row.category_id, parsed.data.amount);
       setEditing(false);
-      onSaved(`Presupuesto de ${row.name} guardado.`);
+      onSaved(t("Presupuesto de {name} guardado.", { name: name }));
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : "No pudimos guardar el monto.");
+      setError(failure instanceof ApiError ? failure.message : t("No pudimos guardar el monto."));
     } finally {
       setBusy(false);
     }
@@ -344,9 +384,9 @@ function BudgetItem({
     setBusy(true);
     try {
       await financeApi.removeBudget(row.category_id);
-      onSaved(`Quitaste el presupuesto de ${row.name}.`);
+      onSaved(t("Quitaste el presupuesto de {name}.", { name: name }));
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : "No pudimos quitarlo.");
+      setError(failure instanceof ApiError ? failure.message : t("No pudimos quitarlo."));
     } finally {
       setBusy(false);
     }
@@ -359,22 +399,29 @@ function BudgetItem({
     <li className="border-line flex flex-col gap-3 border-t py-4 first:border-t-0">
       <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
         <div className="flex min-w-0 flex-col gap-1">
-          <h3 className="font-bold">{row.name}</h3>
+          <h3 className="font-bold">{name}</h3>
           <p className="text-body text-sm tabular-nums">
             {row.budget === null ? (
-              <>Gastado {money(row.spent)}</>
+              <>{t("Gastado {amount}", { amount: money(row.spent) })}</>
             ) : (
               <>
-                {money(row.spent)} de {money(row.budget)}
                 {remaining !== null && remaining < 0
-                  ? ` · te pasaste por ${money(Math.abs(remaining).toFixed(2))}`
-                  : ` · te quedan ${money(row.remaining ?? "0")}`}
+                  ? t("{spent} de {budget} · te pasaste por {amount}", {
+                      spent: money(row.spent),
+                      budget: money(row.budget),
+                      amount: money(Math.abs(remaining).toFixed(2)),
+                    })
+                  : t("{spent} de {budget} · te quedan {amount}", {
+                      spent: money(row.spent),
+                      budget: money(row.budget),
+                      amount: money(row.remaining ?? "0"),
+                    })}
               </>
             )}
           </p>
         </div>
         <span className={`rounded-full px-3 py-1 text-xs font-bold ${PILL[row.status]}`}>
-          {STATUS_TEXT[row.status]}
+          {t(STATUS_TEXT[row.status])}
           {percent !== null ? ` · ${row.percent} %` : ""}
         </span>
       </div>
@@ -382,11 +429,14 @@ function BudgetItem({
       {percent !== null ? (
         <div
           role="progressbar"
-          aria-label={`Presupuesto de ${row.name}`}
+          aria-label={t("Presupuesto de {name}", { name: name })}
           aria-valuemin={0}
           aria-valuemax={100}
           aria-valuenow={Math.min(percent, 100)}
-          aria-valuetext={`${row.percent} % usado. ${STATUS_TEXT[row.status]}.`}
+          aria-valuetext={t("{percent} % usado. {status}.", {
+            percent: row.percent ?? 0,
+            status: t(STATUS_TEXT[row.status]),
+          })}
           className="bg-canvas h-2.5 overflow-hidden rounded-full"
         >
           <div
@@ -405,7 +455,7 @@ function BudgetItem({
           <div className="min-w-[180px] flex-1">
             <TextField
               id={inputId}
-              label={`Presupuesto de ${row.name} por ${per}`}
+              label={t("Presupuesto de {name} por {per}", { name: name, per })}
               inputMode="decimal"
               autoComplete="off"
               value={draft}
@@ -414,10 +464,10 @@ function BudgetItem({
             />
           </div>
           <button type="submit" disabled={busy} className={buttonClass("primary")}>
-            {busy ? "Guardando…" : "Guardar"}
+            {busy ? t("Guardando…") : t("Guardar")}
           </button>
           <button type="button" onClick={() => setEditing(false)} className={buttonClass("ghost")}>
-            Cancelar
+            {t("Cancelar")}
           </button>
         </form>
       ) : (
@@ -426,29 +476,29 @@ function BudgetItem({
             <button
               type="button"
               onClick={() => startEditing(suggestion ?? "")}
-              aria-label={`Poner presupuesto a ${row.name}`}
+              aria-label={t("Poner presupuesto a {name}", { name: name })}
               className={buttonClass("ghost", "md", "border-line border-2")}
             >
-              Poner presupuesto
+              {t("Poner presupuesto")}
             </button>
           ) : (
             <>
               <button
                 type="button"
                 onClick={() => startEditing(row.amount ?? "")}
-                aria-label={`Cambiar el presupuesto de ${row.name}`}
+                aria-label={t("Cambiar el presupuesto de {name}", { name: name })}
                 className={buttonClass("ghost", "md", "border-line border-2")}
               >
-                Cambiar ({money(row.amount)} por {per})
+                {t("Cambiar ({amount} por {per})", { amount: money(row.amount), per })}
               </button>
               <button
                 type="button"
                 onClick={() => void remove()}
                 disabled={busy}
-                aria-label={`Quitar el presupuesto de ${row.name}`}
+                aria-label={t("Quitar el presupuesto de {name}", { name: name })}
                 className={buttonClass("ghost")}
               >
-                Quitar
+                {t("Quitar")}
               </button>
             </>
           )}
@@ -457,15 +507,19 @@ function BudgetItem({
               type="button"
               onClick={() => void save(undefined, suggestion)}
               disabled={busy}
-              aria-label={`Usar ${money(suggestion)} por ${per} como presupuesto de ${row.name}`}
+              aria-label={t("Usar {amount} por {per} como presupuesto de {name}", {
+                amount: money(suggestion),
+                per,
+                name: name,
+              })}
               className="text-primary inline-flex min-h-11 cursor-pointer items-center px-2 text-sm font-bold hover:underline"
             >
-              Sugerido: {money(suggestion)} por {per} · Usar
+              {t("Sugerido: {amount} por {per} · Usar", { amount: money(suggestion), per })}
             </button>
           ) : null}
           {error && !editing ? (
             <p role="alert" className="text-danger text-sm font-semibold">
-              {error}
+              {t(error)}
             </p>
           ) : null}
         </div>

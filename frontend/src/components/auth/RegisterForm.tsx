@@ -11,6 +11,8 @@ import { PasswordChecklist } from "@/components/ui/PasswordChecklist";
 import { PasswordField } from "@/components/ui/PasswordField";
 import { SubmitButton } from "@/components/ui/SubmitButton";
 import { TextField } from "@/components/ui/TextField";
+import { useT } from "@/i18n/client";
+import { msg, rich } from "@/i18n/translate";
 import { ApiError, authApi } from "@/lib/api";
 import { registerSchema, type RegisterValues } from "@/lib/validation";
 
@@ -18,10 +20,12 @@ type ServerError = { title: string; items?: string[] };
 
 // Registration never says whether an email already had an account (see docs/decisions.md
 // D-015), so if the follow-up login fails we can only suggest both possibilities.
-const ACCOUNT_NOT_READY =
-  "No pudimos entrar con esos datos. Si ya tenías una cuenta con este correo, inicia sesión con tu contraseña.";
+const ACCOUNT_NOT_READY = msg(
+  "No pudimos entrar con esos datos. Si ya tenías una cuenta con este correo, inicia sesión con tu contraseña.",
+);
 
 export function RegisterForm() {
+  const t = useT();
   const router = useRouter();
   const [serverError, setServerError] = useState<ServerError | null>(null);
   const {
@@ -51,7 +55,7 @@ export function RegisterForm() {
       if (error instanceof ApiError) {
         setServerError({ title: error.message, items: error.problems });
       } else {
-        setServerError({ title: "No pudimos crear tu cuenta." });
+        setServerError({ title: msg("No pudimos crear tu cuenta.") });
       }
       return;
     }
@@ -78,25 +82,25 @@ export function RegisterForm() {
 
       <TextField
         id="name"
-        label="Nombre"
+        label={t("Nombre")}
         autoComplete="name"
-        placeholder="Tu nombre"
+        placeholder={t("Tu nombre")}
         error={errors.name?.message}
         {...register("name")}
       />
       <TextField
         id="email"
-        label="Correo electrónico"
+        label={t("Correo electrónico")}
         type="email"
         autoComplete="email"
         inputMode="email"
-        placeholder="correo@ejemplo.com"
+        placeholder={t("correo@ejemplo.com")}
         error={errors.email?.message}
         {...register("email")}
       />
       <PasswordField
         id="password"
-        label="Contraseña"
+        label={t("Contraseña")}
         autoComplete="new-password"
         error={errors.password?.message}
         hint={<PasswordChecklist id="password-rules" password={password} />}
@@ -104,7 +108,7 @@ export function RegisterForm() {
       />
       <PasswordField
         id="confirmPassword"
-        label="Confirmar contraseña"
+        label={t("Confirmar contraseña")}
         autoComplete="new-password"
         error={errors.confirmPassword?.message}
         {...register("confirmPassword")}
@@ -117,38 +121,51 @@ export function RegisterForm() {
             type="checkbox"
             aria-invalid={errors.acceptTerms ? true : undefined}
             aria-describedby={errors.acceptTerms ? "acceptTerms-error" : undefined}
-            className="accent-primary mt-0.5 size-5 shrink-0 cursor-pointer"
+            className="accent-primary mt-0.5 size-6 shrink-0 cursor-pointer"
             {...register("acceptTerms")}
           />
           <label htmlFor="acceptTerms" className="text-body text-sm leading-relaxed">
-            He leído y acepto los{" "}
-            <Link
-              href="/legal/terminos"
-              target="_blank"
-              className="text-primary font-bold hover:underline"
-            >
-              Términos y condiciones
-            </Link>{" "}
-            y la{" "}
-            <Link
-              href="/legal/privacidad"
-              target="_blank"
-              className="text-primary font-bold hover:underline"
-            >
-              Política de privacidad
-            </Link>
-            , y consiento que Cuenta Clara trate mis datos para prestarme el servicio. Soy mayor de
-            18 años.
+            {rich(
+              t(
+                "He leído y acepto los <terms>Términos y condiciones</terms> y la <privacy>Política de privacidad</privacy>, y consiento que Cuenta Clara trate mis datos para prestarme el servicio. Soy mayor de 18 años.",
+              ),
+              {
+                terms: (text) => (
+                  <Link
+                    key="terms"
+                    href="/legal/terminos"
+                    target="_blank"
+                    className="text-primary font-bold hover:underline"
+                  >
+                    {text}
+                  </Link>
+                ),
+                privacy: (text) => (
+                  <Link
+                    key="privacy"
+                    href="/legal/privacidad"
+                    target="_blank"
+                    className="text-primary font-bold hover:underline"
+                  >
+                    {text}
+                  </Link>
+                ),
+              },
+            )}
           </label>
         </div>
         {errors.acceptTerms ? (
           <p id="acceptTerms-error" className="text-danger text-[13px] font-semibold">
-            {errors.acceptTerms.message}
+            {t(errors.acceptTerms.message ?? "")}
           </p>
         ) : null}
       </div>
 
-      <SubmitButton busy={isSubmitting} label="Crear cuenta" busyLabel="Creando tu cuenta…" />
+      <SubmitButton
+        busy={isSubmitting}
+        label={t("Crear cuenta")}
+        busyLabel={t("Creando tu cuenta…")}
+      />
     </form>
   );
 }

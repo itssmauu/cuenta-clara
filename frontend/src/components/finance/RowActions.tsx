@@ -1,4 +1,8 @@
+"use client";
+
 import { Pause, Pencil, Play, Trash2 } from "lucide-react";
+
+import { useT } from "@/i18n/client";
 
 const iconButton =
   "grid size-11 cursor-pointer place-items-center rounded-full text-muted transition-colors duration-200 hover:bg-canvas hover:text-ink";
@@ -17,6 +21,7 @@ export function RowActions({
   onToggle?: () => void;
   active?: boolean;
 }) {
+  const t = useT();
   return (
     <div className="flex justify-end gap-1">
       {onToggle ? (
@@ -27,17 +32,17 @@ export function RowActions({
             <Play aria-hidden="true" className="size-5" />
           )}
           <span className="sr-only">
-            {active ? "Pausar" : "Activar"} {label}
+            {active ? t("Pausar {name}", { name: label }) : t("Activar {name}", { name: label })}
           </span>
         </button>
       ) : null}
       <button type="button" onClick={onEdit} className={iconButton}>
         <Pencil aria-hidden="true" className="size-5" />
-        <span className="sr-only">Editar {label}</span>
+        <span className="sr-only">{t("Editar {name}", { name: label })}</span>
       </button>
       <button type="button" onClick={onDelete} className={`${iconButton} hover:text-danger`}>
         <Trash2 aria-hidden="true" className="size-5" />
-        <span className="sr-only">Eliminar {label}</span>
+        <span className="sr-only">{t("Eliminar {name}", { name: label })}</span>
       </button>
     </div>
   );

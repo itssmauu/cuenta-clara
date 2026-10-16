@@ -2,8 +2,12 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 
 import { Dashboard } from "@/components/dashboard/Dashboard";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Dashboard" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Dashboard") };
+}
 
 export default function DashboardPage() {
   return (

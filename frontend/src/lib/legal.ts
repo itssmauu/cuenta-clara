@@ -1,3 +1,5 @@
+import { msg } from "@/i18n/translate";
+
 /**
  * Who is responsible for Cuenta Clara and which version of the legal documents is in force.
  *
@@ -13,7 +15,7 @@ export const LEGAL = {
   ownerKind: "persona natural",
   country: "República de Panamá",
   version: "2026-10-11",
-  updatedOn: "11 de octubre de 2026",
+  updatedOn: msg("11 de octubre de 2026"),
   minimumAge: 18,
   contactEmail: process.env.NEXT_PUBLIC_PRIVACY_EMAIL?.trim() || null,
   authority: "Autoridad Nacional de Transparencia y Acceso a la Información (ANTAI)",
@@ -22,7 +24,7 @@ export const LEGAL = {
 } as const;
 
 export const LEGAL_PAGES = [
-  { href: "/legal/privacidad", label: "Política de privacidad", short: "Privacidad" },
-  { href: "/legal/terminos", label: "Términos y condiciones", short: "Términos" },
-  { href: "/legal/cookies", label: "Política de cookies", short: "Cookies" },
+  { href: "/legal/privacidad", label: msg("Política de privacidad"), short: msg("Privacidad") },
+  { href: "/legal/terminos", label: msg("Términos y condiciones"), short: msg("Términos") },
+  { href: "/legal/cookies", label: msg("Política de cookies"), short: msg("Cookies") },
 ] as const;

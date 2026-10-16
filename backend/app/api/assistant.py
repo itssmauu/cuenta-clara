@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field, StringConstraints, model_validator
 from app.api.deps import CurrentUser, DbSession
 from app.core import rate_limit
 from app.core.config import get_settings
+from app.core.i18n import RequestLanguage
 from app.schemas.common import InputModel
 from app.services import assistant as assistant_service
 from app.services import privacy
@@ -98,7 +99,14 @@ def withdraw_consent(db: DbSession, user: CurrentUser) -> None:
 
 
 @router.post("/chat", response_model=ChatOut)
-def chat(body: ChatIn, db: DbSession, user: CurrentUser, model: Model, limiter: Limiter) -> ChatOut:
+def chat(
+    body: ChatIn,
+    db: DbSession,
+    user: CurrentUser,
+    model: Model,
+    limiter: Limiter,
+    language: RequestLanguage,
+) -> ChatOut:
     if model is None:
         raise assistant_service.AssistantUnavailableError
     if not _consented(db, user):
@@ -106,6 +114,6 @@ def chat(body: ChatIn, db: DbSession, user: CurrentUser, model: Model, limiter: 
     limiter.check(user.id)
     context = assistant_service.build_context(db, user, date.today())
     reply, on_topic = assistant_service.answer(
-        model, context, [(m.role, m.content) for m in body.messages]
+        model, context, [(m.role, m.content) for m in body.messages], language
     )
     return ChatOut(reply=reply, on_topic=on_topic)

@@ -2,6 +2,8 @@
 
 import { useEffect, useLayoutEffect, useRef, type ReactNode } from "react";
 
+import { useT } from "@/i18n/client";
+
 type Option<T> = { value: T; label: ReactNode; ariaLabel?: string };
 
 type Props<T extends string | number> = {
@@ -24,6 +26,7 @@ type Props<T extends string | number> = {
  * active (ink with white text) on top, clipped to the chosen option. Animating the
  * clip moves the pill and swaps the text color in one motion, with no moment where
  * two colors overlap. The copy is decorative: hidden from screen readers and clicks.
+ * Text labels are Spanish and shown in the visitor's language.
  */
 export function SegmentedControl<T extends string | number>({
   label,
@@ -33,6 +36,8 @@ export function SegmentedControl<T extends string | number>({
   layoutClass = "flex",
   optionClass = "px-4 text-sm",
 }: Props<T>) {
+  const t = useT();
+  const text = (label: ReactNode) => (typeof label === "string" ? t(label) : label);
   const groupRef = useRef<HTMLDivElement>(null);
   const overlayRef = useRef<HTMLDivElement>(null);
   const buttonRefs = useRef(new Map<T, HTMLButtonElement>());
@@ -88,12 +93,12 @@ export function SegmentedControl<T extends string | number>({
             else buttonRefs.current.delete(option.value);
           }}
           type="button"
-          aria-label={option.ariaLabel}
+          aria-label={option.ariaLabel === undefined ? undefined : t(option.ariaLabel)}
           aria-pressed={value === option.value}
           onClick={() => onChange(option.value)}
           className={`${optionBase} hover:bg-ink/5 cursor-pointer transition-colors duration-200`}
         >
-          {option.label}
+          {text(option.label)}
         </button>
       ))}
 
@@ -104,7 +109,7 @@ export function SegmentedControl<T extends string | number>({
       >
         {options.map((option) => (
           <span key={option.value} className={`${optionBase} grid place-items-center`}>
-            {option.label}
+            {text(option.label)}
           </span>
         ))}
       </div>

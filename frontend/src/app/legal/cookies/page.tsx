@@ -3,12 +3,21 @@ import Link from "next/link";
 
 import { LegalDocument, type LegalSection } from "@/components/legal/LegalDocument";
 import { COOKIE_NOTICE_KEY } from "@/components/legal/CookieNotice";
+import { cookiesEn } from "@/components/legal/en/cookies";
+import { TranslationNotice } from "@/components/legal/en/legal-en";
+import { getLocale } from "@/i18n/server";
 import { LEGAL } from "@/lib/legal";
+import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
-export const metadata: Metadata = {
-  title: "Política de cookies",
-  description: "Qué cookies usa Cuenta Clara y para qué.",
-};
+export async function generateMetadata(): Promise<Metadata> {
+  if ((await getLocale()) === "en") {
+    return { title: cookiesEn.title, description: cookiesEn.description };
+  }
+  return {
+    title: "Política de cookies",
+    description: "Qué cookies usa Cuenta Clara y para qué.",
+  };
+}
 
 const summary = [
   "Solo usamos cookies técnicas, imprescindibles para iniciar sesión y protegerte.",
@@ -55,7 +64,7 @@ const sections: LegalSection[] = [
           Todas son propias, de sesión segura (solo viajan por HTTPS y nunca a otras webs) y
           estrictamente necesarias:
         </p>
-        <div className="overflow-x-auto">
+        <ScrollRegion label="Tabla de cookies">
           <table>
             <thead>
               <tr>
@@ -76,7 +85,7 @@ const sections: LegalSection[] = [
               ))}
             </tbody>
           </table>
-        </div>
+        </ScrollRegion>
       </>
     ),
   },
@@ -87,8 +96,9 @@ const sections: LegalSection[] = [
       <p>
         Además, guardamos en el almacenamiento local de tu navegador (
         <code>{COOKIE_NOTICE_KEY}</code>) que ya cerraste el aviso de cookies, para no mostrártelo
-        cada vez. No contiene datos personales. La conversación con Balbo no se guarda en ningún
-        sitio: se borra al recargar.
+        cada vez, y el idioma que elegiste se recuerda en una cookie propia (<code>cc-lang</code>).
+        Ninguno contiene datos personales. La conversación con Balbo no se guarda en ningún sitio:
+        se borra al recargar.
       </p>
     ),
   },
@@ -125,7 +135,18 @@ const sections: LegalSection[] = [
   },
 ];
 
-export default function CookiesPage() {
+export default async function CookiesPage() {
+  if ((await getLocale()) === "en") {
+    return (
+      <LegalDocument
+        title={cookiesEn.title}
+        current="/legal/cookies"
+        summary={cookiesEn.summary}
+        sections={cookiesEn.sections}
+        notice={<TranslationNotice />}
+      />
+    );
+  }
   return (
     <LegalDocument
       title="Política de cookies"

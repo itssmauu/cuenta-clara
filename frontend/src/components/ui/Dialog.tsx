@@ -3,6 +3,8 @@
 import { X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
 
+import { useT } from "@/i18n/client";
+
 import { buttonClass } from "./button";
 
 type DialogProps = {
@@ -21,6 +23,7 @@ type DialogProps = {
 const CLOSE_MS = 150;
 
 export function Dialog({ open, onClose, title, description, children }: DialogProps) {
+  const t = useT();
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
   // Keep the content while the dialog animates out, then unmount it so forms start fresh
@@ -62,7 +65,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
               className="hover:bg-canvas ease-out-strong grid size-11 shrink-0 cursor-pointer place-items-center rounded-full transition-[background-color,scale] duration-200 active:scale-[0.94]"
             >
               <X aria-hidden="true" className="size-5" />
-              <span className="sr-only">Cerrar</span>
+              <span className="sr-only">{t("Cerrar")}</span>
             </button>
           </div>
           {children}
@@ -92,12 +95,13 @@ export function ConfirmDialog({
   onConfirm,
   onCancel,
 }: ConfirmDialogProps) {
+  const t = useT();
   return (
     <Dialog open={open} onClose={onCancel} title={title}>
       <p className="text-body leading-relaxed">{message}</p>
       <div className="flex flex-wrap justify-end gap-3">
         <button type="button" onClick={onCancel} className={buttonClass("ghost")}>
-          Cancelar
+          {t("Cancelar")}
         </button>
         <button
           type="button"
@@ -106,7 +110,7 @@ export function ConfirmDialog({
           aria-busy={busy}
           className={buttonClass("danger")}
         >
-          {busy ? "Eliminando…" : confirmLabel}
+          {busy ? t("Eliminando…") : confirmLabel}
         </button>
       </div>
     </Dialog>

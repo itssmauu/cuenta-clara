@@ -22,21 +22,23 @@ import { useLayoutEffect, useRef, useState } from "react";
 
 import { LegalLinks } from "@/components/legal/LegalFooter";
 import { Logo } from "@/components/ui/Logo";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 
 import { useSession } from "./session";
 
 type NavItem = { href: string; label: string; icon: LucideIcon };
 
 const mainNav: NavItem[] = [
-  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { href: "/cuentas", label: "Cuentas", icon: Landmark },
-  { href: "/ingresos", label: "Ingresos", icon: ArrowUpCircle },
-  { href: "/gastos", label: "Gastos", icon: ArrowDownCircle },
-  { href: "/gastos-fijos", label: "Gastos fijos", icon: Repeat },
-  { href: "/presupuesto", label: "Presupuesto", icon: PieChart },
-  { href: "/prediccion", label: "Predicción", icon: TrendingUp },
-  { href: "/metas", label: "Metas de ahorro", icon: Target },
-  { href: "/reportes", label: "Reportes", icon: FileText },
+  { href: "/dashboard", label: msg("Dashboard"), icon: LayoutDashboard },
+  { href: "/cuentas", label: msg("Cuentas"), icon: Landmark },
+  { href: "/ingresos", label: msg("Ingresos"), icon: ArrowUpCircle },
+  { href: "/gastos", label: msg("Gastos"), icon: ArrowDownCircle },
+  { href: "/gastos-fijos", label: msg("Gastos fijos"), icon: Repeat },
+  { href: "/presupuesto", label: msg("Presupuesto"), icon: PieChart },
+  { href: "/prediccion", label: msg("Predicción"), icon: TrendingUp },
+  { href: "/metas", label: msg("Metas de ahorro"), icon: Target },
+  { href: "/reportes", label: msg("Reportes"), icon: FileText },
 ];
 
 const itemClass =
@@ -52,6 +54,7 @@ function NavLink({
   /** The active background is drawn by the list's sliding indicator instead. */
   slidingIndicator?: boolean;
 }) {
+  const t = useT();
   const pathname = usePathname();
   const Icon = item.icon;
   const active = pathname === item.href;
@@ -64,7 +67,7 @@ function NavLink({
       className={`relative ${itemClass} ${active ? activeClass : "text-on-ink hover:bg-ink-3"}`}
     >
       <Icon aria-hidden="true" className="size-5" />
-      {item.label}
+      {t(item.label)}
     </Link>
   );
 }
@@ -107,6 +110,7 @@ function useNavIndicator(pathname: string) {
 }
 
 export function Sidebar() {
+  const t = useT();
   const { user, logout } = useSession();
   const [open, setOpen] = useState(false);
   const close = () => setOpen(false);
@@ -128,7 +132,7 @@ export function Sidebar() {
           ) : (
             <Menu aria-hidden="true" className="size-6" />
           )}
-          <span className="sr-only">{open ? "Cerrar menú" : "Abrir menú"}</span>
+          <span className="sr-only">{open ? t("Cerrar menú") : t("Abrir menú")}</span>
         </button>
       </div>
 
@@ -136,13 +140,15 @@ export function Sidebar() {
         id="app-nav"
         className={`${open ? "flex" : "hidden"} mt-4 flex-1 flex-col gap-7 lg:mt-0 lg:flex`}
       >
-        <nav ref={navRef} aria-label="Principal" className="relative flex flex-col gap-1.5">
+        <nav ref={navRef} aria-label={t("Principal")} className="relative flex flex-col gap-1.5">
           <span
             ref={indicatorRef}
             aria-hidden="true"
             className="nav-indicator bg-primary pointer-events-none absolute inset-x-0 top-0 rounded-[14px] opacity-0"
           />
-          <p className="text-on-ink-muted px-3 pb-1.5 text-xs font-bold tracking-[0.08em]">MENÚ</p>
+          <p className="text-on-ink-muted px-3 pb-1.5 text-xs font-bold tracking-[0.08em]">
+            {t("MENÚ")}
+          </p>
           {mainNav.map((item) => (
             <NavLink key={item.href} item={item} onNavigate={close} slidingIndicator />
           ))}
@@ -150,7 +156,7 @@ export function Sidebar() {
 
         <div className="flex flex-col gap-1.5 lg:mt-auto">
           <NavLink
-            item={{ href: "/ajustes", label: "Configuración", icon: SettingsIcon }}
+            item={{ href: "/ajustes", label: msg("Configuración"), icon: SettingsIcon }}
             onNavigate={close}
           />
           <div className="bg-ink-3 flex items-center gap-3 rounded-[18px] p-3">
@@ -170,7 +176,7 @@ export function Sidebar() {
               className="hover:bg-ink-2 grid size-11 shrink-0 cursor-pointer place-items-center rounded-full"
             >
               <LogOut aria-hidden="true" className="size-5" />
-              <span className="sr-only">Cerrar sesión</span>
+              <span className="sr-only">{t("Cerrar sesión")}</span>
             </button>
           </div>
           <LegalLinks

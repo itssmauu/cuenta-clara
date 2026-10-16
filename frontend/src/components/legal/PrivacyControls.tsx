@@ -8,11 +8,14 @@ import { buttonClass } from "@/components/ui/button";
 import { Dialog } from "@/components/ui/Dialog";
 import { FormAlert } from "@/components/ui/FormAlert";
 import { PasswordField } from "@/components/ui/PasswordField";
+import { useT } from "@/i18n/client";
+import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
 import { privacyApi, saveAsJsonFile } from "@/lib/privacy-api";
 
 /** Right of access and portability: a full copy of the user's data, as a JSON file. */
 export function ExportDataButton({ onError }: { onError: (message: string) => void }) {
+  const t = useT();
   const [busy, setBusy] = useState(false);
 
   async function download() {
@@ -20,7 +23,7 @@ export function ExportDataButton({ onError }: { onError: (message: string) => vo
     try {
       saveAsJsonFile(await privacyApi.exportData());
     } catch {
-      onError("No pudimos preparar la descarga. Inténtalo de nuevo.");
+      onError(t("No pudimos preparar la descarga. Inténtalo de nuevo."));
     } finally {
       setBusy(false);
     }
@@ -35,13 +38,14 @@ export function ExportDataButton({ onError }: { onError: (message: string) => vo
       className={buttonClass("ink")}
     >
       <Download aria-hidden="true" className="size-4" />
-      {busy ? "Preparando…" : "Descargar mis datos"}
+      {busy ? t("Preparando…") : t("Descargar mis datos")}
     </button>
   );
 }
 
 /** Right of cancellation: deletes the account and everything in it, after the password. */
 export function DeleteAccountButton() {
+  const t = useT();
   const router = useRouter();
   const [open, setOpen] = useState(false);
   const [password, setPassword] = useState("");
@@ -57,7 +61,7 @@ export function DeleteAccountButton() {
   async function onSubmit(event: FormEvent) {
     event.preventDefault();
     if (!password) {
-      setError("Escribe tu contraseña para confirmar.");
+      setError(msg("Escribe tu contraseña para confirmar."));
       return;
     }
     setBusy(true);
@@ -66,7 +70,7 @@ export function DeleteAccountButton() {
       await privacyApi.deleteAccount(password);
       router.replace("/");
     } catch (failure) {
-      setError(failure instanceof ApiError ? failure.message : "No pudimos eliminar tu cuenta.");
+      setError(failure instanceof ApiError ? failure.message : t("No pudimos eliminar tu cuenta."));
       setBusy(false);
     }
   }
@@ -75,30 +79,31 @@ export function DeleteAccountButton() {
     <>
       <button type="button" onClick={() => setOpen(true)} className={buttonClass("danger")}>
         <Trash2 aria-hidden="true" className="size-4" />
-        Eliminar mi cuenta
+        {t("Eliminar mi cuenta")}
       </button>
       <Dialog
         open={open}
         onClose={close}
-        title="Eliminar tu cuenta"
-        description="Esto no se puede deshacer."
+        title={t("Eliminar tu cuenta")}
+        description={t("Esto no se puede deshacer.")}
       >
         <form noValidate onSubmit={(event) => void onSubmit(event)} className="flex flex-col gap-5">
           <p className="text-body leading-relaxed">
-            Se borrarán para siempre tu cuenta, tus cuentas y saldos, tus movimientos, tus metas y
-            tu configuración. Si quieres conservar una copia, descarga tus datos antes.
+            {t(
+              "Se borrarán para siempre tu cuenta, tus cuentas y saldos, tus movimientos, tus metas y tu configuración. Si quieres conservar una copia, descarga tus datos antes.",
+            )}
           </p>
           {error ? <FormAlert title={error} /> : null}
           <PasswordField
             id="delete-password"
-            label="Tu contraseña, para confirmar"
+            label={t("Tu contraseña, para confirmar")}
             autoComplete="current-password"
             value={password}
             onChange={(event) => setPassword(event.target.value)}
           />
           <div className="flex flex-wrap justify-end gap-3">
             <button type="button" onClick={close} className={buttonClass("ghost")}>
-              Cancelar
+              {t("Cancelar")}
             </button>
             <button
               type="submit"
@@ -106,7 +111,7 @@ export function DeleteAccountButton() {
               aria-busy={busy}
               className={buttonClass("danger")}
             >
-              {busy ? "Eliminando…" : "Eliminar para siempre"}
+              {busy ? t("Eliminando…") : t("Eliminar para siempre")}
             </button>
           </div>
         </form>

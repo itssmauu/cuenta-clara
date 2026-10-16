@@ -1,8 +1,12 @@
 import type { Metadata } from "next";
 
 import { OnboardingWizard } from "@/components/onboarding/OnboardingWizard";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Configura tu cuenta" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Configura tu cuenta") };
+}
 
 export default function OnboardingPage() {
   return (

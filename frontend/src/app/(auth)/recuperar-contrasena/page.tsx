@@ -1,14 +1,19 @@
 import type { Metadata } from "next";
 
 import { RecoverPasswordForm } from "@/components/auth/RecoverPasswordForm";
+import { getT } from "@/i18n/server";
 
-export const metadata: Metadata = { title: "Recuperar contraseña" };
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getT();
+  return { title: t("Recuperar contraseña") };
+}
 
-export default function RecoverPasswordPage() {
+export default async function RecoverPasswordPage() {
+  const t = await getT();
   return (
     <>
       <h1 className="font-display text-[28px] font-extrabold tracking-[-0.02em]">
-        Recuperar contraseña
+        {t("Recuperar contraseña")}
       </h1>
       <RecoverPasswordForm />
     </>
