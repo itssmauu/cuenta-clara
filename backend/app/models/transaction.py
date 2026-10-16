@@ -2,7 +2,7 @@ import uuid
 from datetime import date
 from decimal import Decimal
 
-from sqlalchemy import CheckConstraint, ForeignKey, Index, String
+from sqlalchemy import CheckConstraint, ForeignKey, Index, String, false
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base, IdMixin, TimestampMixin, str_enum
@@ -10,7 +10,12 @@ from app.models.enums import TransactionType
 
 
 class Transaction(IdMixin, TimestampMixin, Base):
-    """A one-off movement of money. `amount` is always positive; `type` gives the sign."""
+    """A one-off movement of money. `amount` is always positive; `type` gives the sign.
+
+    `third_party` marks money that is not the user's: received from someone (income
+    type) to pay something for them, or paid on their behalf (expense type). It changes
+    the account's balance but is never income or spending, like a transfer from outside.
+    """
 
     __tablename__ = "transactions"
     __table_args__ = (
@@ -29,3 +34,4 @@ class Transaction(IdMixin, TimestampMixin, Base):
     account_id: Mapped[uuid.UUID] = mapped_column(ForeignKey("accounts.id"), index=True)
     occurred_on: Mapped[date]
     note: Mapped[str | None] = mapped_column(String(255))
+    third_party: Mapped[bool] = mapped_column(default=False, server_default=false())

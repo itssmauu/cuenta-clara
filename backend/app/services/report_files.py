@@ -157,7 +157,11 @@ def report_pdf(report: Report, *, generated_on: date) -> bytes:
     boxes = [
         ("Ingresos", _money(report.income, currency), MINT_INK),
         ("Gastos", _money(-report.expenses, currency), DANGER),
-        ("Transferencias", _money(report.transfers, currency, signed=True), INK),
+        (
+            "Transf. y terceros",
+            _money(report.transfers + report.third_party, currency, signed=True),
+            INK,
+        ),
         ("Neto", _money(report.net, currency, signed=True), PRIMARY),
     ]
     # All four on one row: the top is fixed before drawing (each box moves the cursor)

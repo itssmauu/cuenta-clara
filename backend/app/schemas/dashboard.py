@@ -61,6 +61,8 @@ class DashboardOut(BaseModel):
     spent: Decimal
     # Net money moved into (+) or out of (−) this account in the period: not income or spending
     transfers: Decimal
+    # Net of someone else's money received (+) or paid for them (−) in the period
+    third_party: Decimal
     available_balance: Decimal
 
     # Spending limit converted to the selected period; null when the user has none

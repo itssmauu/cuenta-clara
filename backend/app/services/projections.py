@@ -12,6 +12,8 @@ The data is always scoped to some of the user's accounts (one account, or all of
 `initial_balance` is the sum of those accounts' balances and only their movements count.
 Money moved between two accounts in the scope cancels out; money moved in or out of the
 scope is a transfer, which changes the balance but is neither income nor spending.
+Someone else's money (received to pay something for them, or paid on their behalf) works
+the same way: it changes the balance and is neither income nor spending.
 
 Example (weekly): starts with $100, spends $30, receives $160 → $100 − $30 + $160 = $230.
 """
@@ -96,6 +98,8 @@ class FinanceData:
     fixed_expenses: list[Recurring] = field(default_factory=list)
     transactions: list[OneOff] = field(default_factory=list)
     moves: list[Move] = field(default_factory=list)
+    # Someone else's money: + received for them, − paid on their behalf
+    third_party: list[Move] = field(default_factory=list)
 
 
 # ── Aggregates ──────────────────────────────────────────
@@ -108,6 +112,8 @@ class Totals:
     variable_expenses: Decimal = ZERO
     # Net money moved in (+) or out (−) of the scope's accounts; not income, not spending
     transfers: Decimal = ZERO
+    # Net of someone else's money received (+) and paid for them (−); not income, not spending
+    third_party: Decimal = ZERO
 
     @property
     def spent(self) -> Decimal:
@@ -115,7 +121,7 @@ class Totals:
 
     @property
     def net(self) -> Decimal:
-        return self.income - self.spent + self.transfers
+        return self.income - self.spent + self.transfers + self.third_party
 
 
 def totals(data: FinanceData, window: Period) -> Totals:
@@ -131,7 +137,10 @@ def totals(data: FinanceData, window: Period) -> Totals:
     fixed = sum((f.total_in(tracked) for f in data.fixed_expenses), ZERO)
     variable = sum((t.amount for t in one_offs if not t.is_income), ZERO)
     transfers = sum((m.amount for m in data.moves if m.on in tracked), ZERO)
-    return Totals(money(income), money(fixed), money(variable), money(transfers))
+    third_party = sum((m.amount for m in data.third_party if m.on in tracked), ZERO)
+    return Totals(
+        money(income), money(fixed), money(variable), money(transfers), money(third_party)
+    )
 
 
 @dataclass(frozen=True)
@@ -299,7 +308,8 @@ class ForecastPeriod:
     # Real spending so far for the current period; the historical average for future ones
     variable_spending: Decimal
     is_current: bool
-    # Transfers already recorded for the period (future ones are never guessed)
+    # Transfers and someone else's money already recorded for the period (future ones are
+    # never guessed)
     transfers: Decimal = ZERO
 
     @property
@@ -400,7 +410,7 @@ def build_forecast(
             fixed_expenses=period_totals.fixed_expenses,
             variable_spending=period_totals.variable_expenses if is_current else estimate(index),
             is_current=is_current,
-            transfers=period_totals.transfers,
+            transfers=period_totals.transfers + period_totals.third_party,
         )
         forecast.append(row)
         opening = row.closing_balance

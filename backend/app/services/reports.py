@@ -1,8 +1,9 @@
 """The movements report: everything that moved money in a date range, for CSV or PDF.
 
 Unlike the transactions list, a report is what a bank statement would show: one-off
-movements, every occurrence of the recurring incomes and fixed expenses, and transfers
-between accounts. The same rows feed both formats, so they can never disagree.
+movements, every occurrence of the recurring incomes and fixed expenses, transfers
+between accounts and someone else's money that went through them. The same rows feed
+both formats, so they can never disagree.
 """
 
 from dataclasses import dataclass
@@ -24,7 +25,7 @@ MAX_ROWS = 10_000
 # A long daily recurrence over many years would make a huge file: keep reports bounded
 MAX_RANGE_DAYS = 366 * 3
 
-RowKind = Literal["Ingreso", "Gasto", "Ingreso fijo", "Gasto fijo", "Transferencia"]
+RowKind = Literal["Ingreso", "Gasto", "Ingreso fijo", "Gasto fijo", "Transferencia", "De terceros"]
 TypeFilter = Literal["income", "expense"] | None
 
 
@@ -67,8 +68,13 @@ class Report:
         return self._sum("Transferencia")
 
     @property
+    def third_party(self) -> Decimal:
+        """Someone else's money: received for them (+) minus paid on their behalf (−)."""
+        return self._sum("De terceros")
+
+    @property
     def net(self) -> Decimal:
-        return self.income - self.expenses + self.transfers
+        return self.income - self.expenses + self.transfers + self.third_party
 
 
 def build_report(
@@ -112,11 +118,28 @@ def build_report(
         select(Transaction).where(
             Transaction.user_id == user.id,
             Transaction.account_id.in_(ids),
-            Transaction.type.in_(kinds),
             Transaction.occurred_on.between(start, end),
         )
     ):
         income = t.type == TransactionType.INCOME
+        if t.third_party:
+            # Neither income nor spending: only in the full report, like transfers
+            if type_filter is None:
+                concept = "Recibido de terceros" if income else "Pagado por terceros"
+                rows.append(
+                    ReportRow(
+                        on=t.occurred_on,
+                        account=names.get(t.account_id, ""),
+                        kind="De terceros",
+                        concept=t.note or concept,
+                        category="",
+                        amount=t.amount if income else -t.amount,
+                        note=t.note or "",
+                    )
+                )
+            continue
+        if t.type not in kinds:
+            continue
         rows.append(
             ReportRow(
                 on=t.occurred_on,

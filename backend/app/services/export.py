@@ -18,6 +18,14 @@ def safe_cell(value: str) -> str:
     return f"'{value}" if value.startswith(FORMULA_PREFIXES) else value
 
 
+def _kind(t: Transaction) -> str:
+    income = t.type == TransactionType.INCOME
+    if t.third_party:
+        # Someone else's money: not income or spending, but it moved the balance
+        return "recibido de terceros" if income else "pagado por terceros"
+    return "ingreso" if income else "gasto"
+
+
 def transactions_csv(
     transactions: Iterable[Transaction],
     categories: dict[object, Category],
@@ -33,7 +41,7 @@ def transactions_csv(
                 t.occurred_on.isoformat(),
                 # The account name is user text too
                 safe_cell(accounts.get(t.account_id, "")),
-                "ingreso" if t.type == TransactionType.INCOME else "gasto",
+                _kind(t),
                 # Signed plain number (not user text): expenses negative, incomes positive
                 f"{'-' if t.type == TransactionType.EXPENSE else ''}{t.amount}",
                 safe_cell(category.name) if category else "",

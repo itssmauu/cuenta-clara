@@ -67,6 +67,7 @@ def get_dashboard(
         variable_expenses=result.totals.variable_expenses,
         spent=result.totals.spent,
         transfers=result.totals.transfers,
+        third_party=result.totals.third_party,
         available_balance=result.available_balance,
         spending_limit=result.limit,
         limit_remaining=result.limit_remaining,
