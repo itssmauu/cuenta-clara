@@ -156,6 +156,7 @@ describe("TransactionDialog with several accounts", () => {
       occurred_on: "2026-10-07",
       note: null,
       account_id: "a-savings",
+      third_party: false,
     });
     render(
       <TransactionDialog

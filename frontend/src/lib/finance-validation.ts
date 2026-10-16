@@ -207,6 +207,8 @@ export const transactionSchema = z.object({
     .string()
     .optional()
     .transform((value) => value || null),
+  // Someone else's money: moves the balance, never income or spending
+  third_party: z.boolean().default(false),
 });
 
 export const settingsSchema = z

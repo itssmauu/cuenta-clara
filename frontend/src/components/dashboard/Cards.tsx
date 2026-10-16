@@ -149,14 +149,29 @@ export function KpiCards({ dashboard: d }: { dashboard: Dashboard }) {
   );
 }
 
-/** Money moved between accounts changes the balance without being income or spending. */
+/** Money moved between accounts, or someone else's money, changes the balance without
+ * being income or spending: say so under the available balance. */
 function transfersNote(d: Dashboard, t: Translate): string | null {
+  const notes: string[] = [];
   const amount = Number(d.transfers);
-  if (amount === 0) return null;
-  const moved = formatMoney(Math.abs(amount), d.currency);
-  return amount > 0
-    ? t("Incluye {amount} que llegaron de otras cuentas", { amount: moved })
-    : t("Incluye {amount} que pasaste a otras cuentas", { amount: moved });
+  if (amount !== 0) {
+    const moved = formatMoney(Math.abs(amount), d.currency);
+    notes.push(
+      amount > 0
+        ? t("Incluye {amount} que llegaron de otras cuentas", { amount: moved })
+        : t("Incluye {amount} que pasaste a otras cuentas", { amount: moved }),
+    );
+  }
+  const others = Number(d.third_party);
+  if (others !== 0) {
+    const held = formatMoney(Math.abs(others), d.currency);
+    notes.push(
+      others > 0
+        ? t("Incluye {amount} de dinero de terceros", { amount: held })
+        : t("Pagaste {amount} por terceros", { amount: held }),
+    );
+  }
+  return notes.length > 0 ? notes.join(" · ") : null;
 }
 
 /** "Dentro del límite · te quedan $X" / "Te pasaste por $X": icon + words, never color alone. */

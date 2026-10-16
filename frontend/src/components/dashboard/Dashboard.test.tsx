@@ -39,6 +39,7 @@ const dashboard: DashboardData = {
   variable_expenses: "30.00",
   spent: "30.00",
   transfers: "0.00",
+  third_party: "0.00",
   available_balance: "230.00",
   spending_limit: "40.00",
   limit_remaining: "10.00",
@@ -107,6 +108,7 @@ beforeEach(() => {
         occurred_on: "2026-10-06",
         note: "Pasaje",
         account_id: "a-main",
+        third_party: false,
       },
     ],
     total: 1,
@@ -200,6 +202,7 @@ describe("Dashboard", () => {
       occurred_on: "2026-10-07",
       note: null,
       account_id: "a-main",
+      third_party: false,
     });
     renderDashboard();
     await screen.findByText("Saldo disponible");

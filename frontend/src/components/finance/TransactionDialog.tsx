@@ -12,7 +12,13 @@ import { TextField } from "@/components/ui/TextField";
 import { useT } from "@/i18n/client";
 import { msg } from "@/i18n/translate";
 import { ApiError } from "@/lib/api";
-import { financeApi, type Account, type Category, type Transaction } from "@/lib/finance-api";
+import {
+  financeApi,
+  type Account,
+  type Category,
+  type Transaction,
+  type TransactionType,
+} from "@/lib/finance-api";
 import {
   categoryName,
   type TransactionForm,
@@ -34,9 +40,13 @@ type Props = {
   defaultAccountId?: string | null;
   /** Present when editing an existing movement */
   transaction?: Transaction | null;
+  /** How a new movement starts: e.g. an occasional income, or someone else's money */
+  preset?: { type: TransactionType; thirdParty: boolean };
+  /** Spanish title for a new movement; "Añadir movimiento" by default */
+  title?: string;
 };
 
-/** Create or edit a one-off income or expense. */
+/** Create or edit a one-off income or expense, the user's own or someone else's money. */
 export function TransactionDialog({
   open,
   onClose,
@@ -45,6 +55,8 @@ export function TransactionDialog({
   accounts = [],
   defaultAccountId = null,
   transaction,
+  preset,
+  title = msg("Añadir movimiento"),
 }: Props) {
   const t = useT();
   const editing = Boolean(transaction);
@@ -52,13 +64,14 @@ export function TransactionDialog({
     <Dialog
       open={open}
       onClose={onClose}
-      title={editing ? t("Editar movimiento") : t("Añadir movimiento")}
+      title={editing ? t("Editar movimiento") : t(title)}
       description={t(
         "Tus ingresos y gastos fijos se registran solos. Aquí anota lo que no se repite.",
       )}
     >
       <TransactionFormBody
         transaction={transaction ?? null}
+        preset={preset}
         categories={categories}
         accounts={accounts}
         defaultAccountId={defaultAccountId}
@@ -74,6 +87,7 @@ export function TransactionDialog({
 
 function TransactionFormBody({
   transaction,
+  preset,
   categories,
   accounts,
   defaultAccountId,
@@ -81,6 +95,7 @@ function TransactionFormBody({
   onSaved,
 }: {
   transaction: Transaction | null;
+  preset?: { type: TransactionType; thirdParty: boolean };
   categories: Category[];
   accounts: Account[];
   defaultAccountId: string | null;
@@ -98,22 +113,25 @@ function TransactionFormBody({
     resolver: zodResolver(transactionSchema),
     mode: "onBlur",
     defaultValues: {
-      type: transaction?.type ?? "expense",
+      type: transaction?.type ?? preset?.type ?? "expense",
       amount: transaction?.amount ?? "",
       category_id: transaction?.category_id ?? "",
       occurred_on: transaction?.occurred_on ?? todayISO(),
       note: transaction?.note ?? "",
       account_id:
         transaction?.account_id ?? defaultAccountId ?? accounts.find((a) => a.is_primary)?.id ?? "",
+      third_party: transaction?.third_party ?? preset?.thirdParty ?? false,
     },
   });
   const type = useWatch({ control, name: "type" });
+  const thirdParty = useWatch({ control, name: "third_party" });
 
   async function onSubmit(values: TransactionValues) {
     setServerError(null);
     const payload = {
       ...values,
-      category_id: values.type === "expense" ? values.category_id : null,
+      // Only the user's own spending has a category
+      category_id: values.type === "expense" && !values.third_party ? values.category_id : null,
     };
     try {
       if (transaction) {
@@ -139,8 +157,8 @@ function TransactionFormBody({
         <div className="bg-canvas grid grid-cols-2 gap-1.5 rounded-full p-[5px]">
           {(
             [
-              ["expense", "Gasto"],
-              ["income", "Ingreso"],
+              ["expense", thirdParty ? msg("Pagué por otra persona") : msg("Gasto")],
+              ["income", thirdParty ? msg("Me pasaron dinero") : msg("Ingreso")],
             ] as const
           ).map(([value, label]) => (
             <label
@@ -156,6 +174,26 @@ function TransactionFormBody({
         </div>
       </fieldset>
 
+      <div className="bg-canvas flex flex-col gap-1 rounded-2xl p-4">
+        <div className="flex items-start gap-3">
+          <input
+            id="tx-third-party"
+            type="checkbox"
+            aria-describedby="tx-third-party-hint"
+            className="accent-primary mt-0.5 size-6 shrink-0 cursor-pointer"
+            {...register("third_party")}
+          />
+          <label htmlFor="tx-third-party" className="text-sm leading-relaxed font-bold">
+            {t("Es dinero de terceros (no es mío)")}
+          </label>
+        </div>
+        <p id="tx-third-party-hint" className="text-muted pl-9 text-[13px] leading-relaxed">
+          {t(
+            "Por ejemplo, te pasaron plata para pagar algo de otra persona. Cambia el saldo de tu cuenta, pero no cuenta como ingreso ni como gasto.",
+          )}
+        </p>
+      </div>
+
       <TextField
         id="tx-amount"
         label={t("Monto")}
@@ -166,7 +204,7 @@ function TransactionFormBody({
         {...register("amount")}
       />
 
-      {type === "expense" ? (
+      {type === "expense" && !thirdParty ? (
         <SelectField
           id="tx-category"
           label={t("Categoría")}
@@ -197,7 +235,11 @@ function TransactionFormBody({
       <TextField
         id="tx-note"
         label={t("Nota (opcional)")}
-        placeholder={t("Ej. almuerzo, regalo, taxi")}
+        placeholder={
+          thirdParty
+            ? t("Ej. luz de mamá, compra para mi hermano")
+            : t("Ej. almuerzo, regalo, taxi")
+        }
         error={errors.note?.message}
         {...register("note")}
       />

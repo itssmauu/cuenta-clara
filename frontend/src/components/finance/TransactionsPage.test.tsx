@@ -15,6 +15,7 @@ const lunch: Transaction = {
   occurred_on: "2026-10-06",
   note: "Almuerzo",
   account_id: "a-main",
+  third_party: false,
 };
 const gift: Transaction = {
   id: "t2",
@@ -24,6 +25,7 @@ const gift: Transaction = {
   occurred_on: "2026-10-04",
   note: "Regalo",
   account_id: "a-main",
+  third_party: false,
 };
 
 beforeEach(() => {

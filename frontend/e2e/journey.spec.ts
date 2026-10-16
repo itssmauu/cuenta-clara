@@ -123,6 +123,44 @@ test.describe("a new user's first week", () => {
     await expect(page.getByRole("status")).toContainText("«Beca» activado.");
   });
 
+  test("someone else's money moves the balance but is not income or spending", async () => {
+    const amount = async (label: string) =>
+      Number(((await kpi(page, label).textContent()) ?? "").replace(/[^0-9.-]/g, ""));
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    const before = {
+      income: await amount("Ingresos del periodo"),
+      spent: await amount("Gastado"),
+      available: await amount("Saldo disponible"),
+    };
+
+    // Mom sends $50 to pay her electricity bill; Ana pays $45 of it
+    await page.getByRole("link", { name: "Ingresos" }).click();
+    await page.getByRole("button", { name: "Me pasaron dinero" }).click();
+    let dialog = page.getByRole("dialog", { name: "Me pasaron dinero de terceros" });
+    await dialog.getByLabel("Monto").fill("50");
+    await dialog.getByLabel("Nota (opcional)").fill("Luz de mamá");
+    await dialog.getByRole("button", { name: "Guardar movimiento" }).click();
+    await expect(page.getByRole("status")).toContainText("Movimiento guardado.");
+
+    await page.getByRole("button", { name: "Pagué por otra persona" }).click();
+    dialog = page.getByRole("dialog", { name: "Pagué con dinero de terceros" });
+    await dialog.getByLabel("Monto").fill("45");
+    await dialog.getByRole("button", { name: "Guardar movimiento" }).click();
+    await expect(dialog).toBeHidden();
+
+    const others = page.getByRole("region", { name: "Dinero de terceros" });
+    await expect(others.getByText("$5.00")).toBeVisible();
+    await expect(others.getByRole("rowheader", { name: /Luz de mamá/ })).toBeVisible();
+    await expectAccessible(page);
+    await expectNoHorizontalScroll(page);
+
+    await page.getByRole("link", { name: "Dashboard" }).click();
+    await expect(kpi(page, "Saldo disponible")).toHaveText(`$${(before.available + 5).toFixed(2)}`);
+    expect(await amount("Ingresos del periodo")).toBe(before.income);
+    expect(await amount("Gastado")).toBe(before.spent);
+    await expect(page.getByText("Incluye $5.00 de dinero de terceros")).toBeVisible();
+  });
+
   test("saves towards a goal", async () => {
     await page.getByRole("link", { name: "Metas de ahorro" }).click();
     await expect(page.getByText("Aún no tienes metas de ahorro")).toBeVisible();

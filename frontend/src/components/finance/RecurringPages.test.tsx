@@ -36,6 +36,14 @@ beforeEach(() => {
   vi.spyOn(financeApi, "listIncomes").mockResolvedValue([beca]);
   vi.spyOn(financeApi, "listFixedExpenses").mockResolvedValue([internet]);
   vi.spyOn(financeApi, "listCategories").mockResolvedValue(testCategories);
+  // The income page also lists occasional income and someone else's money
+  vi.spyOn(financeApi, "listTransactions").mockResolvedValue({
+    items: [],
+    total: 0,
+    limit: 10,
+    offset: 0,
+  });
+  vi.spyOn(financeApi, "thirdPartyBalance").mockResolvedValue({ balance: "0.00" });
 });
 
 describe("IncomesPage", () => {

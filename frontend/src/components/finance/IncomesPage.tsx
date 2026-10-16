@@ -18,6 +18,7 @@ import { formatDate, formatMoney, todayISO } from "@/lib/format";
 import { useResource } from "@/lib/use-resource";
 import { ScrollRegion } from "@/components/ui/ScrollRegion";
 
+import { OneOffIncomeSections } from "./OneOffIncomeSections";
 import { IncomeDialog } from "./RecurringDialogs";
 import { accountName } from "./accounts-ui";
 import { RowActions, td, th } from "./RowActions";
@@ -94,7 +95,7 @@ export function IncomesPage() {
     <>
       <PageHeader
         title={t("Ingresos")}
-        subtitle={t("Lo que recibes de forma recurrente")}
+        subtitle={t("Lo que recibes: fijo, ocasional o de otras personas")}
         actions={addButton}
       />
       <Notice message={notice} />
@@ -193,6 +194,8 @@ export function IncomesPage() {
           )}
         </p>
       </section>
+
+      <OneOffIncomeSections accounts={accounts} onNotice={showNotice} />
 
       <IncomeDialog
         open={editing !== null}
