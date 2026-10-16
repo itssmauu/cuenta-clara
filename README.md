@@ -32,6 +32,7 @@ Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la s
 - **Varias cuentas:** gastos del día, ahorro, fondos… cada una con su saldo, y puedes **mover dinero** entre ellas sin que cuente como gasto.
 - **Ingresos y gastos fijos** en sus fechas, y que puedes pausar. El día que toca un gasto fijo, la app te pregunta **"¿ya lo pagaste?"**, y solo se descuenta si dices que sí.
 - **Movimientos** sueltos, con filtros.
+- **Ingresos ocasionales** (lo que te llega a veces y por montos distintos) y **dinero de terceros**: plata que te pasan para pagar algo de otra persona, que mueve tu saldo pero no cuenta como tu ingreso ni tu gasto.
 - **Predicción** de tu saldo para las próximas semanas o meses, con promedio o tendencia.
 - **Metas de ahorro** que te dicen cuánto apartar por periodo para llegar a tiempo.
 - **Presupuesto por categoría:** cuánto quieres gastar en comida, transporte u ocio, con una barra que te avisa cuando te acercas al tope o te pasas.

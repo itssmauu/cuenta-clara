@@ -51,6 +51,22 @@ Ejemplo: "Gastos del día" con $100 y "Ahorro" con $400. Se pasan **$50** de Gas
 
 Cubierto por `test_a_transfer_moves_money_without_counting_as_spending` y `test_dashboard_opens_on_the_primary_account_and_can_switch`.
 
+## Dinero de terceros
+
+Un movimiento marcado `third_party` es dinero que **no es del usuario**: se lo pasaron para pagar algo de otra persona (`type=income`) o lo pagó por ella (`type=expense`). Funciona como una transferencia que viene de fuera:
+
+- Cambia el saldo de la cuenta, pero **no es ingreso ni gasto**: no suma a "Ingresos" ni a "Gastado", no consume el límite, no tiene categoría, no entra en el presupuesto y no cambia el gasto variable que usa la predicción.
+- El dashboard devuelve su neto del periodo en `third_party`; el saldo disponible lo incluye.
+- **Por usar de terceros** (`GET /transactions/third-party-balance`) = lo recibido − lo pagado por ellos, desde `balance_as_of` y en todas las cuentas. Si es negativo, el usuario puso dinero propio.
+
+```
+saldo = saldo inicial + ingresos − gastos fijos − gasto variable + transferencias + dinero de terceros (recibido − pagado)
+```
+
+Ejemplo (semanal, $100, límite $40, pasaje $30): mamá le pasa **$50** para la luz y paga **$45**. Ingresos $0, Gastado $30, le quedan $10 del límite, saldo **$75** y le quedan **$5** de terceros por usar. Cubierto por `tests/test_third_party.py`.
+
+Un **ingreso ocasional** (un regalo, lo que le mandan a veces) es un movimiento de ingreso normal: sí cuenta como ingreso, pero no se repite ni pregunta nada.
+
 ## Periodos
 
 | Periodo | Ventana |
