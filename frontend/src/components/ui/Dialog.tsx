@@ -1,7 +1,7 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { Fragment, useEffect, useId, useRef, useState, type ReactNode } from "react";
 
 import { useT } from "@/i18n/client";
 
@@ -29,6 +29,14 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
   // Keep the content while the dialog animates out, then unmount it so forms start fresh
   const [rendered, setRendered] = useState(open);
   if (open && !rendered) setRendered(true);
+  // Each opening is a new form: reopened before the closing animation ends, the old
+  // content (and what was typed in it) must not carry over
+  const [opening, setOpening] = useState(0);
+  const [wasOpen, setWasOpen] = useState(open);
+  if (open !== wasOpen) {
+    setWasOpen(open);
+    if (open) setOpening((count) => count + 1);
+  }
 
   useEffect(() => {
     if (open || !rendered) return;
@@ -68,7 +76,7 @@ export function Dialog({ open, onClose, title, description, children }: DialogPr
               <span className="sr-only">{t("Cerrar")}</span>
             </button>
           </div>
-          {children}
+          <Fragment key={opening}>{children}</Fragment>
         </div>
       ) : null}
     </dialog>
