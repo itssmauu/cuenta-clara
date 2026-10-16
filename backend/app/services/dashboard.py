@@ -53,6 +53,8 @@ class UserFinance:
     transactions: list[tuple[uuid.UUID, OneOff]]
     # (from account, to account, day, amount)
     transfers: list[tuple[uuid.UUID, uuid.UUID, date, Decimal]]
+    # Someone else's money, per account: + received for them, − paid on their behalf
+    third_party: list[tuple[uuid.UUID, Move]]
 
     @property
     def primary(self) -> Account:
@@ -93,6 +95,7 @@ class UserFinance:
             ),
             incomes=[r for account_id, r in self.incomes if account_id in ids],
             fixed_expenses=[r for account_id, r in self.fixed_expenses if account_id in ids],
+            third_party=[m for account_id, m in self.third_party if account_id in ids],
             transactions=[t for account_id, t in self.transactions if account_id in ids],
             moves=moves,
         )
@@ -119,6 +122,7 @@ def load_user_finance(db: Session, user: User, today: date | None = None) -> Use
             Transaction.amount,
             Transaction.type,
             Transaction.category_id,
+            Transaction.third_party,
         ).where(
             Transaction.user_id == user.id,
             Transaction.occurred_on >= settings.balance_as_of,
@@ -177,7 +181,13 @@ def load_user_finance(db: Session, user: User, today: date | None = None) -> Use
                     category_id=category_id,
                 ),
             )
-            for account_id, on, amount, kind, category_id in transactions
+            for account_id, on, amount, kind, category_id, third_party in transactions
+            if not third_party
+        ],
+        third_party=[
+            (account_id, Move(on, amount if kind == TransactionType.INCOME else -amount))
+            for account_id, on, amount, kind, _, third_party in transactions
+            if third_party
         ],
         transfers=[(source, target, on, amount) for source, target, on, amount in transfers],
     )

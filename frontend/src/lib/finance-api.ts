@@ -95,6 +95,11 @@ export type Transaction = {
   occurred_on: string;
   note: string | null;
   account_id: string;
+  /**
+   * Someone else's money: received to pay something for them (income) or paid on their
+   * behalf (expense). It moves the balance but is never income or spending.
+   */
+  third_party: boolean;
 };
 
 export type TransactionInput = Omit<Transaction, "id" | "account_id"> & {
@@ -250,6 +255,8 @@ export type Dashboard = {
   spent: Money;
   /** Net money moved into (+) or out of (−) the account in the period */
   transfers: Money;
+  /** Net of someone else's money received (+) or paid for them (−) in the period */
+  third_party: Money;
   available_balance: Money;
   spending_limit: Money | null;
   limit_remaining: Money | null;
@@ -312,7 +319,7 @@ export function fixedExpensePayload(
   };
 }
 
-function query(params: Record<string, string | number | undefined>): string {
+function query(params: Record<string, string | number | boolean | undefined>): string {
   const search = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value !== undefined) search.set(key, String(value));
@@ -379,9 +386,13 @@ export const financeApi = {
     type?: TransactionType;
     category_id?: string;
     account_id?: string;
+    /** true: only someone else's money; false: only the user's own */
+    third_party?: boolean;
     limit?: number;
     offset?: number;
   }) => request<TransactionPage>(`/transactions${query(params)}`),
+  /** Someone else's money the user still holds (negative: they put in their own) */
+  thirdPartyBalance: () => request<{ balance: Money }>("/transactions/third-party-balance"),
   createTransaction: (data: TransactionInput) =>
     request<Transaction>("/transactions", { method: "POST", body: data }),
   updateTransaction: (id: string, data: TransactionInput) =>
@@ -430,6 +441,7 @@ export const financeApi = {
     type?: TransactionType;
     category_id?: string;
     account_id?: string;
+    third_party?: boolean;
   }) => `/api/v1/transactions/export${query(params)}`,
 
   /**

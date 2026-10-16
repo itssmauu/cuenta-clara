@@ -35,6 +35,7 @@ from app.services.errors import DomainError
 from app.services.ownership import list_owned
 from app.services.periods import Cadence
 from app.services.savings import plan_goal
+from app.services.transactions import third_party_balance
 
 logger = logging.getLogger(__name__)
 
@@ -209,6 +210,19 @@ def build_context(db: Session, user: User, today: date) -> str:
         balance = projections.balance_at_end_of(finance.data_for({account.id}), today)
         role = "principal, gastos del día" if account.is_primary else kinds[account.kind.value]
         lines.append(f"- {account.name} ({role}): {m(balance)}")
+
+    # Someone else's money the user holds: part of the balances above, but not theirs
+    held = third_party_balance(db, user, settings.balance_as_of)
+    if held > 0:
+        lines.append(
+            f"- De esos saldos, {m(held)} es dinero de terceros (le pasaron plata para pagar "
+            "algo de otra persona): no es suyo, no lo cuentes como disponible para gastar."
+        )
+    elif held < 0:
+        lines.append(
+            f"- Puso {m(-held)} de su propio dinero pagando cosas de otras personas "
+            "(dinero de terceros que aún no le devuelven)."
+        )
 
     # The day-to-day account, as the dashboard shows it
     data = finance.data_for({primary.id})

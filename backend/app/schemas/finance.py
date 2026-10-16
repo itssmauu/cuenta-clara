@@ -227,6 +227,14 @@ class TransactionIn(InputModel):
     note: Note | None = None
     # Omitted: the primary account on create, unchanged on update
     account_id: uuid.UUID | None = None
+    # Someone else's money (see Transaction.third_party); it has no spending category
+    third_party: bool = False
+
+    @model_validator(mode="after")
+    def _third_party_has_no_category(self) -> Self:
+        if self.third_party:
+            self.category_id = None
+        return self
 
 
 class TransactionOut(OutputModel):
@@ -237,8 +245,14 @@ class TransactionOut(OutputModel):
     occurred_on: date
     note: str | None
     account_id: uuid.UUID
+    third_party: bool
     created_at: datetime
     updated_at: datetime
+
+
+class ThirdPartyBalanceOut(OutputModel):
+    # Received − paid on others' behalf; negative when the user put in their own money
+    balance: Decimal
 
 
 class TransactionPage(OutputModel):

@@ -35,7 +35,8 @@ export const PAGE_SIZE = 20;
 type Filters = {
   from: string;
   to: string;
-  type: "" | TransactionType;
+  /** "third_party": only someone else's money; income/expense: only the user's own */
+  type: "" | TransactionType | "third_party";
   categoryId: string;
   accountId: string;
 };
@@ -55,7 +56,8 @@ export function TransactionsPage() {
   const params = {
     from: filters.from || undefined,
     to: filters.to || undefined,
-    type: filters.type || undefined,
+    type: filters.type === "third_party" ? undefined : filters.type || undefined,
+    third_party: filters.type === "third_party" ? true : filters.type ? false : undefined,
     category_id: filters.categoryId || undefined,
     account_id: filters.accountId || undefined,
     limit: PAGE_SIZE,
@@ -130,6 +132,7 @@ export function TransactionsPage() {
                 from: params.from,
                 to: params.to,
                 type: params.type,
+                third_party: params.third_party,
                 category_id: params.category_id,
                 account_id: params.account_id,
               })}
@@ -187,6 +190,7 @@ export function TransactionsPage() {
               { value: "", label: t("Todos") },
               { value: "expense", label: t("Gastos") },
               { value: "income", label: t("Ingresos") },
+              { value: "third_party", label: t("Dinero de terceros") },
             ]}
           />
           <SelectField
@@ -303,7 +307,7 @@ export function TransactionsPage() {
                           )}
                         </th>
                         <td className={td}>
-                          {income ? (
+                          {income || tx.third_party ? (
                             <span className="text-muted text-xs">—</span>
                           ) : (
                             <CategoryChip
@@ -316,7 +320,15 @@ export function TransactionsPage() {
                             {accountName(accounts, tx.account_id)}
                           </td>
                         ) : null}
-                        <td className={td}>{income ? t("Ingreso") : t("Gasto")}</td>
+                        <td className={td}>
+                          {tx.third_party
+                            ? income
+                              ? t("Recibido de terceros")
+                              : t("Pagado por terceros")
+                            : income
+                              ? t("Ingreso")
+                              : t("Gasto")}
+                        </td>
                         <td
                           className={`${td} text-right font-extrabold whitespace-nowrap tabular-nums ${
                             income ? "text-mint-ink" : ""

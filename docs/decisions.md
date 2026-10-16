@@ -618,3 +618,18 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
 - **Las categorías predeterminadas** (Comida, Transporte…) son datos en español; se traducen al mostrarlas. Las que crea el usuario conservan su nombre.
 - **Documentos legales:** hay una traducción al inglés de privacidad, términos y cookies, con un aviso de que **prevalece la versión en español**. La cookie `cc-lang` se añadió a la política de cookies; es una preferencia que el usuario pide, sin datos personales.
 - **Fuera de alcance por ahora:** los reportes CSV/PDF y la exportación de datos siguen en español.
+
+## D-072 · Ingresos ocasionales y dinero de terceros
+
+**Contexto.** La página de Ingresos solo creaba ingresos recurrentes. El dinero que llega a veces (lo que mandan los padres) y el que te pasan para pagar algo de otra persona no tenían un lugar: registrarlos como ingreso fijo los repetía, y como ingreso normal inflaba los ingresos y el gasto.
+
+**Decisión (elegida por el usuario).**
+
+- **Ingreso ocasional:** es un movimiento de ingreso normal (ya existía). Ahora tiene su propia sección en Ingresos. Cuenta como ingreso, con el monto que sea, y no se repite ni pregunta nada.
+- **Dinero de terceros:** columna `transactions.third_party` (booleano, `false` por defecto; migración `7c1d2e3f4a5b`).
+  - **Ni entra ni sale:** recibirlo sube el saldo sin ser ingreso, y pagar con él baja el saldo sin ser gasto. No consume el límite, no tiene categoría y no entra en el presupuesto ni en la estimación de gasto variable de la predicción.
+  - En los cálculos se trata como una transferencia que viene de fuera del alcance. Es una lista aparte (`FinanceData.third_party`, `Totals.third_party`) para que el dashboard lo explique como tal y no como "otras cuentas".
+  - **Por usar de terceros** = recibido − pagado (`GET /transactions/third-party-balance`). Si es negativo, se muestra como dinero propio que el usuario puso.
+  - Movimientos, reportes y exportaciones lo marcan como "De terceros". Con el filtro "Ingresos" o "Gastos" no aparece, y tiene un filtro propio.
+  - Balbo sabe qué parte del saldo es de terceros para no ofrecerla como disponible.
+- **De paso:** los diálogos ahora empiezan en limpio en cada apertura. Si se reabría uno antes de que terminara la animación de cierre, conservaba lo escrito y podía guardarse un movimiento con datos del anterior.

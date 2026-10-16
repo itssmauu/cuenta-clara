@@ -6,12 +6,18 @@ from fastapi import APIRouter, Query, Response, status
 
 from app.api.deps import CurrentUser, DbSession
 from app.models import Transaction, TransactionType
-from app.schemas.finance import TransactionIn, TransactionOut, TransactionPage
+from app.schemas.finance import (
+    ThirdPartyBalanceOut,
+    TransactionIn,
+    TransactionOut,
+    TransactionPage,
+)
 from app.services import ownership
 from app.services import transactions as transaction_service
 from app.services.accounts import get_account, list_accounts, with_account
 from app.services.categories import ensure_usable, list_categories
 from app.services.export import transactions_csv
+from app.services.settings import get_settings_for
 
 router = APIRouter(prefix="/transactions", tags=["transactions"])
 
@@ -25,13 +31,14 @@ def list_transactions(
     type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
     account_id: uuid.UUID | None = None,
+    third_party: bool | None = None,
     limit: Annotated[int, Query(ge=1, le=100)] = 50,
     offset: Annotated[int, Query(ge=0)] = 0,
 ) -> TransactionPage:
     if account_id is not None:
         get_account(db, user, account_id)  # 404 for someone else's account
     filters = transaction_service.TransactionFilters(
-        date_from, date_to, type, category_id, account_id
+        date_from, date_to, type, category_id, account_id, third_party
     )
     items, total = transaction_service.list_transactions(
         db, user, filters, limit=limit, offset=offset
@@ -61,12 +68,13 @@ def export_transactions(
     type: TransactionType | None = None,
     category_id: uuid.UUID | None = None,
     account_id: uuid.UUID | None = None,
+    third_party: bool | None = None,
 ) -> Response:
     """The user's transactions matching the filters, as a CSV download."""
     if account_id is not None:
         get_account(db, user, account_id)
     filters = transaction_service.TransactionFilters(
-        date_from, date_to, type, category_id, account_id
+        date_from, date_to, type, category_id, account_id, third_party
     )
     items, _ = transaction_service.list_transactions(
         db, user, filters, limit=EXPORT_MAX_ROWS, offset=0
@@ -79,6 +87,14 @@ def export_transactions(
         media_type="text/csv; charset=utf-8",
         headers={"Content-Disposition": f'attachment; filename="{filename}"'},
     )
+
+
+# Declared before "/{transaction_id}" for the same reason
+@router.get("/third-party-balance", response_model=ThirdPartyBalanceOut)
+def third_party_balance(db: DbSession, user: CurrentUser) -> ThirdPartyBalanceOut:
+    """Someone else's money the user still holds, across all their accounts."""
+    since = get_settings_for(db, user).balance_as_of
+    return ThirdPartyBalanceOut(balance=transaction_service.third_party_balance(db, user, since))
 
 
 @router.post("", response_model=TransactionOut, status_code=status.HTTP_201_CREATED)

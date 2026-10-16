@@ -965,6 +965,44 @@ export const EN: Record<string, string> = {
   "No pudimos conectar con el servidor. Revisa tu conexión.":
     "We couldn't reach the server. Check your connection.",
   "Error inesperado.": "Unexpected error.",
+  "Ej. luz de mamá, compra para mi hermano": "E.g. Mom's electricity bill, shopping for my brother",
+
+  // ── Occasional income and someone else's money ──────
+  "Incluye {amount} de dinero de terceros": "Includes {amount} of someone else's money",
+  "Pagaste {amount} por terceros": "You paid {amount} for others",
+  "Lo que recibes: fijo, ocasional o de otras personas":
+    "What you receive: fixed, occasional or from other people",
+  "Registrar ingreso ocasional": "Record occasional income",
+  "Me pasaron dinero de terceros": "Someone gave me money to handle",
+  "Pagué con dinero de terceros": "I paid with someone else's money",
+  "Ingresos ocasionales": "Occasional income",
+  "Dinero tuyo que no llega siempre ni por el mismo monto: un regalo, un trabajo extra, lo que te mandan a veces. Cuenta como ingreso, pero no se repite.":
+    "Your own money that doesn't always come, or not for the same amount: a gift, an extra job, what someone sends you now and then. It counts as income, but it doesn't repeat.",
+  "Tabla de ingresos ocasionales": "Occasional income table",
+  "Aún no registras ingresos ocasionales": "No occasional income yet",
+  "Cuando te llegue dinero que no es fijo, anótalo aquí con su monto.":
+    "When you get money that isn't fixed, note it here with its amount.",
+  "Dinero de terceros": "Someone else's money",
+  "Plata que te pasan para pagar algo de otra persona. Cambia el saldo de tu cuenta, pero no es tu ingreso ni tu gasto: no cuenta para tu límite ni tu presupuesto.":
+    "Money someone gives you to pay for something of theirs. It changes your account's balance, but it isn't your income or your spending: it doesn't count toward your limit or your budget.",
+  "Me pasaron dinero": "Someone gave me money",
+  "Pagué por otra persona": "I paid for someone else",
+  "Tabla de dinero de terceros": "Someone else's money table",
+  "Sin dinero de terceros": "No money from others",
+  "Si alguien te pasa plata para que le pagues algo, regístrala aquí y luego anota el pago.":
+    "If someone gives you money to pay for something, record it here and then note the payment.",
+  "Pusiste de tu dinero": "You put in your own money",
+  "Por usar de terceros": "Others' money still to use",
+  "Pagaste por otras personas más de lo que te pasaron.":
+    "You paid for other people more than they gave you.",
+  "Lo que te pasaron menos lo que ya pagaste por ellos. Está en tu saldo, pero no es tuyo.":
+    "What they gave you minus what you already paid for them. It's in your balance, but it isn't yours.",
+  "Ingreso ocasional": "Occasional income",
+  "Recibido de terceros": "Received from others",
+  "Pagado por terceros": "Paid for others",
+  "Es dinero de terceros (no es mío)": "It's someone else's money (not mine)",
+  "Por ejemplo, te pasaron plata para pagar algo de otra persona. Cambia el saldo de tu cuenta, pero no cuenta como ingreso ni como gasto.":
+    "For example, someone gave you money to pay for something of theirs. It changes your account's balance, but it doesn't count as income or spending.",
   "Tus presupuestos suman {budgeted}, más que tu límite de gasto de {limit} {period}. Ajusta alguno para no pasarte.":
     "Your budgets add up to {budgeted}, more than your {limit} spending limit {period}. Adjust some so you don't go over.",
   "Cambiar ({amount} por {per})": "Change ({amount} per {per})",

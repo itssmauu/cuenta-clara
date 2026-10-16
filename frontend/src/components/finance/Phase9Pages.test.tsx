@@ -132,6 +132,7 @@ const report: Dashboard = {
   variable_expenses: "25.00",
   spent: "55.00",
   transfers: "0.00",
+  third_party: "0.00",
   available_balance: "205.00",
   spending_limit: "40.00",
   limit_remaining: "-15.00",
@@ -215,6 +216,9 @@ describe("TransactionsPage export", () => {
     expect(link).toHaveAttribute("href", "/api/v1/transactions/export");
 
     await user.selectOptions(screen.getByLabelText("Tipo"), "income");
-    expect(link).toHaveAttribute("href", "/api/v1/transactions/export?type=income");
+    expect(link).toHaveAttribute(
+      "href",
+      "/api/v1/transactions/export?type=income&third_party=false",
+    );
   });
 });

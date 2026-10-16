@@ -2,8 +2,9 @@ import uuid
 from collections.abc import Sequence
 from dataclasses import dataclass
 from datetime import date
+from decimal import Decimal
 
-from sqlalchemy import func, select
+from sqlalchemy import case, func, select
 from sqlalchemy.orm import Session
 
 from app.models import Transaction, TransactionType, User
@@ -16,6 +17,28 @@ class TransactionFilters:
     type: TransactionType | None = None
     category_id: uuid.UUID | None = None
     account_id: uuid.UUID | None = None
+    # True: only someone else's money; False: only the user's own; None: both
+    third_party: bool | None = None
+
+
+def third_party_balance(db: Session, user: User, since: date) -> Decimal:
+    """Someone else's money the user still holds: received − paid on their behalf.
+
+    Negative when the user paid more for others than they received (they put in their
+    own money). Only movements from `since` (the day tracking started) count.
+    """
+    signed = case(
+        (Transaction.type == TransactionType.INCOME, Transaction.amount),
+        else_=-Transaction.amount,
+    )
+    total = db.scalar(
+        select(func.coalesce(func.sum(signed), 0)).where(
+            Transaction.user_id == user.id,
+            Transaction.third_party.is_(True),
+            Transaction.occurred_on >= since,
+        )
+    )
+    return Decimal(total or 0).quantize(Decimal("0.01"))
 
 
 def list_transactions(
@@ -33,6 +56,8 @@ def list_transactions(
         conditions.append(Transaction.category_id == filters.category_id)
     if filters.account_id is not None:
         conditions.append(Transaction.account_id == filters.account_id)
+    if filters.third_party is not None:
+        conditions.append(Transaction.third_party.is_(filters.third_party))
 
     total = db.scalar(select(func.count()).select_from(Transaction).where(*conditions)) or 0
     items = db.scalars(
