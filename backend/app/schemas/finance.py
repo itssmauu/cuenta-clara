@@ -301,5 +301,8 @@ class SavingsGoalOut(OutputModel):
     overdue: bool
     periods_left: int | None
     suggested_per_period: Decimal | None
+    # Saving pace from recent contributions; None while there is too little history
+    pace_per_week: Decimal | None
+    pace_since: date | None
     created_at: datetime
     updated_at: datetime

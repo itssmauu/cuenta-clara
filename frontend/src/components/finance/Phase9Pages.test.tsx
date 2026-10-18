@@ -24,6 +24,8 @@ const laptop: SavingsGoal = {
   overdue: false,
   periods_left: 3,
   suggested_per_period: "150.00",
+  pace_per_week: null,
+  pace_since: null,
 };
 
 describe("subtractMoney", () => {
@@ -61,6 +63,8 @@ describe("GoalsPage", () => {
         progress_percent: 117,
         completed: true,
         suggested_per_period: null,
+        pace_per_week: null,
+        pace_since: null,
       },
     ]);
     renderWithSession(<GoalsPage />);

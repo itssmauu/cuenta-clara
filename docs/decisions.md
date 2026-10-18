@@ -633,3 +633,19 @@ Next.js reenvía esa cabecera tal cual a la API y no añade la IP real. Con `FOR
   - Movimientos, reportes y exportaciones lo marcan como "De terceros". Con el filtro "Ingresos" o "Gastos" no aparece, y tiene un filtro propio.
   - Balbo sabe qué parte del saldo es de terceros para no ofrecerla como disponible.
 - **De paso:** los diálogos ahora empiezan en limpio en cada apertura. Si se reabría uno antes de que terminara la animación de cierre, conservaba lo escrito y podía guardarse un movimiento con datos del anterior.
+
+## D-073 · Tendencia de las metas sin fecha
+
+**Contexto.** Una meta sin fecha límite solo decía cuánto faltaba. El usuario quiere ver cuánto tendrá con el tiempo, por semanas, meses o años.
+
+**Decisión (elegida por el usuario: ritmo real + simulador; gráfica + tabla).**
+
+- **Historial de aportes:** tabla `goal_contributions` (monto con signo y día), con borrado en cascada con la meta y el usuario. Migración `9a8b7c6d5e4f`.
+  - Cada aporte o retiro se registra con el día local del usuario (`?date=`, acotado a ±1 día de UTC, como los gastos fijos).
+  - La migración rellena el historial con los aportes que ya movieron dinero, porque quedaron como transferencias con `goal_id`.
+- **Ritmo:** se calcula en el servidor (`pace_per_week`, `pace_since` en cada meta), en una función pura. Ver `docs/calculations.md`.
+  - Se mide desde el primer aporte de los últimos ~6 meses. Hace falta aportar en 2 días distintos y que pase 1 semana.
+  - Se descartaron una regresión (inestable con pocos puntos) y el promedio por aporte (no dice cada cuánto se ahorra).
+- **Proyección y simulador en la web:** son matemática simple y responden al instante al escribir. La tarjeta dice "a tu ritmo la alcanzas hacia el…". "Ver tendencia" abre la gráfica con la línea de la meta, el ritmo real y el simulado (este con línea punteada y leyenda, para no depender del color), y una tabla con los mismos datos.
+- **Balbo** recibe el ritmo de cada meta para responder "¿cuándo llego?".
+- **Privacidad:** la descarga de datos incluye los aportes (`aportes_a_metas`).

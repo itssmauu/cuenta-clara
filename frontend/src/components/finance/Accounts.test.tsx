@@ -192,6 +192,8 @@ describe("Goals kept in an account", () => {
     overdue: false,
     periods_left: null,
     suggested_per_period: null,
+    pace_per_week: null,
+    pace_since: null,
   };
 
   it("contributing moves the money from the day-to-day account by default", async () => {

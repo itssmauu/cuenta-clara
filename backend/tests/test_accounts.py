@@ -271,7 +271,10 @@ def test_editing_a_movement_without_account_keeps_it(ana: TestClient) -> None:
 # ── Goals linked to an account ──────────────────────────
 
 
-def test_contributing_to_a_goal_moves_money_into_its_account(ana: TestClient) -> None:
+def test_contributing_to_a_goal_moves_money_into_its_account(
+    ana: TestClient, utc_today: Callable[[date], None]
+) -> None:
+    utc_today(date.fromisoformat(WEDNESDAY))  # the contribution is dated on the user's today
     primary = ana.get(f"{API}/accounts").json()[0]
     savings = add_account(ana, "Ahorro", "savings")
     goal = ana.post(
@@ -284,7 +287,7 @@ def test_contributing_to_a_goal_moves_money_into_its_account(ana: TestClient) ->
         f"{API}/savings-goals/{goal['id']}/contributions",
         json={"amount": "30.00", "from_account_id": primary["id"]},
     ).raise_for_status()
-    today = date.today().isoformat()
+    today = WEDNESDAY
     after_deposit = {
         a["name"]: a["balance"] for a in ana.get(f"{API}/accounts", params={"date": today}).json()
     }

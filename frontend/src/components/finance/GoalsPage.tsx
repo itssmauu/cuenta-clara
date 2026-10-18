@@ -1,7 +1,7 @@
 "use client";
 
 import { zodResolver } from "@hookform/resolvers/zod";
-import { AlertTriangle, CheckCircle2, PiggyBank, Plus } from "lucide-react";
+import { AlertTriangle, CheckCircle2, LineChart, PiggyBank, Plus } from "lucide-react";
 import { useState } from "react";
 import { useForm, useWatch } from "react-hook-form";
 
@@ -25,9 +25,11 @@ import {
   type GoalValues,
 } from "@/lib/finance-validation";
 import { formatDate, formatMoney, todayISO } from "@/lib/format";
+import { projectGoal } from "@/lib/goal-projection";
 import { useResource } from "@/lib/use-resource";
 
 import { accountName, accountOptions } from "./accounts-ui";
+import { GoalTrend } from "./GoalTrend";
 import { RowActions } from "./RowActions";
 
 /** "por semana (3 semanas)", "por mes (este mes)" */
@@ -52,6 +54,7 @@ export function GoalsPage() {
   const accounts = accountList.data ?? [];
   const [editing, setEditing] = useState<{ item: SavingsGoal | null } | null>(null);
   const [contributing, setContributing] = useState<SavingsGoal | null>(null);
+  const [trending, setTrending] = useState<SavingsGoal | null>(null);
   const [deleting, setDeleting] = useState<SavingsGoal | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -121,6 +124,7 @@ export function GoalsPage() {
                 period={settings.income_period}
                 accountLabel={accounts.length > 1 ? accountName(accounts, goal.account_id) : ""}
                 onContribute={() => setContributing(goal)}
+                onTrend={() => setTrending(goal)}
                 onEdit={() => setEditing({ item: goal })}
                 onDelete={() => setDeleting(goal)}
               />
@@ -165,6 +169,16 @@ export function GoalsPage() {
           />
         ) : null}
       </Dialog>
+      <Dialog
+        open={trending !== null}
+        onClose={() => setTrending(null)}
+        title={t("Tendencia · {name}", { name: trending?.name ?? "" })}
+        description={t(
+          "Sin fecha límite, mira cuánto tendrías con el tiempo a tu ritmo o con el monto que elijas.",
+        )}
+      >
+        {trending ? <GoalTrend goal={trending} currency={settings.currency} /> : null}
+      </Dialog>
       <ConfirmDialog
         open={deleting !== null}
         title={t("Eliminar meta")}
@@ -187,6 +201,7 @@ function GoalCard({
   period,
   accountLabel,
   onContribute,
+  onTrend,
   onEdit,
   onDelete,
 }: {
@@ -196,11 +211,14 @@ function GoalCard({
   /** Where the goal's money is kept; empty with a single account */
   accountLabel: string;
   onContribute: () => void;
+  /** Goals without a due date: how much they will have over time */
+  onTrend: () => void;
   onEdit: () => void;
   onDelete: () => void;
 }) {
   const t = useT();
   const money = (value: string) => formatMoney(value, currency);
+  const openEnded = goal.due_date === null && !goal.completed;
   const percent = Math.min(goal.progress_percent, 100);
   const words = PERIOD_WORDS[period];
 
@@ -223,6 +241,23 @@ function GoalCard({
         periods,
         date: formatDate(goal.due_date, { day: "numeric", month: "long" }),
       }),
+    };
+  } else if (openEnded && goal.pace_per_week !== null && Number(goal.pace_per_week) > 0) {
+    // No deadline: say when the user's own pace gets them there
+    const { reachDate } = projectGoal({
+      saved: Number(goal.saved_amount),
+      target: Number(goal.target_amount),
+      weekly: Number(goal.pace_per_week),
+      unit: "week",
+    });
+    status = {
+      icon: null,
+      text: reachDate
+        ? t("Te faltan {amount}. A tu ritmo la alcanzas hacia el {date}.", {
+            amount: money(goal.remaining),
+            date: formatDate(reachDate, { day: "numeric", month: "long", year: "numeric" }),
+          })
+        : t("Te faltan {amount}.", { amount: money(goal.remaining) }),
     };
   } else {
     status = { icon: null, text: t("Te faltan {amount}.", { amount: money(goal.remaining) }) };
@@ -286,15 +321,28 @@ function GoalCard({
           {goal.progress_percent}% · {status.text}
         </span>
       </p>
-      <button
-        type="button"
-        onClick={onContribute}
-        // Explicit name: an sr-only suffix loses its leading space in the computed name
-        aria-label={t("Aportar o retirar en {name}", { name: goal.name })}
-        className={buttonClass("ink", "md", "mt-auto self-start")}
-      >
-        {t("Aportar o retirar")}
-      </button>
+      <div className="mt-auto flex flex-wrap gap-2">
+        <button
+          type="button"
+          onClick={onContribute}
+          // Explicit name: an sr-only suffix loses its leading space in the computed name
+          aria-label={t("Aportar o retirar en {name}", { name: goal.name })}
+          className={buttonClass("ink", "md")}
+        >
+          {t("Aportar o retirar")}
+        </button>
+        {openEnded ? (
+          <button
+            type="button"
+            onClick={onTrend}
+            aria-label={t("Ver la tendencia de {name}", { name: goal.name })}
+            className={buttonClass("ghost", "md", "border-line border-2")}
+          >
+            <LineChart aria-hidden="true" className="size-4" />
+            {t("Ver tendencia")}
+          </button>
+        ) : null}
+      </div>
     </article>
   );
 }
