@@ -8,7 +8,7 @@ from app.models.fixed_expense import FixedExpense, FixedExpenseCheckIn
 from app.models.income import Income
 from app.models.password_reset import PasswordResetCode
 from app.models.refresh_token import RefreshToken
-from app.models.savings_goal import SavingsGoal
+from app.models.savings_goal import GoalContribution, SavingsGoal
 from app.models.transaction import Transaction
 from app.models.transfer import Transfer
 from app.models.user import User
@@ -23,6 +23,7 @@ __all__ = [
     "FixedExpense",
     "FixedExpenseCheckIn",
     "Frequency",
+    "GoalContribution",
     "Income",
     "PasswordResetCode",
     "RefreshToken",

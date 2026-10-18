@@ -22,6 +22,7 @@ from app.models import (
     CategoryBudget,
     FixedExpense,
     FixedExpenseCheckIn,
+    GoalContribution,
     Income,
     RefreshToken,
     SavingsGoal,
@@ -83,6 +84,8 @@ def export_user_data(db: Session, user: User) -> dict[str, Any]:
         "movimientos": _rows(db, Transaction, user),
         "transferencias": _rows(db, Transfer, user),
         "metas_de_ahorro": _rows(db, SavingsGoal, user),
+        # Each amount put into or taken out of a goal, with its day
+        "aportes_a_metas": _rows(db, GoalContribution, user),
         # Only when and from which browser a session was opened; never the tokens
         "sesiones": [
             {

@@ -34,7 +34,7 @@ from app.services.dashboard import load_user_finance
 from app.services.errors import DomainError
 from app.services.ownership import list_owned
 from app.services.periods import Cadence
-from app.services.savings import plan_goal
+from app.services.savings import contributions_by_goal, plan_goal, saving_pace
 from app.services.transactions import third_party_balance
 
 logger = logging.getLogger(__name__)
@@ -329,6 +329,7 @@ def build_context(db: Session, user: User, today: date) -> str:
     goals = list_owned(db, SavingsGoal, user, SavingsGoal.created_at)
     if goals:
         lines.append("Metas de ahorro:")
+        history = contributions_by_goal(db, user)
         for goal in goals:
             plan = plan_goal(goal.target_amount, goal.saved_amount, goal.due_date, today, cadence)
             detail = f"- {goal.name}: {m(goal.saved_amount)} de {m(goal.target_amount)}"
@@ -336,6 +337,13 @@ def build_context(db: Session, user: User, today: date) -> str:
                 detail += f", para el {goal.due_date}"
             if plan.suggested_per_period:
                 detail += f", debe apartar {m(plan.suggested_per_period)} por periodo"
+            pace = saving_pace(history.get(goal.id, []), today)
+            if pace is not None and not plan.completed:
+                # Without a deadline this is what tells when they would get there
+                detail += f", su ritmo reciente es {m(pace.per_week)} por semana"
+                if pace.per_week > 0 and goal.due_date is None:
+                    weeks = plan.remaining / pace.per_week
+                    detail += f" (a ese ritmo le faltan unas {weeks:.0f} semanas)"
             lines.append(detail)
     return "\n".join(lines)
 
