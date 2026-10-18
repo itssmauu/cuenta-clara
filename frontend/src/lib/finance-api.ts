@@ -205,6 +205,10 @@ export type SavingsGoal = SavingsGoalInput & {
   overdue: boolean;
   periods_left: number | null;
   suggested_per_period: Money | null;
+  /** Net amount put in per week lately; null while there is too little history */
+  pace_per_week: Money | null;
+  /** The first contribution the pace is measured from */
+  pace_since: string | null;
 };
 
 export type TransactionPage = {
@@ -427,9 +431,12 @@ export const financeApi = {
   updateGoal: (id: string, data: SavingsGoalInput) =>
     request<SavingsGoal>(`/savings-goals/${id}`, { method: "PUT", body: data }),
   deleteGoal: (id: string) => request<void>(`/savings-goals/${id}`, { method: "DELETE" }),
-  /** With `fromAccountId` the money really moves between that account and the goal's */
+  /**
+   * With `fromAccountId` the money really moves between that account and the goal's.
+   * Dated by the user's local day: it feeds the goal's saving pace.
+   */
   contribute: (id: string, amount: Money, fromAccountId: string | null = null) =>
-    request<SavingsGoal>(`/savings-goals/${id}/contributions`, {
+    request<SavingsGoal>(`/savings-goals/${id}/contributions${query({ date: todayISO() })}`, {
       method: "POST",
       body: { amount, from_account_id: fromAccountId },
     }),

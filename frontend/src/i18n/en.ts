@@ -965,6 +965,41 @@ export const EN: Record<string, string> = {
   "No pudimos conectar con el servidor. Revisa tu conexión.":
     "We couldn't reach the server. Check your connection.",
   "Error inesperado.": "Unexpected error.",
+
+  // ── Goal trend (goals without a due date) ───────────
+  "Tendencia · {name}": "Trend · {name}",
+  "Sin fecha límite, mira cuánto tendrías con el tiempo a tu ritmo o con el monto que elijas.":
+    "With no deadline, see how much you would have over time at your pace or with the amount you choose.",
+  "Te faltan {amount}. A tu ritmo la alcanzas hacia el {date}.":
+    "You still need {amount}. At your pace you reach it around {date}.",
+  "Ver la tendencia de {name}": "See the trend for {name}",
+  "Ver tendencia": "See trend",
+  Semanas: "Weeks",
+  Meses: "Months",
+  Años: "Years",
+  "la alcanzas hacia el {date}": "you reach it around {date}",
+  "tardarías más de 100 años": "it would take more than 100 years",
+  "no la alcanzas": "you don't reach it",
+  "Con {amount} por {per}": "With {amount} per {per}",
+  "Tu ritmo": "Your pace",
+  "Aún no podemos calcular tu ritmo": "We can't work out your pace yet",
+  "Tu ritmo: {amount} por semana": "Your pace: {amount} per week",
+  "Hace falta aportar en al menos dos días distintos y que pase una semana desde el primero. Mientras, prueba con un monto abajo.":
+    "You need contributions on at least two different days, and a week since the first. Meanwhile, try an amount below.",
+  "Según tus aportes desde el {date}.": "Based on your contributions since {date}.",
+  "A este ritmo, {reach}.": "At this pace, {reach}.",
+  "Últimamente sacas más de lo que pones: a este ritmo no la alcanzas.":
+    "Lately you take out more than you put in: at this pace you don't reach it.",
+  "¿Y si apartas otro monto?": "What if you set aside another amount?",
+  Cada: "Every",
+  "{scenario}, {reach}.": "{scenario}, {reach}.",
+  "Ver por": "View by",
+  "Cuánto tendrías con el tiempo": "How much you would have over time",
+  "Meta {amount}": "Goal {amount}",
+  "A tu ritmo: {amount}": "At your pace: {amount}",
+  "A tu ritmo": "At your pace",
+  "Tabla de la tendencia de la meta": "Goal trend table",
+  "A TU RITMO": "AT YOUR PACE",
   "Ej. luz de mamá, compra para mi hermano": "E.g. Mom's electricity bill, shopping for my brother",
 
   // ── Occasional income and someone else's money ──────

@@ -184,6 +184,27 @@ test.describe("a new user's first week", () => {
     await expectAccessible(page);
   });
 
+  test("a goal without a date shows how much there will be over time", async () => {
+    await page.getByRole("button", { name: "Ver la tendencia de Laptop" }).click();
+    const trend = page.getByRole("dialog", { name: "Tendencia · Laptop" });
+    // One contribution is not a pace yet: the simulator stands in
+    await expect(trend.getByText("Aún no podemos calcular tu ritmo")).toBeVisible();
+
+    await trend.getByLabel("Monto").fill("50");
+    await expect(trend.getByRole("status")).toContainText(
+      "Con $50.00 por semana, la alcanzas hacia el",
+    );
+    await trend.getByRole("button", { name: "Años" }).click();
+    await trend.getByText("Ver los datos como tabla").click();
+    const table = trend.getByRole("table", { name: "Cuánto tendrías con el tiempo" });
+    await expect(table.getByRole("row")).toHaveCount(7); // header + today + 5 years
+    await expect(table.getByRole("row").last()).toContainText("$600.00");
+    await expectAccessible(page);
+
+    await trend.getByRole("button", { name: "Cerrar" }).click();
+    await expect(trend).toBeHidden();
+  });
+
   test("reports compare periods and download the report as CSV or PDF", async () => {
     await page.getByRole("link", { name: "Reportes" }).click();
     await expect(page.getByRole("heading", { name: /Este periodo frente a/ })).toBeVisible();
