@@ -130,6 +130,31 @@ por_periodo      = ⌈ falta / periodos_restantes ⌉   (al centavo)
 
 Ejemplo semanal, miércoles 7 de octubre, meta $200 con $100 ahorrados para el domingo 25: quedan 3 semanas (la actual y 2 más) → $100 / 3 = **$33.34** por semana.
 
+### Metas sin fecha: ritmo y tendencia
+
+Cada aporte o retiro queda en `goal_contributions` con su día (el día local del usuario). Con eso se calcula el **ritmo** (`saving_pace` en `backend/app/services/savings.py`):
+
+```
+ventana = aportes de los últimos 182 días hasta hoy
+primero = el día del aporte más antiguo de la ventana
+ritmo por semana = (suma de los aportes posteriores al primero) × 7 / días desde el primero hasta hoy
+```
+
+- El primer aporte es el punto de partida, no parte del ritmo: un solo depósito no dice cada cuánto ahorra.
+- Si deja de aportar, el ritmo baja día a día. Los retiros restan.
+- Hace falta aportar en al menos 2 días distintos y que pase 1 semana desde el primero. Antes de eso, el ritmo es `null`.
+
+La **tendencia** (`frontend/src/lib/goal-projection.ts`) proyecta en la web:
+
+```
+tendría(día) = mín( máx(ahorrado + ritmo/7 × días desde hoy, 0), meta )
+la alcanza   = hoy + ⌈ falta / (ritmo/7) ⌉ días   (si el ritmo es positivo y < 100 años)
+```
+
+Por **semanas** (12), **meses** (12, en el calendario) o **años** (5). El simulador cambia el ritmo por un monto propio por semana o por mes (mes = 30.4375 días).
+
+Ejemplo: Laptop $600, ahorrados $180, aportes de $30 el 6 sep y de $25 cada domingo hasta el 18 oct. Son $150 después del primero, en 42 días → **$25 por semana**. Faltan $420 → 118 días → la alcanza hacia el **13 de febrero de 2027**. Cubierto por `tests/test_goal_pace.py` y `goal-projection.test.ts`.
+
 ## Predicción con tendencia (`estimator=trend`)
 
 1. Toma el gasto variable de hasta 8 periodos **completos** desde `balance_as_of` (x = 0, 1, …, n−1).

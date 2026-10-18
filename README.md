@@ -34,7 +34,7 @@ Mucha gente sabe cuánto tiene hoy, pero no cuánto le quedará al final de la s
 - **Movimientos** sueltos, con filtros.
 - **Ingresos ocasionales** (lo que te llega a veces y por montos distintos) y **dinero de terceros**: plata que te pasan para pagar algo de otra persona, que mueve tu saldo pero no cuenta como tu ingreso ni tu gasto.
 - **Predicción** de tu saldo para las próximas semanas o meses, con promedio o tendencia.
-- **Metas de ahorro** que te dicen cuánto apartar por periodo para llegar a tiempo.
+- **Metas de ahorro** que te dicen cuánto apartar por periodo para llegar a tiempo. Si una meta no tiene fecha, ves la **tendencia** de cuánto tendrás por semanas, meses o años a tu ritmo real, y puedes probar otro monto.
 - **Presupuesto por categoría:** cuánto quieres gastar en comida, transporte u ocio, con una barra que te avisa cuando te acercas al tope o te pasas.
 - **En español o en inglés:** cambia de idioma en cualquier página; la app, los correos y Balbo te siguen.
 - **Alertas** al acercarte a tu límite y **comparación** con el periodo anterior.
